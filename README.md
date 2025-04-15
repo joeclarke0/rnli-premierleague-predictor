@@ -7,8 +7,8 @@ This is the backend for a mobile-friendly Premier League score prediction app, b
 - User prediction submission for all 38 gameweeks
 - Admin entry of real results
 - Leaderboard calculation:
-  - ✅ 3 pts for exact score
-  - ⚖️ 1 pt for correct result (win/draw/loss)
+  - ✅ 5 pts for exact score
+  - ⚖️ 2 pt for correct result (win/draw/loss)
   - ❌ 0 pts for incorrect prediction
 - Gameweek support
 - Google Sheets as a lightweight backend
