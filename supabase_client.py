@@ -1,8 +1,7 @@
-# supabase.py
-
+import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-import os
+import uuid
 
 load_dotenv()
 
@@ -11,12 +10,27 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Example helper to insert a prediction
-def insert_prediction(prediction: dict):
-    response = supabase.table("predictions").insert(prediction).execute()
+
+def insert_prediction(data: dict):
+    response = supabase.table("predictions").insert(data).execute()
     return response.data
 
-# Example helper to fetch fixtures by gameweek
-def get_fixtures_by_gameweek(gameweek: int):
-    response = supabase.table("fixtures").select("*").eq("gameweek", gameweek).execute()
+
+def fetch_predictions(filters: dict):
+    query = supabase.table("predictions").select("*")
+
+    for key, value in filters.items():
+        query = query.eq(key, value)
+
+    response = query.execute()
+    return response.data
+
+
+def fetch_fixtures(filters: dict):
+    query = supabase.table("fixtures").select("*")
+
+    for key, value in filters.items():
+        query = query.eq(key, value)
+
+    response = query.execute()
     return response.data

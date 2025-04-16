@@ -1,0 +1,381 @@
+week,date,day,time,home,away,venue
+1,2024-08-16,Fri,20:00,Manchester Utd,Fulham,Old Trafford
+1,2024-08-17,Sat,12:30,Ipswich Town,Liverpool,Portman Road Stadium
+1,2024-08-17,Sat,15:00,Newcastle Utd,Southampton,St James' Park
+1,2024-08-17,Sat,15:00,Nottingham Forest,Bournemouth,The City Ground
+1,2024-08-17,Sat,15:00,Everton,Brighton,Goodison Park
+1,2024-08-17,Sat,15:00,Arsenal,Wolves,Emirates Stadium
+1,2024-08-17,Sat,17:30,West Ham,Aston Villa,London Stadium
+1,2024-08-18,Sun,14:00,Brentford,Crystal Palace,Gtech Community Stadium
+1,2024-08-18,Sun,16:30,Chelsea,Manchester City,Stamford Bridge
+1,2024-08-19,Mon,20:00,Leicester City,Tottenham,King Power Stadium
+2,2024-08-24,Sat,12:30,Brighton,Manchester Utd,The American Express Stadium
+2,2024-08-24,Sat,15:00,Tottenham,Everton,Tottenham Hotspur Stadium
+2,2024-08-24,Sat,15:00,Fulham,Leicester City,Craven Cottage
+2,2024-08-24,Sat,15:00,Crystal Palace,West Ham,Selhurst Park
+2,2024-08-24,Sat,15:00,Manchester City,Ipswich Town,Etihad Stadium
+2,2024-08-24,Sat,15:00,Southampton,Nottingham Forest,St Mary's Stadium
+2,2024-08-24,Sat,17:30,Aston Villa,Arsenal,Villa Park
+2,2024-08-25,Sun,14:00,Bournemouth,Newcastle Utd,Vitality Stadium
+2,2024-08-25,Sun,14:00,Wolves,Chelsea,Molineux Stadium
+2,2024-08-25,Sun,16:30,Liverpool,Brentford,Anfield
+3,2024-08-31,Sat,12:30,Arsenal,Brighton,Emirates Stadium
+3,2024-08-31,Sat,15:00,Everton,Bournemouth,Goodison Park
+3,2024-08-31,Sat,15:00,Leicester City,Aston Villa,King Power Stadium
+3,2024-08-31,Sat,15:00,Nottingham Forest,Wolves,The City Ground
+3,2024-08-31,Sat,15:00,Ipswich Town,Fulham,Portman Road Stadium
+3,2024-08-31,Sat,15:00,Brentford,Southampton,Gtech Community Stadium
+3,2024-08-31,Sat,17:30,West Ham,Manchester City,London Stadium
+3,2024-09-01,Sun,13:30,Newcastle Utd,Tottenham,St James' Park
+3,2024-09-01,Sun,13:30,Chelsea,Crystal Palace,Stamford Bridge
+3,2024-09-01,Sun,16:00,Manchester Utd,Liverpool,Old Trafford
+4,2024-09-14,Sat,12:30,Southampton,Manchester Utd,St Mary's Stadium
+4,2024-09-14,Sat,15:00,Brighton,Ipswich Town,The American Express Stadium
+4,2024-09-14,Sat,15:00,Crystal Palace,Leicester City,Selhurst Park
+4,2024-09-14,Sat,15:00,Manchester City,Brentford,Etihad Stadium
+4,2024-09-14,Sat,15:00,Liverpool,Nottingham Forest,Anfield
+4,2024-09-14,Sat,15:00,Fulham,West Ham,Craven Cottage
+4,2024-09-14,Sat,17:30,Aston Villa,Everton,Villa Park
+4,2024-09-14,Sat,20:00,Bournemouth,Chelsea,Vitality Stadium
+4,2024-09-15,Sun,14:00,Tottenham,Arsenal,Tottenham Hotspur Stadium
+4,2024-09-15,Sun,16:30,Wolves,Newcastle Utd,Molineux Stadium
+5,2024-09-21,Sat,12:30,West Ham,Chelsea,London Stadium
+5,2024-09-21,Sat,15:00,Liverpool,Bournemouth,Anfield
+5,2024-09-21,Sat,15:00,Leicester City,Everton,King Power Stadium
+5,2024-09-21,Sat,15:00,Southampton,Ipswich Town,St Mary's Stadium
+5,2024-09-21,Sat,15:00,Tottenham,Brentford,Tottenham Hotspur Stadium
+5,2024-09-21,Sat,15:00,Fulham,Newcastle Utd,Craven Cottage
+5,2024-09-21,Sat,15:00,Aston Villa,Wolves,Villa Park
+5,2024-09-21,Sat,17:30,Crystal Palace,Manchester Utd,Selhurst Park
+5,2024-09-22,Sun,14:00,Brighton,Nottingham Forest,The American Express Stadium
+5,2024-09-22,Sun,16:30,Manchester City,Arsenal,Etihad Stadium
+6,2024-09-28,Sat,12:30,Newcastle Utd,Manchester City,St James' Park
+6,2024-09-28,Sat,15:00,Chelsea,Brighton,Stamford Bridge
+6,2024-09-28,Sat,15:00,Arsenal,Leicester City,Emirates Stadium
+6,2024-09-28,Sat,15:00,Brentford,West Ham,Gtech Community Stadium
+6,2024-09-28,Sat,15:00,Everton,Crystal Palace,Goodison Park
+6,2024-09-28,Sat,15:00,Nottingham Forest,Fulham,The City Ground
+6,2024-09-28,Sat,17:30,Wolves,Liverpool,Molineux Stadium
+6,2024-09-29,Sun,14:00,Ipswich Town,Aston Villa,Portman Road Stadium
+6,2024-09-29,Sun,16:30,Manchester Utd,Tottenham,Old Trafford
+6,2024-09-30,Mon,20:00,Bournemouth,Southampton,Vitality Stadium
+7,2024-10-05,Sat,15:00,Crystal Palace,Liverpool,Selhurst Park
+7,2024-10-05,Sat,15:00,Manchester City,Fulham,Etihad Stadium
+7,2024-10-05,Sat,15:00,Brentford,Wolves,Gtech Community Stadium
+7,2024-10-05,Sat,15:00,West Ham,Ipswich Town,London Stadium
+7,2024-10-05,Sat,15:00,Aston Villa,Manchester Utd,Villa Park
+7,2024-10-05,Sat,15:00,Chelsea,Nottingham Forest,Stamford Bridge
+7,2024-10-05,Sat,15:00,Arsenal,Southampton,Emirates Stadium
+7,2024-10-05,Sat,15:00,Leicester City,Bournemouth,King Power Stadium
+7,2024-10-05,Sat,15:00,Brighton,Tottenham,The American Express Stadium
+7,2024-10-05,Sat,15:00,Everton,Newcastle Utd,Goodison Park
+8,2024-10-19,Sat,15:00,Bournemouth,Arsenal,Vitality Stadium
+8,2024-10-19,Sat,15:00,Southampton,Leicester City,St Mary's Stadium
+8,2024-10-19,Sat,15:00,Ipswich Town,Everton,Portman Road Stadium
+8,2024-10-19,Sat,15:00,Newcastle Utd,Brighton,St James' Park
+8,2024-10-19,Sat,15:00,Nottingham Forest,Crystal Palace,The City Ground
+8,2024-10-19,Sat,15:00,Fulham,Aston Villa,Craven Cottage
+8,2024-10-19,Sat,15:00,Manchester Utd,Brentford,Old Trafford
+8,2024-10-19,Sat,15:00,Wolves,Manchester City,Molineux Stadium
+8,2024-10-19,Sat,15:00,Tottenham,West Ham,Tottenham Hotspur Stadium
+8,2024-10-19,Sat,15:00,Liverpool,Chelsea,Anfield
+9,2024-10-26,Sat,15:00,Everton,Fulham,Goodison Park
+9,2024-10-26,Sat,15:00,Brentford,Ipswich Town,Gtech Community Stadium
+9,2024-10-26,Sat,15:00,Leicester City,Nottingham Forest,King Power Stadium
+9,2024-10-26,Sat,15:00,Chelsea,Newcastle Utd,Stamford Bridge
+9,2024-10-26,Sat,15:00,West Ham,Manchester Utd,London Stadium
+9,2024-10-26,Sat,15:00,Arsenal,Liverpool,Emirates Stadium
+9,2024-10-26,Sat,15:00,Brighton,Wolves,The American Express Stadium
+9,2024-10-26,Sat,15:00,Manchester City,Southampton,Etihad Stadium
+9,2024-10-26,Sat,15:00,Aston Villa,Bournemouth,Villa Park
+9,2024-10-26,Sat,15:00,Crystal Palace,Tottenham,Selhurst Park
+10,2024-11-02,Sat,15:00,Manchester Utd,Chelsea,Old Trafford
+10,2024-11-02,Sat,15:00,Southampton,Everton,St Mary's Stadium
+10,2024-11-02,Sat,15:00,Liverpool,Brighton,Anfield
+10,2024-11-02,Sat,15:00,Tottenham,Aston Villa,Tottenham Hotspur Stadium
+10,2024-11-02,Sat,15:00,Wolves,Crystal Palace,Molineux Stadium
+10,2024-11-02,Sat,15:00,Nottingham Forest,West Ham,The City Ground
+10,2024-11-02,Sat,15:00,Newcastle Utd,Arsenal,St James' Park
+10,2024-11-02,Sat,15:00,Fulham,Brentford,Craven Cottage
+10,2024-11-02,Sat,15:00,Ipswich Town,Leicester City,Portman Road Stadium
+10,2024-11-02,Sat,15:00,Bournemouth,Manchester City,Vitality Stadium
+11,2024-11-09,Sat,15:00,Brentford,Bournemouth,Gtech Community Stadium
+11,2024-11-09,Sat,15:00,Chelsea,Arsenal,Stamford Bridge
+11,2024-11-09,Sat,15:00,Manchester Utd,Leicester City,Old Trafford
+11,2024-11-09,Sat,15:00,Brighton,Manchester City,The American Express Stadium
+11,2024-11-09,Sat,15:00,Liverpool,Aston Villa,Anfield
+11,2024-11-09,Sat,15:00,Nottingham Forest,Newcastle Utd,The City Ground
+11,2024-11-09,Sat,15:00,West Ham,Everton,London Stadium
+11,2024-11-09,Sat,15:00,Crystal Palace,Fulham,Selhurst Park
+11,2024-11-09,Sat,15:00,Wolves,Southampton,Molineux Stadium
+11,2024-11-09,Sat,15:00,Tottenham,Ipswich Town,Tottenham Hotspur Stadium
+12,2024-11-23,Sat,15:00,Arsenal,Nottingham Forest,Emirates Stadium
+12,2024-11-23,Sat,15:00,Bournemouth,Brighton,Vitality Stadium
+12,2024-11-23,Sat,15:00,Newcastle Utd,West Ham,St James' Park
+12,2024-11-23,Sat,15:00,Leicester City,Chelsea,King Power Stadium
+12,2024-11-23,Sat,15:00,Aston Villa,Crystal Palace,Villa Park
+12,2024-11-23,Sat,15:00,Manchester City,Tottenham,Etihad Stadium
+12,2024-11-23,Sat,15:00,Ipswich Town,Manchester Utd,Portman Road Stadium
+12,2024-11-23,Sat,15:00,Everton,Brentford,Goodison Park
+12,2024-11-23,Sat,15:00,Southampton,Liverpool,St Mary's Stadium
+12,2024-11-23,Sat,15:00,Fulham,Wolves,Craven Cottage
+13,2024-11-30,Sat,15:00,Chelsea,Aston Villa,Stamford Bridge
+13,2024-11-30,Sat,15:00,Liverpool,Manchester City,Anfield
+13,2024-11-30,Sat,15:00,Tottenham,Fulham,Tottenham Hotspur Stadium
+13,2024-11-30,Sat,15:00,Crystal Palace,Newcastle Utd,Selhurst Park
+13,2024-11-30,Sat,15:00,Wolves,Bournemouth,Molineux Stadium
+13,2024-11-30,Sat,15:00,Brighton,Southampton,The American Express Stadium
+13,2024-11-30,Sat,15:00,Nottingham Forest,Ipswich Town,The City Ground
+13,2024-11-30,Sat,15:00,Manchester Utd,Everton,Old Trafford
+13,2024-11-30,Sat,15:00,Brentford,Leicester City,Gtech Community Stadium
+13,2024-11-30,Sat,15:00,West Ham,Arsenal,London Stadium
+14,2024-12-03,Tue,19:45,Fulham,Brighton,Craven Cottage
+14,2024-12-03,Tue,19:45,Leicester City,West Ham,King Power Stadium
+14,2024-12-03,Tue,19:45,Everton,Wolves,Goodison Park
+14,2024-12-03,Tue,19:45,Arsenal,Manchester Utd,Emirates Stadium
+14,2024-12-03,Tue,19:45,Aston Villa,Brentford,Villa Park
+14,2024-12-03,Tue,19:45,Bournemouth,Tottenham,Vitality Stadium
+14,2024-12-03,Tue,19:45,Ipswich Town,Crystal Palace,Portman Road Stadium
+14,2024-12-04,Wed,19:45,Newcastle Utd,Liverpool,St James' Park
+14,2024-12-04,Wed,19:45,Manchester City,Nottingham Forest,Etihad Stadium
+14,2024-12-04,Wed,19:45,Southampton,Chelsea,St Mary's Stadium
+15,2024-12-07,Sat,15:00,Fulham,Arsenal,Craven Cottage
+15,2024-12-07,Sat,15:00,Manchester Utd,Nottingham Forest,Old Trafford
+15,2024-12-07,Sat,15:00,Brentford,Newcastle Utd,Gtech Community Stadium
+15,2024-12-07,Sat,15:00,Ipswich Town,Bournemouth,Portman Road Stadium
+15,2024-12-07,Sat,15:00,West Ham,Wolves,London Stadium
+15,2024-12-07,Sat,15:00,Crystal Palace,Manchester City,Selhurst Park
+15,2024-12-07,Sat,15:00,Leicester City,Brighton,King Power Stadium
+15,2024-12-07,Sat,15:00,Everton,Liverpool,Goodison Park
+15,2024-12-07,Sat,15:00,Aston Villa,Southampton,Villa Park
+15,2024-12-07,Sat,15:00,Tottenham,Chelsea,Tottenham Hotspur Stadium
+16,2024-12-14,Sat,15:00,Newcastle Utd,Leicester City,St James' Park
+16,2024-12-14,Sat,15:00,Nottingham Forest,Aston Villa,The City Ground
+16,2024-12-14,Sat,15:00,Arsenal,Everton,Emirates Stadium
+16,2024-12-14,Sat,15:00,Southampton,Tottenham,St Mary's Stadium
+16,2024-12-14,Sat,15:00,Manchester City,Manchester Utd,Etihad Stadium
+16,2024-12-14,Sat,15:00,Wolves,Ipswich Town,Molineux Stadium
+16,2024-12-14,Sat,15:00,Bournemouth,West Ham,Vitality Stadium
+16,2024-12-14,Sat,15:00,Chelsea,Brentford,Stamford Bridge
+16,2024-12-14,Sat,15:00,Liverpool,Fulham,Anfield
+16,2024-12-14,Sat,15:00,Brighton,Crystal Palace,The American Express Stadium
+17,2024-12-21,Sat,15:00,West Ham,Brighton,London Stadium
+17,2024-12-21,Sat,15:00,Brentford,Nottingham Forest,Gtech Community Stadium
+17,2024-12-21,Sat,15:00,Tottenham,Liverpool,Tottenham Hotspur Stadium
+17,2024-12-21,Sat,15:00,Crystal Palace,Arsenal,Selhurst Park
+17,2024-12-21,Sat,15:00,Ipswich Town,Newcastle Utd,Portman Road Stadium
+17,2024-12-21,Sat,15:00,Manchester Utd,Bournemouth,Old Trafford
+17,2024-12-21,Sat,15:00,Fulham,Southampton,Craven Cottage
+17,2024-12-21,Sat,15:00,Aston Villa,Manchester City,Villa Park
+17,2024-12-21,Sat,15:00,Everton,Chelsea,Goodison Park
+17,2024-12-21,Sat,15:00,Leicester City,Wolves,King Power Stadium
+18,2024-12-26,Thu,15:00,Chelsea,Fulham,Stamford Bridge
+18,2024-12-26,Thu,15:00,Brighton,Brentford,The American Express Stadium
+18,2024-12-26,Thu,15:00,Liverpool,Leicester City,Anfield
+18,2024-12-26,Thu,15:00,Arsenal,Ipswich Town,Emirates Stadium
+18,2024-12-26,Thu,15:00,Wolves,Manchester Utd,Molineux Stadium
+18,2024-12-26,Thu,15:00,Southampton,West Ham,St Mary's Stadium
+18,2024-12-26,Thu,15:00,Manchester City,Everton,Etihad Stadium
+18,2024-12-26,Thu,15:00,Bournemouth,Crystal Palace,Vitality Stadium
+18,2024-12-26,Thu,15:00,Newcastle Utd,Aston Villa,St James' Park
+18,2024-12-26,Thu,15:00,Nottingham Forest,Tottenham,The City Ground
+19,2024-12-29,Sun,15:00,Tottenham,Wolves,Tottenham Hotspur Stadium
+19,2024-12-29,Sun,15:00,Fulham,Bournemouth,Craven Cottage
+19,2024-12-29,Sun,15:00,Aston Villa,Brighton,Villa Park
+19,2024-12-29,Sun,15:00,Everton,Nottingham Forest,Goodison Park
+19,2024-12-29,Sun,15:00,Crystal Palace,Southampton,Selhurst Park
+19,2024-12-29,Sun,15:00,Brentford,Arsenal,Gtech Community Stadium
+19,2024-12-29,Sun,15:00,Ipswich Town,Chelsea,Portman Road Stadium
+19,2024-12-29,Sun,15:00,Leicester City,Manchester City,King Power Stadium
+19,2024-12-29,Sun,15:00,Manchester Utd,Newcastle Utd,Old Trafford
+19,2024-12-29,Sun,15:00,West Ham,Liverpool,London Stadium
+20,2025-01-04,Sat,15:00,Southampton,Brentford,St Mary's Stadium
+20,2025-01-04,Sat,15:00,Bournemouth,Everton,Vitality Stadium
+20,2025-01-04,Sat,15:00,Liverpool,Manchester Utd,Anfield
+20,2025-01-04,Sat,15:00,Brighton,Arsenal,The American Express Stadium
+20,2025-01-04,Sat,15:00,Wolves,Nottingham Forest,Molineux Stadium
+20,2025-01-04,Sat,15:00,Fulham,Ipswich Town,Craven Cottage
+20,2025-01-04,Sat,15:00,Tottenham,Newcastle Utd,Tottenham Hotspur Stadium
+20,2025-01-04,Sat,15:00,Crystal Palace,Chelsea,Selhurst Park
+20,2025-01-04,Sat,15:00,Manchester City,West Ham,Etihad Stadium
+20,2025-01-04,Sat,15:00,Aston Villa,Leicester City,Villa Park
+21,2025-01-14,Tue,19:45,Nottingham Forest,Liverpool,The City Ground
+21,2025-01-14,Tue,19:45,Everton,Aston Villa,Goodison Park
+21,2025-01-14,Tue,19:45,Brentford,Manchester City,Gtech Community Stadium
+21,2025-01-14,Tue,19:45,Leicester City,Crystal Palace,King Power Stadium
+21,2025-01-14,Tue,19:45,Ipswich Town,Brighton,Portman Road Stadium
+21,2025-01-14,Tue,19:45,West Ham,Fulham,London Stadium
+21,2025-01-14,Tue,19:45,Arsenal,Tottenham,Emirates Stadium
+21,2025-01-15,Wed,19:45,Newcastle Utd,Wolves,St James' Park
+21,2025-01-15,Wed,19:45,Chelsea,Bournemouth,Stamford Bridge
+21,2025-01-15,Wed,20:00,Manchester Utd,Southampton,Old Trafford
+22,2025-01-18,Sat,15:00,West Ham,Crystal Palace,London Stadium
+22,2025-01-18,Sat,15:00,Arsenal,Aston Villa,Emirates Stadium
+22,2025-01-18,Sat,15:00,Manchester Utd,Brighton,Old Trafford
+22,2025-01-18,Sat,15:00,Brentford,Liverpool,Gtech Community Stadium
+22,2025-01-18,Sat,15:00,Ipswich Town,Manchester City,Portman Road Stadium
+22,2025-01-18,Sat,15:00,Newcastle Utd,Bournemouth,St James' Park
+22,2025-01-18,Sat,15:00,Leicester City,Fulham,King Power Stadium
+22,2025-01-18,Sat,15:00,Nottingham Forest,Southampton,The City Ground
+22,2025-01-18,Sat,15:00,Chelsea,Wolves,Stamford Bridge
+22,2025-01-18,Sat,15:00,Everton,Tottenham,Goodison Park
+23,2025-01-25,Sat,15:00,Wolves,Arsenal,Molineux Stadium
+23,2025-01-25,Sat,15:00,Crystal Palace,Brentford,Selhurst Park
+23,2025-01-25,Sat,15:00,Southampton,Newcastle Utd,St Mary's Stadium
+23,2025-01-25,Sat,15:00,Tottenham,Leicester City,Tottenham Hotspur Stadium
+23,2025-01-25,Sat,15:00,Brighton,Everton,The American Express Stadium
+23,2025-01-25,Sat,15:00,Aston Villa,West Ham,Villa Park
+23,2025-01-25,Sat,15:00,Manchester City,Chelsea,Etihad Stadium
+23,2025-01-25,Sat,15:00,Fulham,Manchester Utd,Craven Cottage
+23,2025-01-25,Sat,15:00,Liverpool,Ipswich Town,Anfield
+23,2025-01-25,Sat,15:00,Bournemouth,Nottingham Forest,Vitality Stadium
+24,2025-02-01,Sat,15:00,Ipswich Town,Southampton,Portman Road Stadium
+24,2025-02-01,Sat,15:00,Arsenal,Manchester City,Emirates Stadium
+24,2025-02-01,Sat,15:00,Everton,Leicester City,Goodison Park
+24,2025-02-01,Sat,15:00,Newcastle Utd,Fulham,St James' Park
+24,2025-02-01,Sat,15:00,Wolves,Aston Villa,Molineux Stadium
+24,2025-02-01,Sat,15:00,Brentford,Tottenham,Gtech Community Stadium
+24,2025-02-01,Sat,15:00,Manchester Utd,Crystal Palace,Old Trafford
+24,2025-02-01,Sat,15:00,Bournemouth,Liverpool,Vitality Stadium
+24,2025-02-01,Sat,15:00,Nottingham Forest,Brighton,The City Ground
+24,2025-02-01,Sat,15:00,Chelsea,West Ham,Stamford Bridge
+25,2025-02-15,Sat,15:00,Aston Villa,Ipswich Town,Villa Park
+25,2025-02-15,Sat,15:00,Tottenham,Manchester Utd,Tottenham Hotspur Stadium
+25,2025-02-15,Sat,15:00,Crystal Palace,Everton,Selhurst Park
+25,2025-02-15,Sat,15:00,Fulham,Nottingham Forest,Craven Cottage
+25,2025-02-15,Sat,15:00,Liverpool,Wolves,Anfield
+25,2025-02-15,Sat,15:00,West Ham,Brentford,London Stadium
+25,2025-02-15,Sat,15:00,Manchester City,Newcastle Utd,Etihad Stadium
+25,2025-02-15,Sat,15:00,Leicester City,Arsenal,King Power Stadium
+25,2025-02-15,Sat,15:00,Southampton,Bournemouth,St Mary's Stadium
+25,2025-02-15,Sat,15:00,Brighton,Chelsea,The American Express Stadium
+26,2025-02-22,Sat,15:00,Aston Villa,Chelsea,Villa Park
+26,2025-02-22,Sat,15:00,Fulham,Crystal Palace,Craven Cottage
+26,2025-02-22,Sat,15:00,Ipswich Town,Tottenham,Portman Road Stadium
+26,2025-02-22,Sat,15:00,Newcastle Utd,Nottingham Forest,St James' Park
+26,2025-02-22,Sat,15:00,Bournemouth,Wolves,Vitality Stadium
+26,2025-02-22,Sat,15:00,Leicester City,Brentford,King Power Stadium
+26,2025-02-22,Sat,15:00,Arsenal,West Ham,Emirates Stadium
+26,2025-02-22,Sat,15:00,Manchester City,Liverpool,Etihad Stadium
+26,2025-02-22,Sat,15:00,Everton,Manchester Utd,Goodison Park
+26,2025-02-22,Sat,15:00,Southampton,Brighton,St Mary's Stadium
+27,2025-02-25,Tue,19:45,West Ham,Leicester City,London Stadium
+27,2025-02-25,Tue,19:45,Brentford,Everton,Gtech Community Stadium
+27,2025-02-25,Tue,19:45,Tottenham,Manchester City,Tottenham Hotspur Stadium
+27,2025-02-25,Tue,19:45,Wolves,Fulham,Molineux Stadium
+27,2025-02-25,Tue,19:45,Nottingham Forest,Arsenal,The City Ground
+27,2025-02-25,Tue,19:45,Brighton,Bournemouth,The American Express Stadium
+27,2025-02-25,Tue,20:00,Crystal Palace,Aston Villa,Selhurst Park
+27,2025-02-26,Wed,19:45,Chelsea,Southampton,Stamford Bridge
+27,2025-02-26,Wed,20:00,Liverpool,Newcastle Utd,Anfield
+27,2025-02-26,Wed,20:00,Manchester Utd,Ipswich Town,Old Trafford
+28,2025-03-08,Sat,15:00,Liverpool,Southampton,Anfield
+28,2025-03-08,Sat,15:00,Chelsea,Leicester City,Stamford Bridge
+28,2025-03-08,Sat,15:00,Wolves,Everton,Molineux Stadium
+28,2025-03-08,Sat,15:00,West Ham,Newcastle Utd,London Stadium
+28,2025-03-08,Sat,15:00,Tottenham,Bournemouth,Tottenham Hotspur Stadium
+28,2025-03-08,Sat,15:00,Manchester Utd,Arsenal,Old Trafford
+28,2025-03-08,Sat,15:00,Crystal Palace,Ipswich Town,Selhurst Park
+28,2025-03-08,Sat,15:00,Nottingham Forest,Manchester City,The City Ground
+28,2025-03-08,Sat,15:00,Brighton,Fulham,The American Express Stadium
+28,2025-03-08,Sat,15:00,Brentford,Aston Villa,Gtech Community Stadium
+29,2025-03-15,Sat,15:00,Arsenal,Chelsea,Emirates Stadium
+29,2025-03-15,Sat,15:00,Aston Villa,Liverpool,Villa Park
+29,2025-03-15,Sat,15:00,Fulham,Tottenham,Craven Cottage
+29,2025-03-15,Sat,15:00,Newcastle Utd,Crystal Palace,St James' Park
+29,2025-03-15,Sat,15:00,Leicester City,Manchester Utd,King Power Stadium
+29,2025-03-15,Sat,15:00,Manchester City,Brighton,Etihad Stadium
+29,2025-03-15,Sat,15:00,Ipswich Town,Nottingham Forest,Portman Road Stadium
+29,2025-03-15,Sat,15:00,Everton,West Ham,Goodison Park
+29,2025-03-15,Sat,15:00,Southampton,Wolves,St Mary's Stadium
+29,2025-03-15,Sat,15:00,Bournemouth,Brentford,Vitality Stadium
+30,2025-04-01,Tue,19:45,Brighton,Aston Villa,The American Express Stadium
+30,2025-04-01,Tue,19:45,Bournemouth,Ipswich Town,Vitality Stadium
+30,2025-04-01,Tue,19:45,Wolves,West Ham,Molineux Stadium
+30,2025-04-01,Tue,19:45,Arsenal,Fulham,Emirates Stadium
+30,2025-04-01,Tue,19:45,Nottingham Forest,Manchester Utd,The City Ground
+30,2025-04-02,Wed,19:45,Southampton,Crystal Palace,St Mary's Stadium
+30,2025-04-02,Wed,19:45,Chelsea,Tottenham,Stamford Bridge
+30,2025-04-02,Wed,19:45,Manchester City,Leicester City,Etihad Stadium
+30,2025-04-02,Wed,19:45,Newcastle Utd,Brentford,St James' Park
+30,2025-04-02,Wed,20:00,Liverpool,Everton,Anfield
+31,2025-04-05,Sat,15:00,West Ham,Bournemouth,London Stadium
+31,2025-04-05,Sat,15:00,Manchester Utd,Manchester City,Old Trafford
+31,2025-04-05,Sat,15:00,Brentford,Chelsea,Gtech Community Stadium
+31,2025-04-05,Sat,15:00,Aston Villa,Nottingham Forest,Villa Park
+31,2025-04-05,Sat,15:00,Everton,Arsenal,Goodison Park
+31,2025-04-05,Sat,15:00,Fulham,Liverpool,Craven Cottage
+31,2025-04-05,Sat,15:00,Ipswich Town,Wolves,Portman Road Stadium
+31,2025-04-05,Sat,15:00,Leicester City,Newcastle Utd,King Power Stadium
+31,2025-04-05,Sat,15:00,Crystal Palace,Brighton,Selhurst Park
+31,2025-04-05,Sat,15:00,Tottenham,Southampton,Tottenham Hotspur Stadium
+32,2025-04-12,Sat,15:00,Bournemouth,Fulham,Vitality Stadium
+32,2025-04-12,Sat,15:00,Newcastle Utd,Manchester Utd,St James' Park
+32,2025-04-12,Sat,15:00,Arsenal,Brentford,Emirates Stadium
+32,2025-04-12,Sat,15:00,Liverpool,West Ham,Anfield
+32,2025-04-12,Sat,15:00,Wolves,Tottenham,Molineux Stadium
+32,2025-04-12,Sat,15:00,Brighton,Leicester City,The American Express Stadium
+32,2025-04-12,Sat,15:00,Manchester City,Crystal Palace,Etihad Stadium
+32,2025-04-12,Sat,15:00,Nottingham Forest,Everton,The City Ground
+32,2025-04-12,Sat,15:00,Chelsea,Ipswich Town,Stamford Bridge
+32,2025-04-12,Sat,15:00,Southampton,Aston Villa,St Mary's Stadium
+33,2025-04-19,Sat,15:00,Leicester City,Liverpool,King Power Stadium
+33,2025-04-19,Sat,15:00,Ipswich Town,Arsenal,Portman Road Stadium
+33,2025-04-19,Sat,15:00,Brentford,Brighton,Gtech Community Stadium
+33,2025-04-19,Sat,15:00,Aston Villa,Newcastle Utd,Villa Park
+33,2025-04-19,Sat,15:00,Tottenham,Nottingham Forest,Tottenham Hotspur Stadium
+33,2025-04-19,Sat,15:00,West Ham,Southampton,London Stadium
+33,2025-04-19,Sat,15:00,Crystal Palace,Bournemouth,Selhurst Park
+33,2025-04-19,Sat,15:00,Everton,Manchester City,Goodison Park
+33,2025-04-19,Sat,15:00,Fulham,Chelsea,Craven Cottage
+33,2025-04-19,Sat,15:00,Manchester Utd,Wolves,Old Trafford
+34,2025-04-26,Sat,15:00,Chelsea,Everton,Stamford Bridge
+34,2025-04-26,Sat,15:00,Wolves,Leicester City,Molineux Stadium
+34,2025-04-26,Sat,15:00,Newcastle Utd,Ipswich Town,St James' Park
+34,2025-04-26,Sat,15:00,Manchester City,Aston Villa,Etihad Stadium
+34,2025-04-26,Sat,15:00,Liverpool,Tottenham,Anfield
+34,2025-04-26,Sat,15:00,Arsenal,Crystal Palace,Emirates Stadium
+34,2025-04-26,Sat,15:00,Bournemouth,Manchester Utd,Vitality Stadium
+34,2025-04-26,Sat,15:00,Southampton,Fulham,St Mary's Stadium
+34,2025-04-26,Sat,15:00,Nottingham Forest,Brentford,The City Ground
+34,2025-04-26,Sat,15:00,Brighton,West Ham,The American Express Stadium
+35,2025-05-03,Sat,15:00,Chelsea,Liverpool,Stamford Bridge
+35,2025-05-03,Sat,15:00,Brentford,Manchester Utd,Gtech Community Stadium
+35,2025-05-03,Sat,15:00,Manchester City,Wolves,Etihad Stadium
+35,2025-05-03,Sat,15:00,West Ham,Tottenham,London Stadium
+35,2025-05-03,Sat,15:00,Crystal Palace,Nottingham Forest,Selhurst Park
+35,2025-05-03,Sat,15:00,Arsenal,Bournemouth,Emirates Stadium
+35,2025-05-03,Sat,15:00,Everton,Ipswich Town,Goodison Park
+35,2025-05-03,Sat,15:00,Aston Villa,Fulham,Villa Park
+35,2025-05-03,Sat,15:00,Brighton,Newcastle Utd,The American Express Stadium
+35,2025-05-03,Sat,15:00,Leicester City,Southampton,King Power Stadium
+36,2025-05-10,Sat,15:00,Liverpool,Arsenal,Anfield
+36,2025-05-10,Sat,15:00,Southampton,Manchester City,St Mary's Stadium
+36,2025-05-10,Sat,15:00,Tottenham,Crystal Palace,Tottenham Hotspur Stadium
+36,2025-05-10,Sat,15:00,Fulham,Everton,Craven Cottage
+36,2025-05-10,Sat,15:00,Newcastle Utd,Chelsea,St James' Park
+36,2025-05-10,Sat,15:00,Nottingham Forest,Leicester City,The City Ground
+36,2025-05-10,Sat,15:00,Manchester Utd,West Ham,Old Trafford
+36,2025-05-10,Sat,15:00,Bournemouth,Aston Villa,Vitality Stadium
+36,2025-05-10,Sat,15:00,Ipswich Town,Brentford,Portman Road Stadium
+36,2025-05-10,Sat,15:00,Wolves,Brighton,Molineux Stadium
+37,2025-05-18,Sun,15:00,Brentford,Fulham,Gtech Community Stadium
+37,2025-05-18,Sun,15:00,Arsenal,Newcastle Utd,Emirates Stadium
+37,2025-05-18,Sun,15:00,Brighton,Liverpool,The American Express Stadium
+37,2025-05-18,Sun,15:00,Leicester City,Ipswich Town,King Power Stadium
+37,2025-05-18,Sun,15:00,West Ham,Nottingham Forest,London Stadium
+37,2025-05-18,Sun,15:00,Everton,Southampton,Goodison Park
+37,2025-05-18,Sun,15:00,Aston Villa,Tottenham,Villa Park
+37,2025-05-18,Sun,15:00,Chelsea,Manchester Utd,Stamford Bridge
+37,2025-05-18,Sun,15:00,Manchester City,Bournemouth,Etihad Stadium
+37,2025-05-18,Sun,15:00,Crystal Palace,Wolves,Selhurst Park
+38,2025-05-25,Sun,16:00,Southampton,Arsenal,St Mary's Stadium
+38,2025-05-25,Sun,16:00,Liverpool,Crystal Palace,Anfield
+38,2025-05-25,Sun,16:00,Ipswich Town,West Ham,Portman Road Stadium
+38,2025-05-25,Sun,16:00,Bournemouth,Leicester City,Vitality Stadium
+38,2025-05-25,Sun,16:00,Newcastle Utd,Everton,St James' Park
+38,2025-05-25,Sun,16:00,Fulham,Manchester City,Craven Cottage
+38,2025-05-25,Sun,16:00,Nottingham Forest,Chelsea,The City Ground
+38,2025-05-25,Sun,16:00,Manchester Utd,Aston Villa,Old Trafford
+38,2025-05-25,Sun,16:00,Wolves,Brentford,Molineux Stadium
+38,2025-05-25,Sun,16:00,Tottenham,Brighton,Tottenham Hotspur Stadium
