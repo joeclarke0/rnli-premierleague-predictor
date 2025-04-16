@@ -8,11 +8,13 @@ load_dotenv()
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 SERVICE_ACCOUNT_FILE = "service_account.json"
 
+# Create proper credentials
 creds = Credentials.from_service_account_file(
     SERVICE_ACCOUNT_FILE,
     scopes=SCOPES
 )
 
+# Authorize with gspread using scoped credentials
 client = gspread.authorize(creds)
 
 def get_worksheet(sheet_name: str):
