@@ -2,3 +2,7 @@ venv/
 __pycache__/
 .env
 service_account.json
+
+# Frontend
+frontend/node_modules
+frontend/.env.local
