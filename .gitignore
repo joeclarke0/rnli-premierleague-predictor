@@ -1,8 +1,14 @@
+# Python
 venv/
 __pycache__/
+*.pyc
 .env
 service_account.json
 
-# Frontend
-frontend/node_modules
+# Node.js / Frontend
+frontend/node_modules/
 frontend/.env.local
+frontend/dist/
+
+# macOS
+.DS_Store
