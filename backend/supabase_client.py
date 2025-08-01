@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import uuid
 from datetime import datetime, timedelta
 import jwt
+import bcrypt
 
 load_dotenv()
 
@@ -16,6 +17,21 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 else:
     from supabase import create_client, Client
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ----------------------
+# Password Security
+# ----------------------
+
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt"""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash"""
+    try:
+        return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 # ----------------------
 # Authentication
@@ -33,6 +49,11 @@ def authenticate_user(email: str, password: str):
         elif email == "admin@rnli.com" and password == "password":
             return {
                 "user": {"id": "admin-user", "email": email, "username": "Admin", "role": "admin"},
+                "session": {"access_token": "mock-token", "expires_at": (datetime.now() + timedelta(minutes=15)).isoformat()}
+            }
+        elif email == "jea.clarke9307@gmail.com" and password == "password":
+            return {
+                "user": {"id": "361a3c5d-ee29-4b67-8636-e893001ae573", "email": email, "username": "joeclarke0", "role": "admin"},
                 "session": {"access_token": "mock-token", "expires_at": (datetime.now() + timedelta(minutes=15)).isoformat()}
             }
         return None
@@ -75,11 +96,24 @@ def authenticate_user(email: str, password: str):
         except Exception as auth_error:
             print(f"Supabase Auth failed, trying fallback: {auth_error}")
             
-        # Fallback: Check our users table directly
+        # Fallback: Check our users table directly with password verification
         user_info = get_user_by_email(email)
-        if user_info:
-            # For now, accept any password for existing users
-            # In production, you'd want proper password verification
+        if user_info and user_info.get('password'):
+            # Verify password against stored hash
+            if verify_password(password, user_info['password']):
+                return {
+                    "user": user_info,
+                    "session": {
+                        "access_token": f"mock-token-{user_info['id']}", 
+                        "expires_at": (datetime.now() + timedelta(hours=24)).isoformat()
+                    }
+                }
+            else:
+                raise Exception("Invalid password")
+        elif user_info and not user_info.get('password'):
+            # Legacy users without password hash - accept any password for now
+            # TODO: Force password reset for these users
+            print(f"⚠️  Legacy user {email} without password hash - accepting any password")
             return {
                 "user": user_info,
                 "session": {
@@ -178,21 +212,23 @@ def create_user(email: str, password: str, username: str):
         except Exception as auth_error:
             print(f"Supabase Auth signup failed, creating user profile only: {auth_error}")
             
-            # Fallback: Create user profile only
+            # Fallback: Create user profile only with hashed password
             import uuid
             
             user_id = str(uuid.uuid4())
+            hashed_password = hash_password(password)
             user_data = {
                 "id": user_id,
                 "email": email,
                 "username": username,
+                "password": hashed_password,  # Store hashed password
                 "role": "user",  # Default role is user
                 "created_at": datetime.now().isoformat()
             }
             
             try:
                 profile_response = supabase.table("users").insert(user_data).execute()
-                print(f"✅ User profile created: {profile_response.data}")
+                print(f"✅ User profile created with hashed password: {profile_response.data}")
                 return profile_response.data[0] if profile_response.data else None
             except Exception as profile_error:
                 print(f"❌ Error creating user profile: {profile_error}")
