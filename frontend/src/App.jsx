@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Header from './components/Header'
+import Footer from './components/Footer'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Predictions from './pages/Predictions'
@@ -23,6 +24,29 @@ const ProtectedRoute = ({ children, currentUser }) => {
   }
   
   console.log('✅ ProtectedRoute passed - user authenticated:', currentUser.username)
+  return children
+}
+
+// Admin Protected Route component
+const AdminProtectedRoute = ({ children, currentUser }) => {
+  console.log('🔧 AdminProtectedRoute check:', { 
+    currentUser: !!currentUser, 
+    isAdmin: currentUser?.role === 'admin',
+    path: window.location.pathname,
+    userDetails: currentUser ? { id: currentUser.id, username: currentUser.username, role: currentUser.role } : null
+  })
+  
+  if (!currentUser) {
+    console.log('🚫 Redirecting to login - no currentUser')
+    return <Navigate to="/login" replace />
+  }
+  
+  if (currentUser.role !== 'admin') {
+    console.log('🚫 Redirecting to home - user is not admin')
+    return <Navigate to="/" replace />
+  }
+  
+  console.log('✅ AdminProtectedRoute passed - user is admin:', currentUser.username)
   return children
 }
 
@@ -142,13 +166,14 @@ function App() {
             <Route 
               path="/results" 
               element={
-                <ProtectedRoute currentUser={currentUser}>
+                <AdminProtectedRoute currentUser={currentUser}>
                   <Results currentUser={currentUser} />
-                </ProtectedRoute>
+                </AdminProtectedRoute>
               } 
             />
           </Routes>
         </main>
+        <Footer />
       </div>
     </Router>
   )

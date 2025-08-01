@@ -41,6 +41,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
     username TEXT UNIQUE NOT NULL,
+    role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -62,8 +63,8 @@ CREATE POLICY "Users can insert their own profile" ON users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.users (id, email, username)
-    VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'username', 'User'));
+    INSERT INTO public.users (id, email, username, role)
+    VALUES (NEW.id, NEW.email, COALESCE(NEW.raw_user_meta_data->>'username', 'User'), 'user');
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -75,6 +76,43 @@ CREATE TRIGGER on_auth_user_created
         """)
         return False
 
+def add_role_column():
+    """Add role column to existing users table"""
+    try:
+        print("📝 Adding role column to users table...")
+        print("\n📋 SQL to add role column:")
+        print("""
+-- Add role column to existing users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin'));
+
+-- Update existing users to have 'user' role
+UPDATE users SET role = 'user' WHERE role IS NULL;
+        """)
+        return True
+    except Exception as e:
+        print(f"❌ Error adding role column: {e}")
+        return False
+
+def create_admin_user():
+    """Create an admin user for testing"""
+    try:
+        print("📝 Creating admin user...")
+        print("\n📋 SQL to create admin user:")
+        print("""
+-- Insert admin user (replace with actual admin details)
+INSERT INTO users (id, email, username, role) 
+VALUES (
+    gen_random_uuid(), 
+    'admin@rnli.com', 
+    'admin', 
+    'admin'
+) ON CONFLICT (email) DO UPDATE SET role = 'admin';
+        """)
+        return True
+    except Exception as e:
+        print(f"❌ Error creating admin user: {e}")
+        return False
+
 def test_user_creation():
     """Test creating a user to verify the setup works"""
     try:
@@ -83,6 +121,7 @@ def test_user_creation():
             "id": "test-user-id",
             "email": "test@example.com",
             "username": "testuser",
+            "role": "user",
             "created_at": "2024-01-01T00:00:00Z"
         }
         
@@ -106,13 +145,21 @@ def main():
     table_exists = create_users_table()
     
     if table_exists:
+        # Add role column
+        add_role_column()
+        
+        # Create admin user
+        create_admin_user()
+        
         # Test user creation
         test_user_creation()
     
     print("\n📝 Next steps:")
     print("1. If the table doesn't exist, run the SQL above in Supabase Dashboard")
-    print("2. Make sure email confirmation is disabled in Supabase Auth settings")
-    print("3. Test registration in the app")
+    print("2. Add the role column to existing users table")
+    print("3. Create an admin user with role='admin'")
+    print("4. Make sure email confirmation is disabled in Supabase Auth settings")
+    print("5. Test registration in the app")
     print("\n✅ Setup complete!")
 
 if __name__ == "__main__":

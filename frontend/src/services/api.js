@@ -107,7 +107,7 @@ const api = {
     }
   },
 
-  async getPredictions(userId = null, gameweek = null) {
+  async getPredictions(userId = null, gameweek = null, token = null) {
     try {
       let url = userId 
         ? `${API_BASE_URL}/predictions/?user_id=${userId}`
@@ -116,6 +116,12 @@ const api = {
       if (gameweek) {
         url += userId ? '&' : '?' 
         url += `gameweek=${gameweek}`
+      }
+
+      // Add token for authentication
+      if (token) {
+        url += userId || gameweek ? '&' : '?'
+        url += `token=${token}`
       }
       
       const response = await fetch(url)
@@ -129,9 +135,16 @@ const api = {
     }
   },
 
-  async submitPrediction(prediction) {
+  async submitPrediction(prediction, token = null) {
     try {
-      const response = await fetch(`${API_BASE_URL}/predictions/`, {
+      let url = `${API_BASE_URL}/predictions/`
+      
+      // Add token for authentication
+      if (token) {
+        url += `?token=${token}`
+      }
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,6 +157,43 @@ const api = {
       return await response.json()
     } catch (error) {
       console.error('Error submitting prediction:', error)
+      throw error
+    }
+  },
+
+  async deletePrediction(predictionId, token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/predictions/${predictionId}?token=${token}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error deleting prediction:', error)
+      throw error
+    }
+  },
+
+  async updatePrediction(predictionId, predictionUpdate, token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/predictions/${predictionId}?token=${token}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(predictionUpdate),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error updating prediction:', error)
       throw error
     }
   },
@@ -162,12 +212,18 @@ const api = {
     }
   },
 
-  async getResults(gameweek = null) {
+  async getResults(gameweek = null, token = null) {
     try {
       let url = `${API_BASE_URL}/results/`
       
       if (gameweek) {
         url += `?gameweek=${gameweek}`
+      }
+
+      // Add token for authentication
+      if (token) {
+        url += gameweek ? '&' : '?'
+        url += `token=${token}`
       }
       
       const response = await fetch(url)
@@ -181,9 +237,9 @@ const api = {
     }
   },
 
-  async submitResult(result) {
+  async submitResult(result, token) {
     try {
-      const response = await fetch(`${API_BASE_URL}/results/`, {
+      const response = await fetch(`${API_BASE_URL}/results/?token=${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,6 +252,43 @@ const api = {
       return await response.json()
     } catch (error) {
       console.error('Error submitting result:', error)
+      throw error
+    }
+  },
+
+  async deleteResult(resultId, token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/results/${resultId}?token=${token}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error deleting result:', error)
+      throw error
+    }
+  },
+
+  async updateResult(resultId, resultUpdate, token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/results/${resultId}?token=${token}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(resultUpdate),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error updating result:', error)
       throw error
     }
   }

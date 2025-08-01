@@ -1,11 +1,24 @@
 import { Link } from 'react-router-dom'
 
 const Home = ({ currentUser }) => {
+  const isAdmin = currentUser && currentUser.role === 'admin'
+
   return (
     <div className="text-center">
       <div className="card p-8 mb-8">
         <div className="mb-6">
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚓</div>
+          <div style={{ marginBottom: '1rem' }}>
+            <img 
+              src="/premXrnli.png" 
+              alt="RNLI Premier League Predictor" 
+              style={{ 
+                maxWidth: '300px', 
+                height: 'auto',
+                margin: '0 auto',
+                display: 'block'
+              }} 
+            />
+          </div>
           <h1>Welcome to RNLI Premier League Predictor</h1>
           <p className="text-lg">
             Predict Premier League results and compete with your colleagues in this exciting prediction game!
@@ -38,16 +51,19 @@ const Home = ({ currentUser }) => {
             </Link>
           </div>
 
-          <div className="card p-6">
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-            <h3>Match Results</h3>
-            <p className="mb-4">
-              Admins can enter actual match results to calculate scores and update the leaderboard.
-            </p>
-            <Link to="/results" className="btn-secondary">
-              Enter Results
-            </Link>
-          </div>
+          {/* Only show Results card for admin users */}
+          {isAdmin && (
+            <div className="card p-6">
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+              <h3>Match Results</h3>
+              <p className="mb-4">
+                Admins can enter actual match results to calculate scores and update the leaderboard.
+              </p>
+              <Link to="/results" className="btn-secondary">
+                Enter Results
+              </Link>
+            </div>
+          )}
         </div>
       ) : (
         // Show login prompt for non-logged-in users
@@ -82,6 +98,23 @@ const Home = ({ currentUser }) => {
             <h4>4. Compete</h4>
             <p>Track your progress on the leaderboard and compete with colleagues throughout the season.</p>
           </div>
+        </div>
+      </div>
+
+      <div className="card p-6 mt-8">
+        <h2>Meet The App Creator</h2>
+        <div className="mt-4">
+          <img 
+            src="/leadDE.jpeg" 
+            alt="App Creator" 
+            style={{ 
+              maxWidth: '200px', 
+              height: 'auto',
+              margin: '0 auto',
+              display: 'block',
+              borderRadius: '8px'
+            }} 
+          />
         </div>
       </div>
     </div>

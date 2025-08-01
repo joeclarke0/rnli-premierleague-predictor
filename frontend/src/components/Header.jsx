@@ -9,12 +9,22 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
     navigate('/')
   }
 
+  const isAdmin = currentUser && currentUser.role === 'admin'
+
   return (
     <header className="nav-header">
       <div className="nav-container">
         <a href="/" className="nav-brand">
-          <span style={{ fontSize: '1.5rem' }}>⚓</span>
-          <span>RNLI Predictor</span>
+          <img 
+            src="/lifeboats_logo_2025_master.svg" 
+            alt="RNLI Lifeboats" 
+            style={{ 
+              height: '100%', 
+              width: 'auto',
+              maxHeight: '3rem',
+              objectFit: 'contain'
+            }} 
+          />
         </a>
         
         <nav className="nav-links">
@@ -40,27 +50,37 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
               >
                 Leaderboard
               </a>
-              <a 
-                href="/results" 
-                className={`nav-link ${location.pathname === '/results' ? 'active' : ''}`}
-              >
-                Results
-              </a>
+              {/* Only show Results tab for admin users */}
+              {isAdmin && (
+                <a 
+                  href="/results" 
+                  className={`nav-link ${location.pathname === '/results' ? 'active' : ''}`}
+                >
+                  Results
+                </a>
+              )}
             </>
           )}
           
           {currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ color: 'var(--rnli-blue)', fontWeight: '600' }}>
-                Welcome, {currentUser.username || currentUser}
-              </span>
               <button
                 onClick={handleLogout}
-                className="btn-secondary"
+                className="btn-logout"
                 style={{ padding: '8px 16px', fontSize: '0.875rem' }}
               >
                 Logout
               </button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <span style={{ color: 'var(--rnli-white)', fontWeight: '600' }}>
+                  Welcome, {currentUser.username || currentUser}
+                </span>
+                {isAdmin && (
+                  <span className="admin-badge">
+                    <span>🔧</span>Admin
+                  </span>
+                )}
+              </div>
             </div>
           ) : (
             <button

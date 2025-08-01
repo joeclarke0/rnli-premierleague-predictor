@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
+import sessionManager from '../utils/session'
 
 const Predictions = ({ currentUser }) => {
   const [fixtures, setFixtures] = useState([])
@@ -9,10 +10,15 @@ const Predictions = ({ currentUser }) => {
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [gameweekSubmitted, setGameweekSubmitted] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
+    // Check if user is admin
+    if (currentUser && currentUser.role === 'admin') {
+      setIsAdmin(true)
+    }
     loadFixtures()
-  }, [selectedGameweek])
+  }, [selectedGameweek, currentUser])
 
   const loadFixtures = async () => {
     try {
@@ -23,13 +29,15 @@ const Predictions = ({ currentUser }) => {
       // Load existing predictions for this gameweek
       if (currentUser) {
         const userId = currentUser.id || currentUser // Handle both object and string
-        const predictionsResponse = await api.getPredictions(userId, selectedGameweek)
+        const token = sessionManager.getToken()
+        const predictionsResponse = await api.getPredictions(userId, selectedGameweek, token)
         const existingPredictions = {}
         let hasPredictions = false
         
         predictionsResponse.predictions?.forEach(pred => {
           if (pred.gameweek === selectedGameweek) {
             existingPredictions[pred.fixture_id] = {
+              id: pred.id,
               home: pred.predicted_home,
               away: pred.predicted_away
             }
@@ -70,7 +78,8 @@ const Predictions = ({ currentUser }) => {
       return
     }
 
-    if (gameweekSubmitted) {
+    // Regular users can't resubmit, admins can override
+    if (gameweekSubmitted && !isAdmin) {
       setMessage('Predictions already submitted for this gameweek')
       return
     }
@@ -80,6 +89,7 @@ const Predictions = ({ currentUser }) => {
       setMessage('')
 
       const userId = currentUser.id || currentUser // Handle both object and string
+      const token = sessionManager.getToken()
 
       // Create predictions for ALL fixtures in the gameweek, using 0-0 as default
       const predictionsToSubmit = fixtures.map(fixture => ({
@@ -91,7 +101,7 @@ const Predictions = ({ currentUser }) => {
       }))
 
       for (const prediction of predictionsToSubmit) {
-        await api.submitPrediction(prediction)
+        await api.submitPrediction(prediction, token)
       }
 
       setGameweekSubmitted(true)
@@ -101,6 +111,23 @@ const Predictions = ({ currentUser }) => {
       setMessage('Error submitting predictions')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleDeletePrediction = async (predictionId) => {
+    if (!isAdmin) {
+      setMessage('Only admins can delete predictions')
+      return
+    }
+
+    try {
+      const token = sessionManager.getToken()
+      await api.deletePrediction(predictionId, token)
+      setMessage('✅ Prediction deleted successfully')
+      loadFixtures() // Reload to refresh the state
+    } catch (error) {
+      console.error('Error deleting prediction:', error)
+      setMessage('Error deleting prediction')
     }
   }
 
@@ -141,25 +168,35 @@ const Predictions = ({ currentUser }) => {
       </div>
     )
   }
-
+  
   return (
-    <div>
-      <div className="text-center mb-8">
-        <h1>Make Predictions</h1>
-        <p className="text-lg">
-          Select your predicted scores for Gameweek {selectedGameweek}
-        </p>
+    <div className="predictions-container">
+      {/* Header Section */}
+      <div className="predictions-header">
+        <div className="header-content">
+          <h1 className="page-title">Make Predictions</h1>
+          <p className="page-subtitle">
+            Select your predicted scores for Gameweek {selectedGameweek}
+          </p>
+          
+          {/* Admin Badge */}
+          {isAdmin && (
+            <div className="admin-indicator">
+              <span className="admin-icon">🔧</span>
+              <span className="admin-text">Admin Mode - Can Override Submissions</span>
+            </div>
+          )}
+        </div>
         
         {/* Gameweek Selector */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--rnli-blue)' }}>
+        <div className="gameweek-selector">
+          <label className="selector-label">
             Select Gameweek:
           </label>
           <select
             value={selectedGameweek}
             onChange={(e) => setSelectedGameweek(parseInt(e.target.value))}
-            className="input-field"
-            style={{ maxWidth: '200px' }}
+            className="gameweek-select"
           >
             {Array.from({ length: 38 }, (_, i) => i + 1).map(week => (
               <option key={week} value={week}>
@@ -172,106 +209,128 @@ const Predictions = ({ currentUser }) => {
 
       {/* Message Display */}
       {message && (
-        <div className={`message ${message.includes('Error') ? 'error' : message.includes('already submitted') ? 'warning' : 'success'} mb-8`}>
+        <div className={`status-message ${message.includes('Error') ? 'error' : message.includes('already submitted') ? 'warning' : 'success'}`}>
           {message}
         </div>
       )}
-
+      
+      {/* Fixtures Section */}
       {fixtures.length > 0 && (
-        <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Home Team</th>
-                <th>Score</th>
-                <th>Away Team</th>
-              </tr>
-            </thead>
-            <tbody>
-              {fixtures.map((fixture) => (
-                <tr key={fixture.id}>
-                  <td>
-                    <div className="font-medium" style={{ color: 'var(--rnli-blue)' }}>
-                      {formatDate(fixture.date)}
+        <div className="fixtures-section">
+          <div className="fixtures-header">
+            <h2 className="section-title">Match Predictions</h2>
+            <p className="section-subtitle">
+              Enter your predicted scores for each match
+            </p>
+          </div>
+          
+          <div className="fixtures-grid">
+            {fixtures.map((fixture) => {
+              const hasPrediction = predictions[fixture.id]
+              return (
+                <div key={fixture.id} className="fixture-card">
+                  <div className="fixture-header">
+                    <div className="match-info">
+                      <div className="match-date">
+                        {formatDate(fixture.date)}
+                      </div>
+                      <div className="match-time">
+                        {formatTime(fixture.kickoff_time)}
+                      </div>
                     </div>
-                  </td>
-                  <td>
-                    <div className="font-medium">
-                      {formatTime(fixture.kickoff_time)}
+                    <div className="prediction-status">
+                      <span className={`status-badge ${hasPrediction ? 'entered' : 'pending'}`}>
+                        {hasPrediction ? 'Entered' : 'Pending'}
+                      </span>
                     </div>
-                  </td>
-                  <td>
-                    <div className="font-semibold" style={{ fontSize: '1.1rem' }}>
-                      {fixture.home_team}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="flex items-center justify-center space-x-2">
+                    {isAdmin && gameweekSubmitted && predictions[fixture.id]?.id && (
+                      <button
+                        onClick={() => handleDeletePrediction(predictions[fixture.id].id)}
+                        className="delete-btn"
+                      >
+                        DELETE
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="teams-section">
+                    <div className="team home-team">
+                      <div className="team-name">{fixture.home_team}</div>
                       <input
                         type="number"
                         min="0"
                         max="20"
                         value={predictions[fixture.id]?.home || ''}
                         onChange={(e) => handlePredictionChange(fixture.id, 'home', e.target.value)}
-                        className="score-input"
+                        className="score-input home-score"
                         placeholder="0"
-                        disabled={gameweekSubmitted}
+                        disabled={gameweekSubmitted && !isAdmin}
                       />
-                      <span className="font-bold" style={{ color: 'var(--rnli-orange)' }}>:</span>
+                    </div>
+                    
+                    <div className="score-divider">
+                      <span className="vs-text">vs</span>
+                    </div>
+                    
+                    <div className="team away-team">
+                      <div className="team-name">{fixture.away_team}</div>
                       <input
                         type="number"
                         min="0"
                         max="20"
                         value={predictions[fixture.id]?.away || ''}
                         onChange={(e) => handlePredictionChange(fixture.id, 'away', e.target.value)}
-                        className="score-input"
+                        className="score-input away-score"
                         placeholder="0"
-                        disabled={gameweekSubmitted}
+                        disabled={gameweekSubmitted && !isAdmin}
                       />
                     </div>
-                  </td>
-                  <td>
-                    <div className="font-semibold" style={{ fontSize: '1.1rem' }}>
-                      {fixture.away_team}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
-      {/* Submit Button */}
-      {fixtures.length > 0 && !gameweekSubmitted && (
-        <div className="text-center py-8">
+      {/* Submit Section */}
+      {fixtures.length > 0 && (!gameweekSubmitted || isAdmin) && (
+        <div className="submit-section">
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="btn-primary"
-            style={{ fontSize: '1.1rem', padding: '12px 32px' }}
+            className="submit-btn"
           >
-            {submitting ? 'Submitting...' : 'Submit Predictions'}
+            {submitting ? 'Submitting...' : isAdmin && gameweekSubmitted ? 'Override Predictions' : 'Submit Predictions'}
           </button>
-          <p className="text-sm mt-4" style={{ color: 'var(--rnli-dark-gray)' }}>
+          <p className="submit-hint">
             💡 Leave fields empty for 0-0 predictions
+            {isAdmin && gameweekSubmitted && (
+              <span className="admin-hint"> • Admin can override existing submissions</span>
+            )}
           </p>
         </div>
       )}
 
       {fixtures.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-xl">No fixtures found for Gameweek {selectedGameweek}</p>
+        <div className="empty-state">
+          <div className="empty-icon">⚽</div>
+          <h3 className="empty-title">No Fixtures Found</h3>
+          <p className="empty-text">No fixtures found for Gameweek {selectedGameweek}</p>
         </div>
       )}
-
+      
       {/* Instructions Footer */}
-      <div className="text-center mt-12 pt-8" style={{ borderTop: '1px solid var(--rnli-border)' }}>
-        <p className="text-sm" style={{ color: 'var(--rnli-dark-gray)' }}>
-          Enter your predicted scores for each match. Empty fields will be treated as 0-0 predictions.
-        </p>
+      <div className="instructions-footer">
+        <div className="instructions-content">
+          <h4 className="instructions-title">How It Works</h4>
+          <p className="instructions-text">
+            Enter your predicted scores for each match. Empty fields will be treated as 0-0 predictions.
+            {isAdmin && (
+              <span className="admin-instruction"> Admins can override existing submissions.</span>
+            )}
+          </p>
+        </div>
       </div>
     </div>
   )
