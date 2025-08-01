@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 
 const Home = ({ currentUser }) => {
+  const isAdmin = currentUser && currentUser.role === 'admin'
+
   return (
     <div className="text-center">
       <div className="card p-8 mb-8">
@@ -38,16 +40,19 @@ const Home = ({ currentUser }) => {
             </Link>
           </div>
 
-          <div className="card p-6">
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
-            <h3>Match Results</h3>
-            <p className="mb-4">
-              Admins can enter actual match results to calculate scores and update the leaderboard.
-            </p>
-            <Link to="/results" className="btn-secondary">
-              Enter Results
-            </Link>
-          </div>
+          {/* Only show Results card for admin users */}
+          {isAdmin && (
+            <div className="card p-6">
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+              <h3>Match Results</h3>
+              <p className="mb-4">
+                Admins can enter actual match results to calculate scores and update the leaderboard.
+              </p>
+              <Link to="/results" className="btn-secondary">
+                Enter Results
+              </Link>
+            </div>
+          )}
         </div>
       ) : (
         // Show login prompt for non-logged-in users

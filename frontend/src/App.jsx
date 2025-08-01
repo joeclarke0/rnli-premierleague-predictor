@@ -26,6 +26,29 @@ const ProtectedRoute = ({ children, currentUser }) => {
   return children
 }
 
+// Admin Protected Route component
+const AdminProtectedRoute = ({ children, currentUser }) => {
+  console.log('🔧 AdminProtectedRoute check:', { 
+    currentUser: !!currentUser, 
+    isAdmin: currentUser?.role === 'admin',
+    path: window.location.pathname,
+    userDetails: currentUser ? { id: currentUser.id, username: currentUser.username, role: currentUser.role } : null
+  })
+  
+  if (!currentUser) {
+    console.log('🚫 Redirecting to login - no currentUser')
+    return <Navigate to="/login" replace />
+  }
+  
+  if (currentUser.role !== 'admin') {
+    console.log('🚫 Redirecting to home - user is not admin')
+    return <Navigate to="/" replace />
+  }
+  
+  console.log('✅ AdminProtectedRoute passed - user is admin:', currentUser.username)
+  return children
+}
+
 function App() {
   const [currentUser, setCurrentUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -142,9 +165,9 @@ function App() {
             <Route 
               path="/results" 
               element={
-                <ProtectedRoute currentUser={currentUser}>
+                <AdminProtectedRoute currentUser={currentUser}>
                   <Results currentUser={currentUser} />
-                </ProtectedRoute>
+                </AdminProtectedRoute>
               } 
             />
           </Routes>

@@ -42,12 +42,15 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
               >
                 Leaderboard
               </a>
-              <a 
-                href="/results" 
-                className={`nav-link ${location.pathname === '/results' ? 'active' : ''}`}
-              >
-                Results
-              </a>
+              {/* Only show Results tab for admin users */}
+              {isAdmin && (
+                <a 
+                  href="/results" 
+                  className={`nav-link ${location.pathname === '/results' ? 'active' : ''}`}
+                >
+                  Results
+                </a>
+              )}
             </>
           )}
           
