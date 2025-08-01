@@ -15,8 +15,16 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
     <header className="nav-header">
       <div className="nav-container">
         <a href="/" className="nav-brand">
-          <span style={{ fontSize: '1.5rem' }}>⚓</span>
-          <span>RNLI Predictor</span>
+          <img 
+            src="/lifeboats_logo_2025_master.svg" 
+            alt="RNLI Lifeboats" 
+            style={{ 
+              height: '100%', 
+              width: 'auto',
+              maxHeight: '3rem',
+              objectFit: 'contain'
+            }} 
+          />
         </a>
         
         <nav className="nav-links">
@@ -56,28 +64,23 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
           
           {currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ color: 'var(--rnli-blue)', fontWeight: '600' }}>
-                  Welcome, {currentUser.username || currentUser}
-                </span>
-                {isAdmin && (
-                  <span style={{ 
-                    color: 'var(--rnli-orange)', 
-                    fontSize: '0.75rem', 
-                    fontWeight: '600',
-                    textTransform: 'uppercase'
-                  }}>
-                    🔧 Admin
-                  </span>
-                )}
-              </div>
               <button
                 onClick={handleLogout}
-                className="btn-secondary"
+                className="btn-logout"
                 style={{ padding: '8px 16px', fontSize: '0.875rem' }}
               >
                 Logout
               </button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <span style={{ color: 'var(--rnli-white)', fontWeight: '600' }}>
+                  Welcome, {currentUser.username || currentUser}
+                </span>
+                {isAdmin && (
+                  <span className="admin-badge">
+                    <span>🔧</span>Admin
+                  </span>
+                )}
+              </div>
             </div>
           ) : (
             <button

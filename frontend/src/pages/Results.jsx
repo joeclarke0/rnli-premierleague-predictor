@@ -169,32 +169,33 @@ const Results = ({ currentUser }) => {
   }
   
   return (
-    <div>
-      <div className="text-center mb-8">
-        <h1>Match Results</h1>
-        <p className="text-lg">
-          {isAdmin ? 'Enter actual scores for Gameweek' : 'View actual scores for Gameweek'} {selectedGameweek}
-        </p>
-        
-        {/* Admin Badge */}
-        {isAdmin && (
-          <div className="mt-2">
-            <span className="inline-block bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-              🔧 Admin Mode - Can Manage Results
-            </span>
-          </div>
-        )}
+    <div className="results-container">
+      {/* Header Section */}
+      <div className="results-header">
+        <div className="header-content">
+          <h1 className="page-title">Match Results</h1>
+          <p className="page-subtitle">
+            {isAdmin ? 'Enter actual scores for Gameweek' : 'View actual scores for Gameweek'} {selectedGameweek}
+          </p>
+          
+          {/* Admin Badge */}
+          {isAdmin && (
+            <div className="admin-indicator">
+              <span className="admin-icon">🔧</span>
+              <span className="admin-text">Admin Mode - Can Manage Results</span>
+            </div>
+          )}
+        </div>
         
         {/* Gameweek Selector */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--rnli-blue)' }}>
+        <div className="gameweek-selector">
+          <label className="selector-label">
             Select Gameweek:
           </label>
           <select
             value={selectedGameweek}
             onChange={(e) => setSelectedGameweek(parseInt(e.target.value))}
-            className="input-field"
-            style={{ maxWidth: '200px' }}
+            className="gameweek-select"
           >
             {Array.from({ length: 38 }, (_, i) => i + 1).map(week => (
               <option key={week} value={week}>
@@ -207,141 +208,131 @@ const Results = ({ currentUser }) => {
 
       {/* Message Display */}
       {message && (
-        <div className={`message ${message.includes('Error') ? 'error' : message.includes('already submitted') ? 'warning' : 'success'} mb-8`}>
+        <div className={`status-message ${message.includes('Error') ? 'error' : message.includes('already submitted') ? 'warning' : 'success'}`}>
           {message}
         </div>
       )}
       
+      {/* Results Section */}
       {fixtures.length > 0 && (
-        <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Home Team</th>
-                <th>Score</th>
-                <th>Away Team</th>
-                <th>Status</th>
-                {isAdmin && gameweekSubmitted && (
-                  <th>Actions</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {fixtures.map((fixture) => {
-                const hasResult = results[fixture.id]
-                return (
-                  <tr key={fixture.id}>
-                    <td>
-                      <div className="font-medium" style={{ color: 'var(--rnli-blue)' }}>
+        <div className="results-section">
+          <div className="results-header-section">
+            <h2 className="section-title">Match Results</h2>
+            <p className="section-subtitle">
+              {isAdmin ? 'Enter actual scores for each match' : 'View actual scores for each match'}
+            </p>
+          </div>
+          
+          <div className="results-grid">
+            {fixtures.map((fixture) => {
+              const hasResult = results[fixture.id]
+              return (
+                <div key={fixture.id} className="result-card">
+                  <div className="result-header">
+                    <div className="match-info">
+                      <div className="match-date">
                         {formatDate(fixture.date)}
                       </div>
-                    </td>
-                    <td>
-                      <div className="font-medium">
+                      <div className="match-time">
                         {formatTime(fixture.kickoff_time)}
                       </div>
-                    </td>
-                    <td>
-                      <div className="font-semibold" style={{ fontSize: '1.1rem' }}>
-                        {fixture.home_team}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="flex items-center justify-center space-x-2">
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          value={results[fixture.id]?.home || ''}
-                          onChange={(e) => handleResultChange(fixture.id, 'home', e.target.value)}
-                          className="score-input"
-                          placeholder="0"
-                          disabled={!isAdmin}
-                        />
-                        <span className="font-bold" style={{ color: 'var(--rnli-orange)' }}>:</span>
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          value={results[fixture.id]?.away || ''}
-                          onChange={(e) => handleResultChange(fixture.id, 'away', e.target.value)}
-                          className="score-input"
-                          placeholder="0"
-                          disabled={!isAdmin}
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="font-semibold" style={{ fontSize: '1.1rem' }}>
-                        {fixture.away_team}
-                      </div>
-                    </td>
-                    <td>
-                      <div className={`text-sm font-medium px-2 py-1 rounded-full ${
-                        hasResult 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
+                    </div>
+                    <div className="result-status">
+                      <span className={`status-badge ${hasResult ? 'entered' : 'pending'}`}>
                         {hasResult ? 'Entered' : 'Pending'}
-                      </div>
-                    </td>
+                      </span>
+                    </div>
                     {isAdmin && gameweekSubmitted && results[fixture.id]?.id && (
-                      <td>
-                        <button
-                          onClick={() => handleDeleteResult(results[fixture.id].id)}
-                          className="btn-secondary"
-                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                        >
-                          Delete
-                        </button>
-                      </td>
+                      <button
+                        onClick={() => handleDeleteResult(results[fixture.id].id)}
+                        className="delete-btn"
+                      >
+                        DELETE
+                      </button>
                     )}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                  </div>
+                  
+                  <div className="teams-section">
+                    <div className="team home-team">
+                      <div className="team-name">{fixture.home_team}</div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="20"
+                        value={results[fixture.id]?.home || ''}
+                        onChange={(e) => handleResultChange(fixture.id, 'home', e.target.value)}
+                        className="score-input home-score"
+                        placeholder="0"
+                        disabled={!isAdmin}
+                      />
+                    </div>
+                    
+                    <div className="score-divider">
+                      <span className="vs-text">vs</span>
+                    </div>
+                    
+                    <div className="team away-team">
+                      <div className="team-name">{fixture.away_team}</div>
+                      <input
+                        type="number"
+                        min="0"
+                        max="20"
+                        value={results[fixture.id]?.away || ''}
+                        onChange={(e) => handleResultChange(fixture.id, 'away', e.target.value)}
+                        className="score-input away-score"
+                        placeholder="0"
+                        disabled={!isAdmin}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
+      {/* Submit Section */}
       {fixtures.length > 0 && isAdmin && (
-        <div className="text-center py-8">
+        <div className="submit-section">
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="btn-primary"
-            style={{ fontSize: '1.1rem', padding: '12px 32px' }}
+            className="submit-btn"
           >
             {submitting ? 'Submitting...' : gameweekSubmitted ? 'Override Results' : 'Submit Results'}
           </button>
-          <p className="text-sm mt-4" style={{ color: 'var(--rnli-dark-gray)' }}>
+          <p className="submit-hint">
             💡 Leave fields empty for 0-0 results
             {isAdmin && gameweekSubmitted && (
-              <span style={{ color: 'var(--rnli-orange)' }}> • Admin can override existing results</span>
+              <span className="admin-hint"> • Admin can override existing results</span>
             )}
           </p>
         </div>
       )}
 
       {fixtures.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-xl">No fixtures found for Gameweek {selectedGameweek}</p>
+        <div className="empty-state">
+          <div className="empty-icon">⚽</div>
+          <h3 className="empty-title">No Fixtures Found</h3>
+          <p className="empty-text">No fixtures found for Gameweek {selectedGameweek}</p>
         </div>
       )}
       
       {/* Instructions Footer */}
-      <div className="text-center mt-12 pt-8" style={{ borderTop: '1px solid var(--rnli-border)' }}>
-        <p className="text-sm" style={{ color: 'var(--rnli-dark-gray)' }}>
-          {isAdmin 
-            ? 'Enter actual match results. Empty fields will be treated as 0-0 results. Only admins can manage results.'
-            : 'View actual match results for the selected gameweek.'
-          }
-          {isAdmin && gameweekSubmitted && (
-            <span style={{ color: 'var(--rnli-orange)' }}> Admins can override existing results.</span>
-          )}
-        </p>
+      <div className="instructions-footer">
+        <div className="instructions-content">
+          <h4 className="instructions-title">How It Works</h4>
+          <p className="instructions-text">
+            {isAdmin 
+              ? 'Enter actual match results. Empty fields will be treated as 0-0 results. Only admins can manage results.'
+              : 'View actual match results for the selected gameweek.'
+            }
+            {isAdmin && gameweekSubmitted && (
+              <span className="admin-instruction"> Admins can override existing results.</span>
+            )}
+          </p>
+        </div>
       </div>
     </div>
   )

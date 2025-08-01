@@ -45,11 +45,21 @@ def get_leaderboard():
         print(f"✅ Fetched {len(predictions)} predictions, {len(results)} results, {len(users)} users")
 
         result_lookup = {r["fixture_id"]: r for r in results}
+        
+        # Create a set of active user IDs for efficient lookup
+        active_user_ids = {u["id"] for u in users}
         user_lookup = {u["id"]: u["username"] for u in users}
 
         leaderboard = defaultdict(lambda: defaultdict(int))
 
-        for pred in predictions:
+        # Filter predictions to only include active users
+        active_predictions = [pred for pred in predictions if pred["user_id"] in active_user_ids]
+        
+        if len(active_predictions) != len(predictions):
+            filtered_count = len(predictions) - len(active_predictions)
+            print(f"⚠️  Filtered out {filtered_count} predictions from inactive users")
+
+        for pred in active_predictions:
             fixture_id = pred["fixture_id"]
             user_id = pred["user_id"]
             gameweek = pred["gameweek"]
@@ -64,16 +74,20 @@ def get_leaderboard():
 
         formatted = []
         for user_id, scores in leaderboard.items():
-            row = {
-                "player": user_lookup.get(user_id, user_id),
-            }
-            total = 0
-            for week in range(1, 39):
-                week_score = scores.get(week, 0)
-                row[f"week_{week}"] = week_score
-                total += week_score
-            row["total"] = total
-            formatted.append(row)
+            # Double-check that user still exists (defensive programming)
+            if user_id in user_lookup:
+                row = {
+                    "player": user_lookup[user_id],
+                }
+                total = 0
+                for week in range(1, 39):
+                    week_score = scores.get(week, 0)
+                    row[f"week_{week}"] = week_score
+                    total += week_score
+                row["total"] = total
+                formatted.append(row)
+            else:
+                print(f"⚠️  Skipping user {user_id} - no longer in users table")
 
         sorted_leaderboard = sorted(formatted, key=lambda x: x["total"], reverse=True)
 
@@ -81,7 +95,7 @@ def get_leaderboard():
         for idx, row in enumerate(sorted_leaderboard, start=1):
             row["rank"] = idx
 
-        print(f"✅ Leaderboard generated with {len(sorted_leaderboard)} users")
+        print(f"✅ Leaderboard generated with {len(sorted_leaderboard)} active users")
         return {"leaderboard": sorted_leaderboard}
 
     except HTTPException:
