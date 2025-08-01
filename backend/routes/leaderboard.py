@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from supabase_client import supabase
+from supabase_client import fetch_predictions, fetch_results, fetch_users
 from collections import defaultdict
+import time
 
 router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
 
@@ -24,9 +25,24 @@ def calculate_points(pred_home, pred_away, act_home, act_away):
 @router.get("/")
 def get_leaderboard():
     try:
-        predictions = supabase.table("predictions").select("*").execute().data
-        results = supabase.table("results").select("*").execute().data
-        users = supabase.table("users").select("id", "username").execute().data
+        print("📊 Generating leaderboard...")
+        
+        # Add retry logic for database connections
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                predictions = fetch_predictions()
+                results = fetch_results()
+                users = fetch_users()
+                break
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    print(f"❌ Failed to fetch data after {max_retries} attempts: {e}")
+                    raise HTTPException(status_code=500, detail="Failed to fetch leaderboard data")
+                print(f"⚠️  Attempt {attempt + 1} failed, retrying...")
+                time.sleep(0.5)  # Brief delay before retry
+        
+        print(f"✅ Fetched {len(predictions)} predictions, {len(results)} results, {len(users)} users")
 
         result_lookup = {r["fixture_id"]: r for r in results}
         user_lookup = {u["id"]: u["username"] for u in users}
@@ -65,8 +81,12 @@ def get_leaderboard():
         for idx, row in enumerate(sorted_leaderboard, start=1):
             row["rank"] = idx
 
+        print(f"✅ Leaderboard generated with {len(sorted_leaderboard)} users")
         return {"leaderboard": sorted_leaderboard}
 
+    except HTTPException:
+        raise
     except Exception as e:
-        print("❌ Error generating leaderboard:", str(e))
-        raise HTTPException(status_code=500, detail="Failed to calculate leaderboard")
+        print(f"❌ Error generating leaderboard: {e}")
+        # Return empty leaderboard instead of crashing
+        return {"leaderboard": []}

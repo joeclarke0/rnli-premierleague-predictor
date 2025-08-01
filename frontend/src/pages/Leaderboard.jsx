@@ -1,61 +1,157 @@
-// frontend/src/pages/Leaderboard.jsx
-import { useEffect, useState } from "react";
+import { useState, useEffect } from 'react'
+import api from '../services/api'
 
 const Leaderboard = () => {
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [leaderboard, setLeaderboard] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [selectedPlayer, setSelectedPlayer] = useState(null)
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/leaderboard`);
-        const data = await res.json();
-        setLeaderboard(data.leaderboard);
-      } catch (err) {
-        console.error("Error fetching leaderboard:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    loadLeaderboard()
+  }, [])
 
-    fetchLeaderboard();
-  }, []);
+  const loadLeaderboard = async () => {
+    try {
+      setLoading(true)
+      const response = await api.getLeaderboard()
+      setLeaderboard(response.leaderboard || [])
+    } catch (error) {
+      console.error('Error loading leaderboard:', error)
+      setError('Failed to load leaderboard')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  if (loading) return <p className="text-center mt-8">Loading leaderboard...</p>;
+  const getPlayerDetails = (player) => {
+    const gameweeks = []
+    for (let i = 1; i <= 38; i++) {
+      const score = player[`week_${i}`] || 0
+      gameweeks.push({ week: i, score })
+    }
+    return gameweeks
+  }
+
+  const getRankClass = (rank) => {
+    if (rank === 1) return 'rank-1'
+    if (rank === 2) return 'rank-2'
+    if (rank === 3) return 'rank-3'
+    return 'rank-other'
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-16">
+        <div className="loading-spinner"></div>
+        <p className="mt-6 text-xl">Loading leaderboard...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <div className="message error">{error}</div>
+        <button onClick={loadLeaderboard} className="btn-primary mt-4">
+          Try Again
+        </button>
+      </div>
+    )
+  }
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-center">🏆 Leaderboard</h1>
-      <div className="overflow-auto">
-        <table className="min-w-full border border-gray-300">
+    <div>
+      <div className="text-center mb-8">
+        <h1>Premier League Leaderboard</h1>
+        <p className="text-lg">
+          Current standings in the RNLI prediction league
+        </p>
+      </div>
+
+      <div className="table-container">
+        <table className="table">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="px-2 py-1 border">Rank</th>
-              <th className="px-2 py-1 border">Player</th>
-              {[...Array(38)].map((_, i) => (
-                <th key={i} className="px-2 py-1 border text-xs">GW{i + 1}</th>
-              ))}
-              <th className="px-2 py-1 border">Total</th>
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Total Points</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {leaderboard.map((user, idx) => (
-              <tr key={user.player} className="text-center">
-                <td className="border px-1 py-1">{user.rank}</td>
-                <td className="border px-1 py-1 text-left">{user.player}</td>
-                {[...Array(38)].map((_, i) => (
-                  <td key={i} className="border px-1 py-1 text-sm">
-                    {user[`week_${i + 1}`] || 0}
-                  </td>
-                ))}
-                <td className="border px-1 py-1 font-semibold">{user.total}</td>
+            {leaderboard.map((player) => (
+              <tr key={player.player}>
+                <td>
+                  <div className={`rank-badge ${getRankClass(player.rank)}`}>
+                    {player.rank}
+                  </div>
+                </td>
+                <td>
+                  <div className="font-semibold" style={{ fontSize: '1.1rem' }}>
+                    {player.player}
+                  </div>
+                </td>
+                <td>
+                  <div className="font-bold text-xl" style={{ color: 'var(--rnli-orange)' }}>
+                    {player.total}
+                  </div>
+                </td>
+                <td>
+                  <button
+                    onClick={() => setSelectedPlayer(selectedPlayer === player.player ? null : player.player)}
+                    className="btn-secondary"
+                    style={{ padding: '8px 16px', fontSize: '0.875rem' }}
+                  >
+                    {selectedPlayer === player.player ? 'Hide' : 'View'} Details
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
-  );
-};
 
-export default Leaderboard;
+      {selectedPlayer && (
+        <div className="card p-6 mt-8">
+          <h3 className="mb-4">
+            {selectedPlayer} - Gameweek Breakdown
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '1rem' }}>
+            {getPlayerDetails(leaderboard.find(p => p.player === selectedPlayer)).map(({ week, score }) => (
+              <div key={week} className="text-center p-3" style={{ 
+                background: score > 0 ? 'var(--rnli-light-blue)' : 'var(--rnli-gray)', 
+                borderRadius: '10px',
+                border: score > 0 ? '1px solid var(--rnli-blue)' : '1px solid var(--rnli-border)'
+              }}>
+                <div className="text-sm font-medium" style={{ color: 'var(--rnli-blue)' }}>GW {week}</div>
+                <div className={`text-lg font-bold ${
+                  score > 0 ? 'text-green-600' : 'text-gray-400'
+                }`}>
+                  {score}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {leaderboard.length === 0 && (
+        <div className="text-center py-16">
+          <p className="text-xl">No leaderboard data available</p>
+        </div>
+      )}
+
+      {/* Scoring System Footer */}
+      <div className="text-center mt-12 pt-8" style={{ borderTop: '1px solid var(--rnli-border)' }}>
+        <p className="text-sm" style={{ color: 'var(--rnli-dark-gray)' }}>
+          <span style={{ color: 'var(--rnli-orange)', fontWeight: '600' }}>5 points</span> for exact score • 
+          <span style={{ color: 'var(--rnli-blue)', fontWeight: '600' }}> 2 points</span> for correct result • 
+          <span style={{ color: 'var(--rnli-dark-gray)', fontWeight: '600' }}> 0 points</span> for incorrect
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default Leaderboard 
