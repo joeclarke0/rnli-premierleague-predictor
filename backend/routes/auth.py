@@ -24,13 +24,14 @@ class SessionResponse(BaseModel):
     expires_at: str
     user: dict
 
-def create_jwt_token(user_id: str, email: str, username: str):
+def create_jwt_token(user_id: str, email: str, username: str, role: str = "user"):
     """Create JWT token with 24-hour expiration"""
     expiration = datetime.utcnow() + timedelta(hours=24)
     payload = {
         "user_id": user_id,
         "email": email,
         "username": username,
+        "role": role,
         "exp": expiration
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -61,11 +62,12 @@ async def login(request: LoginRequest):
         if not user_info:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Create JWT token
+        # Create JWT token with role
         token, expires_at = create_jwt_token(
             user_info["id"], 
             user_info["email"], 
-            user_info["username"]
+            user_info["username"],
+            user_info.get("role", "user")
         )
         
         return SessionResponse(
@@ -74,7 +76,8 @@ async def login(request: LoginRequest):
             user={
                 "id": user_info["id"],
                 "email": user_info["email"],
-                "username": user_info["username"]
+                "username": user_info["username"],
+                "role": user_info.get("role", "user")
             }
         )
         
@@ -107,11 +110,12 @@ async def register(request: RegisterRequest):
         if not user_info:
             raise HTTPException(status_code=500, detail="Failed to create user")
         
-        # Create JWT token
+        # Create JWT token with role
         token, expires_at = create_jwt_token(
             user_info["id"], 
             user_info["email"], 
-            user_info["username"]
+            user_info["username"],
+            user_info.get("role", "user")
         )
         
         return SessionResponse(
@@ -120,7 +124,8 @@ async def register(request: RegisterRequest):
             user={
                 "id": user_info["id"],
                 "email": user_info["email"],
-                "username": user_info["username"]
+                "username": user_info["username"],
+                "role": user_info.get("role", "user")
             }
         )
         
@@ -148,7 +153,8 @@ async def validate_session_token(token: str = None):
             "user": {
                 "id": user_info["id"],
                 "email": user_info["email"],
-                "username": user_info["username"]
+                "username": user_info["username"],
+                "role": user_info.get("role", "user")
             }
         }
         

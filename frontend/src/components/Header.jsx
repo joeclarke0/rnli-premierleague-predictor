@@ -9,6 +9,8 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
     navigate('/')
   }
 
+  const isAdmin = currentUser && currentUser.role === 'admin'
+
   return (
     <header className="nav-header">
       <div className="nav-container">
@@ -51,9 +53,21 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
           
           {currentUser ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ color: 'var(--rnli-blue)', fontWeight: '600' }}>
-                Welcome, {currentUser.username || currentUser}
-              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <span style={{ color: 'var(--rnli-blue)', fontWeight: '600' }}>
+                  Welcome, {currentUser.username || currentUser}
+                </span>
+                {isAdmin && (
+                  <span style={{ 
+                    color: 'var(--rnli-orange)', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '600',
+                    textTransform: 'uppercase'
+                  }}>
+                    🔧 Admin
+                  </span>
+                )}
+              </div>
               <button
                 onClick={handleLogout}
                 className="btn-secondary"
