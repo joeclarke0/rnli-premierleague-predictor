@@ -256,7 +256,7 @@ const Predictions = ({ currentUser }) => {
           {isAdmin && (
             <div className="admin-indicator">
               <span className="admin-icon">🔧</span>
-              <span className="admin-text">Admin Mode - Can Override Submissions</span>
+              <span className="admin-text">ADMIN MODE - CAN OVERRIDE SUBMISSIONS</span>
             </div>
           )}
         </div>
@@ -291,7 +291,7 @@ const Predictions = ({ currentUser }) => {
       {fixtures.length > 0 && (
         <div className="fixtures-section">
           <div className="fixtures-header">
-            <h2 className="section-title">Match Predictions</h2>
+
             <p className="section-subtitle">
               Enter your predicted scores for each match
             </p>

@@ -75,7 +75,17 @@ const Login = ({ setCurrentUser }) => {
     <div style={{ maxWidth: '400px', margin: '0 auto' }}>
       <div className="card p-8">
         <div className="text-center mb-6">
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚓</div>
+          <div style={{ marginBottom: '1rem' }}>
+            <img 
+              src="/premXrnli.png" 
+              alt="Premier League x RNLI" 
+              style={{ 
+                width: '120px', 
+                height: 'auto',
+                maxWidth: '100%'
+              }} 
+            />
+          </div>
           <h1>{isRegistering ? 'Create Account' : 'Welcome Back'}</h1>
           <p className="text-lg">
             {isRegistering 
@@ -151,7 +161,7 @@ const Login = ({ setCurrentUser }) => {
           </button>
         </form>
 
-        <div className="text-center mt-6">
+        <div className="text-center mt-6" style={{ paddingTop: '2rem' }}>
           <button
             onClick={toggleMode}
             className="btn-secondary"

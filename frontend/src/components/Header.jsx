@@ -59,6 +59,15 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
                   Results
                 </a>
               )}
+              {/* Only show Admin tab for admin users */}
+              {isAdmin && (
+                <a 
+                  href="/admin" 
+                  className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}
+                >
+                  Admin
+                </a>
+              )}
             </>
           )}
           

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import fixtures, predictions, results, leaderboard, auth  # ✅ Added auth route
+from routes import fixtures, predictions, results, leaderboard, auth, admin  # ✅ Added auth and admin routes
 
 app = FastAPI(title="RNLI Premier League Predictor")
 
@@ -19,6 +19,7 @@ app.include_router(predictions.router)
 app.include_router(results.router)
 app.include_router(leaderboard.router)  # ✅ Register leaderboard
 app.include_router(auth.router)  # ✅ Register auth
+app.include_router(admin.router)  # ✅ Register admin
 
 @app.get("/")
 def root():

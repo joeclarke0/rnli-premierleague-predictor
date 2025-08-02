@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Predictions from './pages/Predictions'
 import Leaderboard from './pages/Leaderboard'
 import Results from './pages/Results'
+import Admin from './pages/Admin'
 import sessionManager from './utils/session'
 import api from './services/api'
 
@@ -168,6 +169,14 @@ function App() {
               element={
                 <AdminProtectedRoute currentUser={currentUser}>
                   <Results currentUser={currentUser} />
+                </AdminProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <AdminProtectedRoute currentUser={currentUser}>
+                  <Admin currentUser={currentUser} />
                 </AdminProtectedRoute>
               } 
             />
