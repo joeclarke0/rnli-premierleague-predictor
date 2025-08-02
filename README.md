@@ -77,16 +77,7 @@ python setup_users_table.py
 python create_admin_user.py
 ```
 
-### **4. Admin Access**
-- **Email**: `admin@rnli.com`
-- **Password**: `password`
-- **Role**: `admin`
 
-**OR**
-
-- **Email**: `jea.clarke9307@gmail.com`
-- **Password**: `password`
-- **Role**: `admin`
 
 ---
 
