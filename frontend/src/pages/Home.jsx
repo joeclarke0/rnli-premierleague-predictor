@@ -79,27 +79,7 @@ const Home = ({ currentUser }) => {
         </div>
       )}
 
-      <div className="card p-6 mt-8">
-        <h2>How It Works</h2>
-        <div className="grid-2 mt-4">
-          <div>
-            <h4>1. Make Predictions</h4>
-            <p>Select a gameweek and predict the scores for each match. You can leave fields empty for 0-0 predictions.</p>
-          </div>
-          <div>
-            <h4>2. Submit Results</h4>
-            <p>Admins enter the actual match results to calculate points and update the leaderboard.</p>
-          </div>
-          <div>
-            <h4>3. Score Points</h4>
-            <p>Earn points for correct predictions: 5 points for exact score, 2 points for correct result.</p>
-          </div>
-          <div>
-            <h4>4. Compete</h4>
-            <p>Track your progress on the leaderboard and compete with colleagues throughout the season.</p>
-          </div>
-        </div>
-      </div>
+
 
       <div className="card p-6 mt-8">
         <h2>Meet The App Creator</h2>

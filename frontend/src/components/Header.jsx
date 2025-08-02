@@ -1,8 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTheme } from '../contexts/ThemeContext'
 
 const Header = ({ currentUser, setCurrentUser, onLogout }) => {
   const location = useLocation()
   const navigate = useNavigate()
+  const { isDarkMode, toggleTheme } = useTheme()
 
   const handleLogout = () => {
     onLogout()
@@ -90,18 +92,64 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
                   </span>
                 )}
               </div>
+              <button
+                onClick={toggleTheme}
+                className="theme-toggle"
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                style={{ 
+                  padding: '8px', 
+                  fontSize: '1rem',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--rnli-white)',
+                  cursor: 'pointer',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
             </div>
           ) : (
-            <button
-              onClick={() => {
-                console.log('Login button clicked')
-                navigate('/login')
-              }}
-              className="btn-primary"
-              style={{ padding: '8px 16px', fontSize: '0.875rem' }}
-            >
-              Login
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <button
+                onClick={() => {
+                  console.log('Login button clicked')
+                  navigate('/login')
+                }}
+                className="btn-primary"
+                style={{ padding: '8px 16px', fontSize: '0.875rem' }}
+              >
+                Login
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="theme-toggle"
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                style={{ 
+                  padding: '8px', 
+                  fontSize: '1rem',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--rnli-white)',
+                  cursor: 'pointer',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
+            </div>
           )}
         </nav>
       </div>
