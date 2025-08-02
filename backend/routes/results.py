@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from supabase_client import insert_result, fetch_results, delete_result, upsert_result
 from routes.auth import verify_jwt_token
@@ -11,12 +11,12 @@ router = APIRouter(prefix="/results", tags=["Results"])
 class Result(BaseModel):
     gameweek: int
     fixture_id: int
-    actual_home: int
-    actual_away: int
+    actual_home: int = Field(ge=0, le=100, description="Home team score (0-100)")
+    actual_away: int = Field(ge=0, le=100, description="Away team score (0-100)")
 
 class ResultUpdate(BaseModel):
-    actual_home: int
-    actual_away: int
+    actual_home: int = Field(ge=0, le=100, description="Home team score (0-100)")
+    actual_away: int = Field(ge=0, le=100, description="Away team score (0-100)")
 
 def get_current_user(token: str = Query(None)):
     """Get current user from token"""

@@ -59,7 +59,17 @@ def get_leaderboard():
             filtered_count = len(predictions) - len(active_predictions)
             print(f"⚠️  Filtered out {filtered_count} predictions from inactive users")
 
+        # Remove duplicate predictions (keep only the latest one per user per fixture)
+        unique_predictions = {}
         for pred in active_predictions:
+            key = (pred["user_id"], pred["fixture_id"])
+            # Keep the latest prediction (assuming newer ones have higher IDs or timestamps)
+            if key not in unique_predictions or pred.get("id", 0) > unique_predictions[key].get("id", 0):
+                unique_predictions[key] = pred
+        
+        print(f"✅ Filtered {len(active_predictions)} predictions down to {len(unique_predictions)} unique predictions")
+
+        for pred in unique_predictions.values():
             fixture_id = pred["fixture_id"]
             user_id = pred["user_id"]
             gameweek = pred["gameweek"]

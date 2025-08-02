@@ -11,6 +11,7 @@ const Results = ({ currentUser }) => {
   const [message, setMessage] = useState('')
   const [gameweekSubmitted, setGameweekSubmitted] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
 
   useEffect(() => {
     // Check if user is admin
@@ -60,11 +61,46 @@ const Results = ({ currentUser }) => {
   }
 
   const handleResultChange = (fixtureId, field, value) => {
+    // Clear any previous validation errors for this field
+    setValidationErrors(prev => ({
+      ...prev,
+      [`${fixtureId}-${field}`]: null
+    }))
+    
+    // Validate input: only allow numbers 0-100
+    let validatedValue = 0
+    
+    if (value === '') {
+      validatedValue = 0
+    } else {
+      // Check for non-numeric characters (letters, symbols, etc.)
+      if (!/^\d+$/.test(value)) {
+        setValidationErrors(prev => ({
+          ...prev,
+          [`${fixtureId}-${field}`]: 'Enter value between 0-100'
+        }))
+        return // Don't update if non-numeric
+      }
+      
+      // Check for valid number range
+      const numValue = parseInt(value)
+      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+        validatedValue = numValue
+      } else {
+        // Set validation error
+        setValidationErrors(prev => ({
+          ...prev,
+          [`${fixtureId}-${field}`]: 'Enter value between 0-100'
+        }))
+        return // Don't update if invalid
+      }
+    }
+    
     setResults(prev => ({
       ...prev,
       [fixtureId]: {
         ...prev[fixtureId],
-        [field]: parseInt(value) || 0
+        [field]: validatedValue
       }
     }))
   }
@@ -72,6 +108,13 @@ const Results = ({ currentUser }) => {
   const handleSubmit = async () => {
     if (!currentUser) {
       setMessage('Please log in to submit results')
+      return
+    }
+
+    // Check for validation errors
+    const hasErrors = Object.values(validationErrors).some(error => error !== null)
+    if (hasErrors) {
+      setMessage('❌ Please fix validation errors before submitting')
       return
     }
 
@@ -258,13 +301,46 @@ const Results = ({ currentUser }) => {
                       <input
                         type="number"
                         min="0"
-                        max="20"
-                        value={results[fixture.id]?.home || ''}
+                        max="100"
+                        value={results[fixture.id]?.home ?? 0}
                         onChange={(e) => handleResultChange(fixture.id, 'home', e.target.value)}
-                        className="score-input home-score"
+                        onBlur={(e) => {
+                          // Validate on blur and show errors for invalid values
+                          const value = e.target.value
+                          if (value === '') {
+                            handleResultChange(fixture.id, 'home', '0')
+                          } else {
+                            // Check for non-numeric characters
+                            if (!/^\d+$/.test(value)) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                [`${fixture.id}-home`]: 'Enter value between 0-100'
+                              }))
+                              return
+                            }
+                            
+                            const numValue = parseInt(value)
+                            if (numValue < 0 || numValue > 100) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                [`${fixture.id}-home`]: 'Enter value between 0-100'
+                              }))
+                              return
+                            }
+                            
+                            // If valid, update the result
+                            handleResultChange(fixture.id, 'home', value)
+                          }
+                        }}
+                        className={`score-input home-score ${validationErrors[`${fixture.id}-home`] ? 'error' : ''}`}
                         placeholder="0"
                         disabled={!isAdmin}
                       />
+                      {validationErrors[`${fixture.id}-home`] && (
+                        <div className="validation-error">
+                          {validationErrors[`${fixture.id}-home`]}
+                        </div>
+                      )}
                     </div>
                     
                     <div className="score-divider">
@@ -276,13 +352,46 @@ const Results = ({ currentUser }) => {
                       <input
                         type="number"
                         min="0"
-                        max="20"
-                        value={results[fixture.id]?.away || ''}
+                        max="100"
+                        value={results[fixture.id]?.away ?? 0}
                         onChange={(e) => handleResultChange(fixture.id, 'away', e.target.value)}
-                        className="score-input away-score"
+                        onBlur={(e) => {
+                          // Validate on blur and show errors for invalid values
+                          const value = e.target.value
+                          if (value === '') {
+                            handleResultChange(fixture.id, 'away', '0')
+                          } else {
+                            // Check for non-numeric characters
+                            if (!/^\d+$/.test(value)) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                [`${fixture.id}-away`]: 'Enter value between 0-100'
+                              }))
+                              return
+                            }
+                            
+                            const numValue = parseInt(value)
+                            if (numValue < 0 || numValue > 100) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                [`${fixture.id}-away`]: 'Enter value between 0-100'
+                              }))
+                              return
+                            }
+                            
+                            // If valid, update the result
+                            handleResultChange(fixture.id, 'away', value)
+                          }
+                        }}
+                        className={`score-input away-score ${validationErrors[`${fixture.id}-away`] ? 'error' : ''}`}
                         placeholder="0"
                         disabled={!isAdmin}
                       />
+                      {validationErrors[`${fixture.id}-away`] && (
+                        <div className="validation-error">
+                          {validationErrors[`${fixture.id}-away`]}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

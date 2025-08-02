@@ -11,6 +11,8 @@ const Predictions = ({ currentUser }) => {
   const [message, setMessage] = useState('')
   const [gameweekSubmitted, setGameweekSubmitted] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [submittedThisSession, setSubmittedThisSession] = useState(false)
+  const [validationErrors, setValidationErrors] = useState({})
 
   useEffect(() => {
     // Check if user is admin
@@ -47,6 +49,7 @@ const Predictions = ({ currentUser }) => {
         
         setPredictions(existingPredictions)
         setGameweekSubmitted(hasPredictions)
+        setSubmittedThisSession(false) // Reset for new gameweek
         
         if (hasPredictions) {
           setMessage('✅ Predictions already submitted for this gameweek')
@@ -63,11 +66,46 @@ const Predictions = ({ currentUser }) => {
   }
 
   const handlePredictionChange = (fixtureId, field, value) => {
+    // Clear any previous validation errors for this field
+    setValidationErrors(prev => ({
+      ...prev,
+      [`${fixtureId}-${field}`]: null
+    }))
+    
+    // Validate input: only allow numbers 0-100
+    let validatedValue = 0
+    
+    if (value === '') {
+      validatedValue = 0
+    } else {
+      // Check for non-numeric characters (letters, symbols, etc.)
+      if (!/^\d+$/.test(value)) {
+        setValidationErrors(prev => ({
+          ...prev,
+          [`${fixtureId}-${field}`]: 'Enter value between 0-100'
+        }))
+        return // Don't update if non-numeric
+      }
+      
+      // Check for valid number range
+      const numValue = parseInt(value)
+      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+        validatedValue = numValue
+      } else {
+        // Set validation error
+        setValidationErrors(prev => ({
+          ...prev,
+          [`${fixtureId}-${field}`]: 'Enter value between 0-100'
+        }))
+        return // Don't update if invalid
+      }
+    }
+    
     setPredictions(prev => ({
       ...prev,
       [fixtureId]: {
         ...prev[fixtureId],
-        [field]: parseInt(value) || 0
+        [field]: validatedValue
       }
     }))
   }
@@ -75,6 +113,13 @@ const Predictions = ({ currentUser }) => {
   const handleSubmit = async () => {
     if (!currentUser) {
       setMessage('Please log in to submit predictions')
+      return
+    }
+
+    // Check for validation errors
+    const hasErrors = Object.values(validationErrors).some(error => error !== null)
+    if (hasErrors) {
+      setMessage('❌ Please fix validation errors before submitting')
       return
     }
 
@@ -105,6 +150,7 @@ const Predictions = ({ currentUser }) => {
       }
 
       setGameweekSubmitted(true)
+      setSubmittedThisSession(true)
       setMessage('✅ Predictions submitted successfully!')
     } catch (error) {
       console.error('Error submitting predictions:', error)
@@ -227,6 +273,7 @@ const Predictions = ({ currentUser }) => {
           <div className="fixtures-grid">
             {fixtures.map((fixture) => {
               const hasPrediction = predictions[fixture.id]
+              const showEntered = (gameweekSubmitted && hasPrediction) || (submittedThisSession && hasPrediction)
               return (
                 <div key={fixture.id} className="fixture-card">
                   <div className="fixture-header">
@@ -239,8 +286,8 @@ const Predictions = ({ currentUser }) => {
                       </div>
                     </div>
                     <div className="prediction-status">
-                      <span className={`status-badge ${hasPrediction ? 'entered' : 'pending'}`}>
-                        {hasPrediction ? 'Entered' : 'Pending'}
+                      <span className={`status-badge ${showEntered ? 'entered' : 'pending'}`}>
+                        {showEntered ? 'Entered' : 'Pending'}
                       </span>
                     </div>
                     {isAdmin && gameweekSubmitted && predictions[fixture.id]?.id && (
@@ -259,13 +306,46 @@ const Predictions = ({ currentUser }) => {
                       <input
                         type="number"
                         min="0"
-                        max="20"
-                        value={predictions[fixture.id]?.home || ''}
+                        max="100"
+                        value={predictions[fixture.id]?.home ?? 0}
                         onChange={(e) => handlePredictionChange(fixture.id, 'home', e.target.value)}
-                        className="score-input home-score"
+                        onBlur={(e) => {
+                          // Validate on blur and show errors for invalid values
+                          const value = e.target.value
+                          if (value === '') {
+                            handlePredictionChange(fixture.id, 'home', '0')
+                          } else {
+                            // Check for non-numeric characters
+                            if (!/^\d+$/.test(value)) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                [`${fixture.id}-home`]: 'Enter value between 0-100'
+                              }))
+                              return
+                            }
+                            
+                            const numValue = parseInt(value)
+                            if (numValue < 0 || numValue > 100) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                [`${fixture.id}-home`]: 'Enter value between 0-100'
+                              }))
+                              return
+                            }
+                            
+                            // If valid, update the prediction
+                            handlePredictionChange(fixture.id, 'home', value)
+                          }
+                        }}
+                        className={`score-input home-score ${validationErrors[`${fixture.id}-home`] ? 'error' : ''}`}
                         placeholder="0"
                         disabled={gameweekSubmitted && !isAdmin}
                       />
+                      {validationErrors[`${fixture.id}-home`] && (
+                        <div className="validation-error">
+                          {validationErrors[`${fixture.id}-home`]}
+                        </div>
+                      )}
                     </div>
                     
                     <div className="score-divider">
@@ -277,13 +357,46 @@ const Predictions = ({ currentUser }) => {
                       <input
                         type="number"
                         min="0"
-                        max="20"
-                        value={predictions[fixture.id]?.away || ''}
+                        max="100"
+                        value={predictions[fixture.id]?.away ?? 0}
                         onChange={(e) => handlePredictionChange(fixture.id, 'away', e.target.value)}
-                        className="score-input away-score"
+                        onBlur={(e) => {
+                          // Validate on blur and show errors for invalid values
+                          const value = e.target.value
+                          if (value === '') {
+                            handlePredictionChange(fixture.id, 'away', '0')
+                          } else {
+                            // Check for non-numeric characters
+                            if (!/^\d+$/.test(value)) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                [`${fixture.id}-away`]: 'Enter value between 0-100'
+                              }))
+                              return
+                            }
+                            
+                            const numValue = parseInt(value)
+                            if (numValue < 0 || numValue > 100) {
+                              setValidationErrors(prev => ({
+                                ...prev,
+                                [`${fixture.id}-away`]: 'Enter value between 0-100'
+                              }))
+                              return
+                            }
+                            
+                            // If valid, update the prediction
+                            handlePredictionChange(fixture.id, 'away', value)
+                          }
+                        }}
+                        className={`score-input away-score ${validationErrors[`${fixture.id}-away`] ? 'error' : ''}`}
                         placeholder="0"
                         disabled={gameweekSubmitted && !isAdmin}
                       />
+                      {validationErrors[`${fixture.id}-away`] && (
+                        <div className="validation-error">
+                          {validationErrors[`${fixture.id}-away`]}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

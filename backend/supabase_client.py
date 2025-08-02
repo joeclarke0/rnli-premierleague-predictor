@@ -282,6 +282,56 @@ def insert_prediction(data: dict):
     response = supabase.table("predictions").insert(data).execute()
     return response.data
 
+def upsert_prediction(data: dict, user_id: str = None):
+    """Insert or update a prediction based on user_id, gameweek, and fixture_id"""
+    if supabase is None:
+        print("📝 Mock: Prediction would be upserted:", data)
+        return [data]
+    
+    try:
+        # Check if prediction already exists for this user, gameweek, and fixture
+        existing = supabase.table("predictions").select("*").eq("user_id", data["user_id"]).eq("gameweek", data["gameweek"]).eq("fixture_id", data["fixture_id"]).execute()
+        
+        if existing.data:
+            # Update existing prediction
+            prediction_id = existing.data[0]["id"]
+            response = supabase.table("predictions").update({
+                "predicted_home": data["predicted_home"],
+                "predicted_away": data["predicted_away"]
+            }).eq("id", prediction_id).execute()
+            print(f"✅ Updated existing prediction: {prediction_id}")
+        else:
+            # Insert new prediction
+            response = supabase.table("predictions").insert(data).execute()
+            print(f"✅ Inserted new prediction")
+        
+        return response.data
+    except Exception as e:
+        print(f"❌ Error upserting prediction: {e}")
+        return None
+
+def update_prediction(prediction_id: str, data: dict, user_id: str = None):
+    """Update an existing prediction (admin only or own prediction)"""
+    if supabase is None:
+        print(f"📝 Mock: Prediction {prediction_id} would be updated:", data)
+        return True
+    
+    try:
+        # Check if user is admin or owns the prediction
+        if user_id:
+            is_admin = is_admin_user(user_id)
+            if not is_admin:
+                # Check if user owns the prediction
+                prediction = supabase.table("predictions").select("user_id").eq("id", prediction_id).execute()
+                if not prediction.data or prediction.data[0]["user_id"] != user_id:
+                    raise Exception("Unauthorized to update this prediction")
+        
+        response = supabase.table("predictions").update(data).eq("id", prediction_id).execute()
+        return True
+    except Exception as e:
+        print(f"❌ Error updating prediction: {e}")
+        return False
+
 def fetch_predictions(filters: dict = {}):
     if supabase is None:
         # Return mock data
