@@ -248,6 +248,24 @@ const Results = ({ currentUser }) => {
             {isAdmin ? 'Enter actual scores for Gameweek' : 'View actual scores for Gameweek'} {selectedGameweek}
           </p>
           
+          {/* Gameweek Selector - Centered under subtitle */}
+          <div className="gameweek-selector-centered">
+            <label className="selector-label">
+              Select Gameweek:
+            </label>
+            <select
+              value={selectedGameweek}
+              onChange={(e) => setSelectedGameweek(parseInt(e.target.value))}
+              className="gameweek-select"
+            >
+              {Array.from({ length: 38 }, (_, i) => i + 1).map(week => (
+                <option key={week} value={week}>
+                  Gameweek {week}
+                </option>
+              ))}
+            </select>
+          </div>
+          
           {/* Admin Badge */}
           {isAdmin && (
             <div className="admin-indicator">
@@ -255,24 +273,6 @@ const Results = ({ currentUser }) => {
               <span className="admin-text">Admin Mode - Can Manage Results</span>
             </div>
           )}
-        </div>
-        
-        {/* Gameweek Selector */}
-        <div className="gameweek-selector">
-          <label className="selector-label">
-            Select Gameweek:
-          </label>
-          <select
-            value={selectedGameweek}
-            onChange={(e) => setSelectedGameweek(parseInt(e.target.value))}
-            className="gameweek-select"
-          >
-            {Array.from({ length: 38 }, (_, i) => i + 1).map(week => (
-              <option key={week} value={week}>
-                Gameweek {week}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 

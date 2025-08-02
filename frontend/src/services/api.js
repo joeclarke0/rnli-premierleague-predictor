@@ -291,6 +291,25 @@ const api = {
       console.error('Error updating result:', error)
       throw error
     }
+  },
+
+  // Admin functions
+  async getUsers(token) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users?token=${token}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('Error getting users:', error)
+      throw error
+    }
   }
 }
 

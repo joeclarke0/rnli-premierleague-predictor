@@ -252,31 +252,31 @@ const Predictions = ({ currentUser }) => {
             Select your predicted scores for Gameweek {selectedGameweek}
           </p>
           
+          {/* Gameweek Selector - Centered under subtitle */}
+          <div className="gameweek-selector-centered">
+            <label className="selector-label">
+              Select Gameweek:
+            </label>
+            <select
+              value={selectedGameweek}
+              onChange={(e) => setSelectedGameweek(parseInt(e.target.value))}
+              className="gameweek-select"
+            >
+              {Array.from({ length: 38 }, (_, i) => i + 1).map(week => (
+                <option key={week} value={week}>
+                  Gameweek {week}
+                </option>
+              ))}
+            </select>
+          </div>
+          
           {/* Admin Badge */}
           {isAdmin && (
             <div className="admin-indicator">
               <span className="admin-icon">🔧</span>
-              <span className="admin-text">Admin Mode - Can Override Submissions</span>
+              <span className="admin-text">ADMIN MODE - CAN OVERRIDE SUBMISSIONS</span>
             </div>
           )}
-        </div>
-        
-        {/* Gameweek Selector */}
-        <div className="gameweek-selector">
-          <label className="selector-label">
-            Select Gameweek:
-          </label>
-          <select
-            value={selectedGameweek}
-            onChange={(e) => setSelectedGameweek(parseInt(e.target.value))}
-            className="gameweek-select"
-          >
-            {Array.from({ length: 38 }, (_, i) => i + 1).map(week => (
-              <option key={week} value={week}>
-                Gameweek {week}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -291,7 +291,7 @@ const Predictions = ({ currentUser }) => {
       {fixtures.length > 0 && (
         <div className="fixtures-section">
           <div className="fixtures-header">
-            <h2 className="section-title">Match Predictions</h2>
+
             <p className="section-subtitle">
               Enter your predicted scores for each match
             </p>
