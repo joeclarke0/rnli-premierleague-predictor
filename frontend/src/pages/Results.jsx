@@ -13,6 +13,32 @@ const Results = ({ currentUser }) => {
   const [isAdmin, setIsAdmin] = useState(false)
   const [validationErrors, setValidationErrors] = useState({})
 
+  // Team logo mapping function
+  const getTeamLogo = (teamName) => {
+    const logoMap = {
+      'Arsenal': 'Arsenal logo.svg',
+      'Aston Villa': 'Aston Villa Logo.svg',
+      'AFC Bournemouth': 'Bournemouth Logo.svg',
+      'Brentford': 'Brentford logo.svg',
+      'Brighton & Hove Albion': 'Brighton logo.svg',
+      'Burnley': 'Burnley logo.svg',
+      'Chelsea': 'Chelsea logo.svg',
+      'Everton': 'Everton logo.svg',
+      'Fulham': 'Fulham logo.svg',
+      'Liverpool': 'liverpool logo.svg',
+      'Luton Town': 'Luton logo.svg',
+      'Manchester City': 'mancity logo.svg',
+      'Manchester United': 'united logo.svg',
+      'Newcastle United': 'saudi logo.svg',
+      'Nottingham Forest': 'forrest logo.png',
+      'Sheffield United': 'Sheffield United logo.svg',
+      'Tottenham Hotspur': 'spurs logo.svg',
+      'West Ham United': 'hammers logo.svg',
+      'Wolverhampton Wanderers': 'Wolves logo.svg'
+    }
+    return logoMap[teamName] || null
+  }
+
   useEffect(() => {
     // Check if user is admin
     if (currentUser && currentUser.role === 'admin') {
@@ -297,7 +323,16 @@ const Results = ({ currentUser }) => {
                   
                   <div className="teams-section">
                     <div className="team home-team">
-                      <div className="team-name">{fixture.home_team}</div>
+                      <div className="team-info">
+                        {getTeamLogo(fixture.home_team) && (
+                          <img 
+                            src={`/${getTeamLogo(fixture.home_team)}`} 
+                            alt={`${fixture.home_team} logo`}
+                            className="team-logo"
+                          />
+                        )}
+                        <div className="team-name">{fixture.home_team}</div>
+                      </div>
                       <input
                         type="number"
                         min="0"
@@ -348,7 +383,16 @@ const Results = ({ currentUser }) => {
                     </div>
                     
                     <div className="team away-team">
-                      <div className="team-name">{fixture.away_team}</div>
+                      <div className="team-info">
+                        {getTeamLogo(fixture.away_team) && (
+                          <img 
+                            src={`/${getTeamLogo(fixture.away_team)}`} 
+                            alt={`${fixture.away_team} logo`}
+                            className="team-logo"
+                          />
+                        )}
+                        <div className="team-name">{fixture.away_team}</div>
+                      </div>
                       <input
                         type="number"
                         min="0"
