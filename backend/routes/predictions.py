@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel
-from supabase_client import insert_prediction, fetch_predictions, delete_prediction, supabase, is_admin_user
+from pydantic import BaseModel, Field
+from supabase_client import insert_prediction, fetch_predictions, delete_prediction, upsert_prediction, supabase, is_admin_user
 from routes.auth import verify_jwt_token
 import uuid
 
@@ -10,12 +10,12 @@ class Prediction(BaseModel):
     user_id: str
     gameweek: int
     fixture_id: int
-    predicted_home: int
-    predicted_away: int
+    predicted_home: int = Field(ge=0, le=100, description="Home team score (0-100)")
+    predicted_away: int = Field(ge=0, le=100, description="Away team score (0-100)")
 
 class PredictionUpdate(BaseModel):
-    predicted_home: int
-    predicted_away: int
+    predicted_home: int = Field(ge=0, le=100, description="Home team score (0-100)")
+    predicted_away: int = Field(ge=0, le=100, description="Away team score (0-100)")
 
 def get_current_user(token: str = Query(None)):
     """Get current user from token"""
@@ -38,7 +38,6 @@ def submit_prediction(prediction: Prediction, current_user: dict = Depends(get_c
             raise HTTPException(status_code=403, detail="Can only submit predictions for yourself")
 
         data = {
-            "id": str(uuid.uuid4()),
             "user_id": prediction.user_id,
             "gameweek": prediction.gameweek,
             "fixture_id": prediction.fixture_id,
@@ -46,10 +45,13 @@ def submit_prediction(prediction: Prediction, current_user: dict = Depends(get_c
             "predicted_away": prediction.predicted_away,
         }
 
-        result = insert_prediction(data)
-        print("✅ Prediction inserted:", result)
-
-        return {"message": "Prediction submitted to Supabase"}
+        # Use upsert to either insert new or update existing
+        result = upsert_prediction(data, current_user["user_id"])
+        if result:
+            print("✅ Prediction upserted successfully")
+            return {"message": "Prediction submitted to Supabase"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to upsert prediction")
 
     except HTTPException:
         raise
@@ -132,9 +134,19 @@ def update_prediction(
             if not predictions or predictions[0]["user_id"] != current_user["user_id"]:
                 raise HTTPException(status_code=403, detail="Can only update your own predictions")
 
-        # Update prediction logic would go here
-        # For now, we'll just return success
-        return {"message": "Prediction updated successfully"}
+        # Update the prediction in the database
+        from supabase_client import update_prediction as update_prediction_func
+        
+        data = {
+            "predicted_home": prediction_update.predicted_home,
+            "predicted_away": prediction_update.predicted_away
+        }
+        
+        success = update_prediction_func(prediction_id, data, current_user["user_id"])
+        if success:
+            return {"message": "Prediction updated successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update prediction")
 
     except HTTPException:
         raise

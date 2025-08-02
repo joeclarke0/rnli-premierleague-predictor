@@ -98,6 +98,9 @@ python create_admin_user.py
 - ✅ **Gameweek Lock**: Prevent resubmission (except admins)
 - ✅ **Admin Override**: Admins can modify existing predictions
 - ✅ **Visual Feedback**: Clear submission status indicators
+- ✅ **Input Validation**: Real-time validation with 0-100 range enforcement
+- ✅ **Error Display**: Clear error messages for invalid inputs
+- ✅ **Dual Validation**: onChange and onBlur validation for better UX
 
 ### **🏆 Leaderboard**
 - ✅ **Real-time Scoring**: 5 points exact, 2 points result, 0 incorrect
@@ -111,6 +114,9 @@ python create_admin_user.py
 - ✅ **Override Capability**: Admins can modify existing results
 - ✅ **Bulk Operations**: Submit all results for a gameweek
 - ✅ **Upsert Logic**: Updates existing results instead of creating duplicates
+- ✅ **Input Validation**: Real-time validation with 0-100 range enforcement
+- ✅ **Error Display**: Clear error messages for invalid inputs
+- ✅ **Dual Validation**: onChange and onBlur validation for better UX
 
 ### **🔐 Authentication**
 - ✅ **User Registration**: Email, password, username
@@ -174,9 +180,11 @@ python create_admin_user.py
 ### **🔮 Predictions Page**
 - ✅ **Gameweek Selection**: Choose which week to predict
 - ✅ **Fixture Table**: Clean table layout for all matches
-- ✅ **Score Inputs**: Easy-to-use number inputs
+- ✅ **Score Inputs**: Easy-to-use number inputs with validation
 - ✅ **Admin Override**: Admins can modify existing predictions
 - ✅ **Submission Status**: Clear feedback on submission state
+- ✅ **Input Validation**: Real-time validation with error display
+- ✅ **Range Enforcement**: 0-100 score limits with clear feedback
 
 ### **🏆 Leaderboard Page**
 - ✅ **Rankings Table**: Professional leaderboard display
@@ -186,10 +194,12 @@ python create_admin_user.py
 
 ### **📊 Results Page**
 - ✅ **Admin Only**: Restricted to admin users
-- ✅ **Result Entry**: Input actual match scores
+- ✅ **Result Entry**: Input actual match scores with validation
 - ✅ **Status Tracking**: Visual indicators for entered vs pending
 - ✅ **Admin Management**: Delete/edit existing results
 - ✅ **Override Functionality**: Update existing results instead of duplicates
+- ✅ **Input Validation**: Real-time validation with error display
+- ✅ **Range Enforcement**: 0-100 score limits with clear feedback
 
 ### **🔐 Login/Register Page**
 - ✅ **User Registration**: Create new accounts
@@ -293,8 +303,9 @@ POST   /auth/logout        # User logout
 ### **Data Protection**
 - ✅ **User Isolation**: Users can only see their own predictions
 - ✅ **Admin Controls**: Restricted access to sensitive operations
-- ✅ **Input Validation**: Server-side validation for all inputs
+- ✅ **Input Validation**: Server-side and client-side validation for all inputs
 - ✅ **Error Handling**: Secure error responses
+- ✅ **Range Enforcement**: 0-100 score limits enforced on frontend and backend
 
 ---
 

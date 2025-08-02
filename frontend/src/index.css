@@ -404,21 +404,47 @@ p {
 
 /* Score Input */
 .score-input {
-  width: 60px;
-  padding: 8px 12px;
+  width: 70px; /* Increased from 60px for better touch targets */
+  padding: 10px 14px; /* Increased padding for better touch targets */
   border: 2px solid var(--rnli-border);
-  border-radius: 6px;
-  font-size: 1rem;
+  border-radius: 8px; /* Slightly more rounded */
+  font-size: 1.1rem; /* Slightly larger font */
   font-weight: 600;
   text-align: center;
   transition: all 0.3s ease;
   background: var(--rnli-white);
+  cursor: pointer; /* Shows it's interactive */
+}
+
+/* Remove spinner controls completely for clean number input */
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox - Remove default spinner */
+.score-input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 .score-input:focus {
   outline: none;
   border-color: var(--rnli-orange);
   box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
+}
+
+.score-input.error {
+  border-color: var(--rnli-error);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.validation-error {
+  color: var(--rnli-error);
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+  text-align: center;
 }
 
 .team-name {
@@ -905,8 +931,10 @@ p {
   }
 
   .score-input {
-    width: 50px;
-    font-size: 0.875rem;
+    width: 80px; /* Much larger for mobile touch targets */
+    padding: 12px 16px;
+    font-size: 1.2rem;
+    border-radius: 10px;
   }
 
   .table th,
