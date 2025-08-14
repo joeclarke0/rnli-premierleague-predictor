@@ -18,7 +18,7 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
       <div className="nav-container">
         <a href="/" className="nav-brand">
           <img 
-            src="/lifeboats_logo_2025_master.svg" 
+            src="/premXrnli.png" 
             alt="RNLI Lifeboats" 
             style={{ 
               height: '100%', 
