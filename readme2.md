@@ -31,21 +31,6 @@ SUPABASE_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-### **Setting Up Credentials**
-1. **Create `.env` file** in the `backend/` directory
-2. **Add your Supabase credentials**:
-   ```
-   SUPABASE_URL=https://your-project-id.supabase.co
-   SUPABASE_KEY=your-supabase-anon-key
-   ```
-3. **Get credentials from Supabase**:
-   - Go to your Supabase project dashboard
-   - Settings → API
-   - Copy "Project URL" and "anon public" key
-4. **Restart the backend server** after adding credentials
-
-**Note**: The `.env` file is in `.gitignore`, so your credentials won't be committed to git.
-
 ## 🏗️ Architecture
 
 ### Tech Stack
@@ -291,4 +276,4 @@ npm run dev
 
 This project is developed for RNLI internal use. All rights reserved.
 
----
+--- 
