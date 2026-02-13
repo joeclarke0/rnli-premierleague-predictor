@@ -2,120 +2,285 @@ import { useEffect, useState } from "react";
 import { leaderboardAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-const Leaderboard = () => {
+const VIEWS = {
+  OVERALL: "overall",
+  GAMEWEEK: "gameweek",
+};
+
+// Colour a score value based on points
+function ScoreBadge({ score }) {
+  if (score === 5)
+    return (
+      <span className="inline-block w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center">
+        5
+      </span>
+    );
+  if (score === 2)
+    return (
+      <span className="inline-block w-7 h-7 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center">
+        2
+      </span>
+    );
+  return (
+    <span className="inline-block w-7 h-7 rounded-full bg-gray-100 text-gray-400 text-xs flex items-center justify-center">
+      0
+    </span>
+  );
+}
+
+// Sparkline — last 5 played gameweeks as coloured dots
+function RecentForm({ playerRow, maxWeek }) {
+  const weeks = [];
+  for (let w = maxWeek; w >= 1 && weeks.length < 5; w--) {
+    const s = playerRow[`week_${w}`];
+    if (s !== undefined) weeks.unshift({ w, s });
+  }
+  if (weeks.length === 0) return <span className="text-gray-400 text-xs">No data</span>;
+  return (
+    <div className="flex gap-1 items-center">
+      {weeks.map(({ w, s }) => (
+        <span
+          key={w}
+          title={`GW${w}: ${s} pts`}
+          className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
+            ${s === 5 ? "bg-green-500 text-white" : s === 2 ? "bg-blue-400 text-white" : "bg-gray-200 text-gray-500"}`}
+        >
+          {s}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [view, setView] = useState(VIEWS.OVERALL);
+  const [selectedGameweek, setSelectedGameweek] = useState(1);
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchLeaderboard = async () => {
-      try {
-        const res = await leaderboardAPI.get();
-        setLeaderboard(res.data.leaderboard);
-      } catch (err) {
-        console.error("Error fetching leaderboard:", err);
-        setError("Failed to load leaderboard");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
+    leaderboardAPI
+      .get()
+      .then((res) => setLeaderboard(res.data.leaderboard))
+      .catch(() => setError("Failed to load leaderboard"))
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
+  // Highest gameweek that has any non-zero score
+  const maxWeekPlayed = (() => {
+    for (let w = 38; w >= 1; w--) {
+      if (leaderboard.some((r) => r[`week_${w}`] > 0)) return w;
+    }
+    return 1;
+  })();
+
+  // Gameweek view: re-rank players by selected week
+  const gameweekRanked = [...leaderboard]
+    .map((r) => ({ ...r, gwScore: r[`week_${selectedGameweek}`] || 0 }))
+    .sort((a, b) => b.gwScore - a.gwScore)
+    .map((r, i) => ({ ...r, gwRank: i + 1 }));
+
+  if (loading)
     return (
-      <div className="text-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rnli-blue mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading leaderboard...</p>
+      <div className="text-center py-24">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rnli-blue mx-auto" />
+        <p className="mt-4 text-gray-500">Loading leaderboard…</p>
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <div className="card bg-red-50 text-red-700">
         <p>{error}</p>
       </div>
     );
-  }
+
+  const top3 = leaderboard.slice(0, 3);
+  const rest = leaderboard.slice(3);
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-rnli-blue">🏆 Leaderboard</h1>
-      </div>
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-rnli-blue">🏆 Leaderboard</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {leaderboard.length} players · {maxWeekPlayed} gameweek
+            {maxWeekPlayed !== 1 ? "s" : ""} played
+          </p>
+        </div>
 
-      {/* Scoring Legend */}
-      <div className="card bg-rnli-yellow bg-opacity-10">
-        <h3 className="font-semibold mb-2 text-rnli-blue">Scoring System:</h3>
-        <div className="flex gap-6 text-sm">
-          <div>
-            <span className="font-bold text-green-600">5 pts</span> - Exact score
-          </div>
-          <div>
-            <span className="font-bold text-blue-600">2 pts</span> - Correct result
-          </div>
-          <div>
-            <span className="font-bold text-gray-600">0 pts</span> - Incorrect
-          </div>
+        {/* View toggle */}
+        <div className="flex rounded-lg overflow-hidden border border-gray-200 self-start sm:self-auto">
+          <button
+            onClick={() => setView(VIEWS.OVERALL)}
+            className={`px-5 py-2 text-sm font-semibold transition-colors ${
+              view === VIEWS.OVERALL
+                ? "bg-rnli-blue text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Overall
+          </button>
+          <button
+            onClick={() => setView(VIEWS.GAMEWEEK)}
+            className={`px-5 py-2 text-sm font-semibold transition-colors border-l border-gray-200 ${
+              view === VIEWS.GAMEWEEK
+                ? "bg-rnli-blue text-white"
+                : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            By Gameweek
+          </button>
         </div>
       </div>
 
-      {/* Leaderboard Table */}
-      <div className="card overflow-x-auto">
+      {/* ── Scoring legend ── */}
+      <div className="flex flex-wrap gap-4 text-sm">
+        <span className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded-full bg-green-500 inline-block" />
+          <strong>5 pts</strong> — Exact score
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded-full bg-blue-400 inline-block" />
+          <strong>2 pts</strong> — Correct result
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded-full bg-gray-200 inline-block" />
+          <strong>0 pts</strong> — Incorrect
+        </span>
+      </div>
+
+      {leaderboard.length === 0 ? (
+        <div className="card text-center py-16 text-gray-500">
+          No data yet — start predicting to see scores!
+        </div>
+      ) : view === VIEWS.OVERALL ? (
+        <OverallView
+          top3={top3}
+          rest={rest}
+          leaderboard={leaderboard}
+          maxWeekPlayed={maxWeekPlayed}
+          currentUser={user}
+        />
+      ) : (
+        <GameweekView
+          gameweekRanked={gameweekRanked}
+          selectedGameweek={selectedGameweek}
+          setSelectedGameweek={setSelectedGameweek}
+          maxWeekPlayed={maxWeekPlayed}
+          currentUser={user}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   OVERALL VIEW
+═══════════════════════════════════════════ */
+function OverallView({ top3, rest, leaderboard, maxWeekPlayed, currentUser }) {
+  // Podium order: 2nd, 1st, 3rd
+  const podium = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const podiumHeights = ["h-24", "h-32", "h-20"];
+  const podiumLabels = ["2nd", "1st", "3rd"];
+  const podiumColors = ["bg-gray-200", "bg-rnli-yellow", "bg-orange-200"];
+  const podiumTextColors = ["text-gray-600", "text-gray-900", "text-orange-700"];
+  const medals = ["🥈", "🥇", "🥉"];
+
+  return (
+    <div className="space-y-6">
+      {/* ── Top 3 Podium ── */}
+      {top3.length >= 1 && (
+        <div className="card">
+          <h2 className="text-lg font-bold text-rnli-blue mb-6 text-center">Top 3</h2>
+          <div className="flex items-end justify-center gap-4">
+            {podium.map((player, idx) => (
+              <div key={player.player} className="flex flex-col items-center gap-2 w-28">
+                <span className="text-3xl">{medals[idx]}</span>
+                <p
+                  className={`text-sm font-bold text-center truncate w-full text-center ${
+                    currentUser?.username === player.player ? "text-rnli-blue" : ""
+                  }`}
+                >
+                  {player.player}
+                  {currentUser?.username === player.player && (
+                    <span className="block text-xs text-rnli-blue font-normal">(You)</span>
+                  )}
+                </p>
+                <p className="text-xl font-bold">{player.total} <span className="text-sm font-normal text-gray-500">pts</span></p>
+                <div
+                  className={`w-full rounded-t-lg ${podiumColors[idx]} ${podiumHeights[idx]} flex items-center justify-center`}
+                >
+                  <span className={`text-2xl font-black ${podiumTextColors[idx]}`}>
+                    {podiumLabels[idx]}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Full Rankings Table ── */}
+      <div className="card overflow-hidden p-0">
         <table className="min-w-full">
-          <thead className="bg-rnli-blue text-white sticky top-0">
-            <tr>
-              <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Rank</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold uppercase">Player</th>
-              {[...Array(38)].map((_, i) => (
-                <th key={i} className="px-2 py-3 text-center text-xs font-semibold">
-                  {i + 1}
-                </th>
-              ))}
-              <th className="px-3 py-3 text-center text-xs font-semibold uppercase bg-rnli-blue-dark">
-                Total
-              </th>
+          <thead>
+            <tr className="bg-rnli-blue text-white text-sm">
+              <th className="px-4 py-3 text-left w-14">Rank</th>
+              <th className="px-4 py-3 text-left">Player</th>
+              <th className="px-4 py-3 text-center hidden sm:table-cell">Recent Form</th>
+              <th className="px-4 py-3 text-center hidden md:table-cell">Best Week</th>
+              <th className="px-4 py-3 text-center hidden md:table-cell">Played</th>
+              <th className="px-4 py-3 text-center w-20 bg-rnli-blue-dark">Total</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {leaderboard.map((userRow, idx) => {
-              const isCurrentUser = user && userRow.player === user.username;
-              const isTop3 = userRow.rank <= 3;
+          <tbody className="divide-y divide-gray-100">
+            {leaderboard.map((row, idx) => {
+              const isCurrentUser = currentUser?.username === row.player;
+              const weekScores = Array.from({ length: 38 }, (_, i) => row[`week_${i + 1}`] || 0);
+              const bestWeek = Math.max(...weekScores);
+              const weeksPlayed = weekScores.filter((s) => s > 0).length;
 
               return (
                 <tr
-                  key={userRow.player}
-                  className={`
-                    ${isCurrentUser ? 'bg-blue-50 font-semibold' : ''}
-                    ${idx % 2 === 0 && !isCurrentUser ? 'bg-gray-50' : ''}
-                    hover:bg-blue-100 transition-colors
-                  `}
+                  key={row.player}
+                  className={`transition-colors ${
+                    isCurrentUser
+                      ? "bg-blue-50 font-semibold"
+                      : idx % 2 === 0
+                      ? "bg-white"
+                      : "bg-gray-50"
+                  } hover:bg-blue-50`}
                 >
-                  <td className="px-3 py-3 whitespace-nowrap text-sm">
-                    {isTop3 ? (
-                      <span className="text-xl">
-                        {userRow.rank === 1 && '🥇'}
-                        {userRow.rank === 2 && '🥈'}
-                        {userRow.rank === 3 && '🥉'}
-                      </span>
-                    ) : (
-                      <span className="text-gray-600">{userRow.rank}</span>
+                  <td className="px-4 py-3 text-center">
+                    {row.rank === 1 ? "🥇" : row.rank === 2 ? "🥈" : row.rank === 3 ? "🥉" : (
+                      <span className="text-sm text-gray-500 font-medium">{row.rank}</span>
                     )}
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap text-sm font-medium">
-                    {userRow.player}
-                    {isCurrentUser && <span className="ml-2 text-rnli-blue">(You)</span>}
+                  <td className="px-4 py-3">
+                    <span className="font-semibold text-sm">{row.player}</span>
+                    {isCurrentUser && (
+                      <span className="ml-2 text-xs text-rnli-blue bg-blue-100 px-1.5 py-0.5 rounded">You</span>
+                    )}
                   </td>
-                  {[...Array(38)].map((_, i) => (
-                    <td key={i} className="px-2 py-3 text-center text-sm text-gray-600">
-                      {userRow[`week_${i + 1}`] || 0}
-                    </td>
-                  ))}
-                  <td className="px-3 py-3 text-center font-bold bg-gray-100 text-rnli-blue">
-                    {userRow.total}
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <RecentForm playerRow={row} maxWeek={maxWeekPlayed} />
+                  </td>
+                  <td className="px-4 py-3 text-center hidden md:table-cell">
+                    {bestWeek > 0 ? (
+                      <span className="text-green-600 font-bold text-sm">{bestWeek} pts</span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center hidden md:table-cell text-sm text-gray-500">
+                    {weeksPlayed}
+                  </td>
+                  <td className="px-4 py-3 text-center font-bold text-rnli-blue bg-gray-100 text-base">
+                    {row.total}
                   </td>
                 </tr>
               );
@@ -123,14 +288,111 @@ const Leaderboard = () => {
           </tbody>
         </table>
       </div>
-
-      {leaderboard.length === 0 && (
-        <div className="card text-center py-12 text-gray-600">
-          <p>No leaderboard data yet. Start predicting to see scores!</p>
-        </div>
-      )}
     </div>
   );
-};
+}
 
-export default Leaderboard;
+/* ═══════════════════════════════════════════
+   GAMEWEEK VIEW
+═══════════════════════════════════════════ */
+function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, maxWeekPlayed, currentUser }) {
+  const totalPoints = gameweekRanked.reduce((sum, r) => sum + r.gwScore, 0);
+  const topScore = gameweekRanked[0]?.gwScore ?? 0;
+
+  return (
+    <div className="space-y-4">
+      {/* Gameweek selector */}
+      <div className="card py-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-semibold text-gray-700 shrink-0">Select Gameweek:</span>
+          <div className="flex flex-wrap gap-1.5">
+            {Array.from({ length: 38 }, (_, i) => i + 1).map((gw) => (
+              <button
+                key={gw}
+                onClick={() => setSelectedGameweek(gw)}
+                className={`w-9 h-9 rounded-lg text-xs font-bold transition-colors ${
+                  selectedGameweek === gw
+                    ? "bg-rnli-blue text-white shadow-md"
+                    : gw <= maxWeekPlayed
+                    ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    : "bg-gray-50 text-gray-300 cursor-not-allowed"
+                }`}
+                disabled={gw > maxWeekPlayed}
+              >
+                {gw}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Gameweek stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="card text-center py-3">
+          <p className="text-2xl font-bold text-rnli-blue">{gameweekRanked[0]?.player ?? "—"}</p>
+          <p className="text-xs text-gray-500 mt-1">GW{selectedGameweek} Winner</p>
+        </div>
+        <div className="card text-center py-3">
+          <p className="text-2xl font-bold text-green-600">{topScore} <span className="text-sm font-normal">pts</span></p>
+          <p className="text-xs text-gray-500 mt-1">Highest Score</p>
+        </div>
+        <div className="card text-center py-3">
+          <p className="text-2xl font-bold text-gray-700">{totalPoints}</p>
+          <p className="text-xs text-gray-500 mt-1">Total Points Scored</p>
+        </div>
+      </div>
+
+      {/* Gameweek rankings */}
+      <div className="card overflow-hidden p-0">
+        <div className="bg-rnli-blue text-white px-4 py-3">
+          <h2 className="font-bold text-sm">Gameweek {selectedGameweek} Rankings</h2>
+        </div>
+        <table className="min-w-full">
+          <thead>
+            <tr className="bg-gray-50 text-xs text-gray-500 uppercase border-b border-gray-200">
+              <th className="px-4 py-3 text-left w-16">Rank</th>
+              <th className="px-4 py-3 text-left">Player</th>
+              <th className="px-4 py-3 text-center">GW{selectedGameweek} Score</th>
+              <th className="px-4 py-3 text-center">Overall Rank</th>
+              <th className="px-4 py-3 text-center">Overall Total</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {gameweekRanked.map((row, idx) => {
+              const isCurrentUser = currentUser?.username === row.player;
+              return (
+                <tr
+                  key={row.player}
+                  className={`transition-colors ${
+                    isCurrentUser ? "bg-blue-50 font-semibold" : idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  } hover:bg-blue-50`}
+                >
+                  <td className="px-4 py-3 text-center">
+                    {row.gwRank === 1 ? "🥇" : row.gwRank === 2 ? "🥈" : row.gwRank === 3 ? "🥉" : (
+                      <span className="text-sm text-gray-500">{row.gwRank}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="font-semibold text-sm">{row.player}</span>
+                    {isCurrentUser && (
+                      <span className="ml-2 text-xs text-rnli-blue bg-blue-100 px-1.5 py-0.5 rounded">You</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <ScoreBadge score={row.gwScore} />
+                  </td>
+                  <td className="px-4 py-3 text-center text-sm text-gray-500">
+                    {row.rank === 1 ? "🥇" : row.rank === 2 ? "🥈" : row.rank === 3 ? "🥉" : `#${row.rank}`}
+                  </td>
+                  <td className="px-4 py-3 text-center font-bold text-rnli-blue text-sm">
+                    {row.total}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
