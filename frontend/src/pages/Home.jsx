@@ -52,9 +52,12 @@ export default function Home() {
             <FiStar className="w-3.5 h-3.5" />
             Premier League 2024/25
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-4 leading-tight">
-            ⚓ RNLI Predictor
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-14 w-auto" />
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
+              Premier League Predictions
+            </h1>
+          </div>
           <p className="text-lg sm:text-xl text-blue-100 mb-2 max-w-xl mx-auto">
             The Premier League prediction game for RNLI colleagues.
           </p>

@@ -4,18 +4,19 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         'rnli-blue': {
           DEFAULT: '#003087',
-          light: '#0055CC',
-          dark: '#001F5C',
+          light:   '#1a4a9f',
+          dark:    '#001a5c',
         },
         'rnli-yellow': {
           DEFAULT: '#FFB81C',
-          light: '#FFCC4D',
-          dark: '#E6A200',
+          light:   '#ffd166',
+          dark:    '#e6a300',
         },
       },
     },
