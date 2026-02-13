@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { leaderboardAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
 
 const VIEWS = {
   OVERALL: "overall",
@@ -181,7 +184,22 @@ export default function Leaderboard() {
 /* ═══════════════════════════════════════════
    OVERALL VIEW
 ═══════════════════════════════════════════ */
+const CHART_COLORS = ["#003087","#FFB81C","#ef4444","#22c55e","#8b5cf6","#f97316","#06b6d4","#ec4899","#84cc16","#f59e0b"];
+
 function OverallView({ top3, rest, leaderboard, maxWeekPlayed, currentUser }) {
+  // Build chart data: one entry per week with each player's cumulative points
+  const chartData = [];
+  for (let w = 1; w <= maxWeekPlayed; w++) {
+    const entry = { week: w };
+    leaderboard.forEach((row) => {
+      // Cumulative sum up to week w
+      let cum = 0;
+      for (let i = 1; i <= w; i++) cum += row[`week_${i}`] || 0;
+      entry[row.player] = cum;
+    });
+    chartData.push(entry);
+  }
+
   // Podium order: 2nd, 1st, 3rd
   const podium = [top3[1], top3[0], top3[2]].filter(Boolean);
   const podiumHeights = ["h-24", "h-32", "h-20"];
@@ -288,6 +306,44 @@ function OverallView({ top3, rest, leaderboard, maxWeekPlayed, currentUser }) {
           </tbody>
         </table>
       </div>
+
+      {/* ── Points Progression Chart ── */}
+      {maxWeekPlayed > 1 && chartData.length > 0 && (
+        <div className="card">
+          <h2 className="text-lg font-bold text-rnli-blue mb-1">Points Progression</h2>
+          <p className="text-xs text-gray-400 mb-4">Cumulative points by gameweek</p>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis
+                dataKey="week"
+                tickFormatter={(v) => `GW${v}`}
+                tick={{ fontSize: 10, fill: "#9ca3af" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={(value, name) => [`${value} pts`, name]}
+                labelFormatter={(l) => `Gameweek ${l}`}
+                contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+              />
+              <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
+              {leaderboard.map((row, i) => (
+                <Line
+                  key={row.player}
+                  type="monotone"
+                  dataKey={row.player}
+                  stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                  strokeWidth={currentUser?.username === row.player ? 3 : 1.5}
+                  dot={false}
+                  activeDot={{ r: 5 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }

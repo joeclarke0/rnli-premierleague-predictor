@@ -85,4 +85,12 @@ export const leaderboardAPI = {
   get: () => api.get('/leaderboard'),
 };
 
+// ============================================================================
+// User Stats API
+// ============================================================================
+
+export const statsAPI = {
+  getMyStats: () => api.get('/users/me/stats'),
+};
+
 export default api;
