@@ -95,11 +95,7 @@ export default function Predictions() {
   };
 
   const saveSingle = async (fixture) => {
-    const pred = predictions[fixture.id];
-    if (pred?.home === undefined || pred?.away === undefined || pred?.home === '' || pred?.away === '') {
-      toast.error('Please enter both scores');
-      return;
-    }
+    const pred = predictions[fixture.id] ?? { home: 0, away: 0 };
     try {
       setSavingId(fixture.id);
       await predictionsAPI.submit({
@@ -117,18 +113,15 @@ export default function Predictions() {
   };
 
   const saveAll = async () => {
-    const toSave = fixtures.filter((f) => {
-      const p = predictions[f.id];
-      return p?.home !== undefined && p?.away !== undefined && p?.home !== '' && p?.away !== '';
-    });
+    const toSave = fixtures;
     if (toSave.length === 0) {
-      toast.error('No predictions to save');
+      toast.error('No fixtures to save');
       return;
     }
     setBulkSaving(true);
     let saved = 0;
     for (const fixture of toSave) {
-      const pred = predictions[fixture.id];
+      const pred = predictions[fixture.id] ?? { home: 0, away: 0 };
       try {
         await predictionsAPI.submit({
           fixture_id: fixture.id,
@@ -146,10 +139,9 @@ export default function Predictions() {
   };
 
   const gameweeks = Array.from({ length: 38 }, (_, i) => i + 1);
-  const predictedCount = fixtures.filter((f) => {
-    const p = predictions[f.id];
-    return p?.home !== undefined && p?.home !== '';
-  }).length;
+  // Count fixtures that have been saved to the server (present in API response lookup)
+  const savedIds = new Set(Object.keys(predictions).map(Number));
+  const predictedCount = fixtures.filter((f) => savedIds.has(f.id)).length;
   const maxPts = predictedCount * 5;
 
   return (
@@ -190,13 +182,13 @@ export default function Predictions() {
           </div>
           <button
             onClick={saveAll}
-            disabled={bulkSaving || predictedCount === 0}
+            disabled={bulkSaving || fixtures.length === 0}
             className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap"
           >
             {bulkSaving ? (
               <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Saving…</>
             ) : (
-              <><FiSave className="w-4 h-4" />Save All ({predictedCount})</>
+              <><FiSave className="w-4 h-4" />Save All ({fixtures.length})</>
             )}
           </button>
         </div>
@@ -212,8 +204,8 @@ export default function Predictions() {
           </div>
         ) : (
           fixtures.map((fixture) => {
-            const pred = predictions[fixture.id] || { home: '', away: '' };
-            const hasPrediction = pred.home !== '' && pred.home !== undefined;
+            const pred = predictions[fixture.id] || { home: 0, away: 0 };
+            const hasPrediction = pred.home !== undefined;
             const isSaving = savingId === fixture.id;
             const showQuickPick = quickPickTarget === fixture.id;
 
