@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+import csv
+import io
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -219,4 +223,115 @@ def get_missing_predictions(
         "gameweek": gameweek,
         "total_fixtures": len(fixture_ids),
         "summary": summary,
+    }
+
+
+# ── Fixture Upload ────────────────────────────────────────────────────────────
+
+REQUIRED_COLS = {"week", "date", "home", "away"}
+OPTIONAL_COLS = {"time", "day", "venue"}
+# Accept common aliases
+COL_ALIASES = {
+    "gameweek": "week",
+    "home_team": "home",
+    "away_team": "away",
+    "hometeam": "home",
+    "awayteam": "away",
+}
+
+
+def _normalise_header(raw: str) -> str:
+    key = raw.strip().lower().replace(" ", "_")
+    return COL_ALIASES.get(key, key)
+
+
+@router.post("/fixtures/upload")
+async def upload_fixtures(
+    file: UploadFile = File(...),
+    replace: bool = True,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload a CSV file of fixtures for the new season.
+    Required columns: week, date, home, away
+    Optional columns: time, day (auto-computed if absent), venue
+    Set replace=true (default) to clear existing fixtures first.
+    """
+    if not file.filename.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="File must be a .csv")
+
+    content = await file.read()
+    try:
+        text = content.decode("utf-8-sig")  # handle BOM from Excel
+    except UnicodeDecodeError:
+        text = content.decode("latin-1")
+
+    reader = csv.DictReader(io.StringIO(text))
+
+    # Normalise headers
+    if reader.fieldnames is None:
+        raise HTTPException(status_code=400, detail="CSV appears to be empty")
+
+    norm_headers = [_normalise_header(h) for h in reader.fieldnames]
+    missing = REQUIRED_COLS - set(norm_headers)
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"CSV is missing required columns: {', '.join(sorted(missing))}. "
+                   f"Required: week, date, home, away. Optional: time, day, venue",
+        )
+
+    rows = []
+    errors = []
+    for i, raw_row in enumerate(reader, start=2):  # row 2 = first data row
+        row = {_normalise_header(k): v.strip() for k, v in raw_row.items() if k}
+        try:
+            week = int(row["week"])
+            if not (1 <= week <= 38):
+                raise ValueError(f"week must be 1–38, got {week}")
+
+            fixture_date = datetime.strptime(row["date"], "%Y-%m-%d").date()
+            home = row["home"]
+            away = row["away"]
+            if not home or not away:
+                raise ValueError("home and away team names cannot be empty")
+
+            # Auto-compute day from date if not provided
+            day = row.get("day") or fixture_date.strftime("%a")
+            time_str = row.get("time") or ""
+            venue = row.get("venue") or ""
+
+            rows.append(Fixture(
+                gameweek=week,
+                date=fixture_date,
+                day=day,
+                time=time_str,
+                home_team=home,
+                away_team=away,
+                venue=venue,
+            ))
+        except (ValueError, KeyError) as e:
+            errors.append(f"Row {i}: {e}")
+
+    if errors:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "CSV contains invalid rows", "errors": errors[:20]},
+        )
+
+    if replace:
+        # Delete results and predictions first (FK constraints), then fixtures
+        db.query(Result).delete()
+        db.query(Prediction).delete()
+        db.query(Fixture).delete()
+        db.commit()
+
+    db.add_all(rows)
+    db.commit()
+
+    return {
+        "imported": len(rows),
+        "replaced": replace,
+        "gameweeks": sorted({r.gameweek for r in rows}),
     }

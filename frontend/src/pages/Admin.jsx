@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
   FiUsers, FiBarChart2, FiAlertCircle, FiGrid,
   FiTrash2, FiShield, FiUser, FiChevronDown, FiRefreshCw,
-  FiCheckCircle, FiXCircle, FiEdit2,
+  FiCheckCircle, FiXCircle, FiEdit2, FiUpload, FiDownload,
 } from 'react-icons/fi';
 
 const TABS = [
@@ -14,6 +14,7 @@ const TABS = [
   { id: 'users', label: 'Users', icon: FiUsers },
   { id: 'predictions', label: 'Predictions', icon: FiBarChart2 },
   { id: 'missing', label: 'Missing', icon: FiAlertCircle },
+  { id: 'fixtures', label: 'Fixtures', icon: FiUpload },
 ];
 
 // ── Overview Tab ─────────────────────────────────────────────────────────────
@@ -428,6 +429,180 @@ function MissingTab() {
   );
 }
 
+// ── Fixtures Tab ──────────────────────────────────────────────────────────────
+const TEMPLATE_ROWS = [
+  'week,date,time,home,away,venue',
+  '1,2025-08-16,12:30,Arsenal,Chelsea,Emirates Stadium',
+  '1,2025-08-16,15:00,Liverpool,Everton,Anfield',
+];
+
+function FixturesTab() {
+  const [file, setFile] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const handleFile = (f) => {
+    setFile(f);
+    setResult(null);
+    setError(null);
+    setConfirmed(false);
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([TEMPLATE_ROWS.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'fixtures_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleUpload = async () => {
+    if (!file || !confirmed) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('replace', 'true');
+    setUploading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/admin/fixtures/upload?replace=true`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          body: formData,
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        const detail = data.detail;
+        const msg = typeof detail === 'object' ? detail.message : detail;
+        const errs = typeof detail === 'object' ? detail.errors : [];
+        setError({ message: msg, errors: errs });
+      } else {
+        setResult(data);
+        setFile(null);
+        setConfirmed(false);
+        toast.success(`${data.imported} fixtures imported across ${data.gameweeks.length} gameweeks!`);
+      }
+    } catch {
+      setError({ message: 'Upload failed — check your connection and try again', errors: [] });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      {/* Instructions */}
+      <div className="card bg-blue-50 border border-blue-200">
+        <h3 className="font-bold text-rnli-blue mb-2">How to load a new season's fixtures</h3>
+        <ol className="text-sm text-gray-700 space-y-1.5 list-decimal list-inside">
+          <li>Download the <strong>CSV template</strong> below to see the required format.</li>
+          <li>Get the fixture list from <strong>football-data.co.uk</strong> (free, download the season CSV) or prepare your own using the template format.</li>
+          <li>Ensure your CSV has these columns: <code className="bg-white px-1 rounded text-xs">week, date, home, away</code> — plus optional <code className="bg-white px-1 rounded text-xs">time, venue</code>.</li>
+          <li>Dates must be in <code className="bg-white px-1 rounded text-xs">YYYY-MM-DD</code> format.</li>
+          <li>Upload the file below — <strong>this will replace all existing fixtures, predictions and results.</strong></li>
+        </ol>
+        <button
+          onClick={downloadTemplate}
+          className="mt-3 flex items-center gap-2 text-xs font-semibold text-rnli-blue hover:underline"
+        >
+          <FiDownload className="w-3.5 h-3.5" />
+          Download CSV template
+        </button>
+      </div>
+
+      {/* Drop zone */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+        className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer ${
+          dragOver ? 'border-rnli-blue bg-blue-50' : file ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-rnli-blue hover:bg-blue-50'
+        }`}
+        onClick={() => document.getElementById('fixture-csv-input').click()}
+      >
+        <input
+          id="fixture-csv-input"
+          type="file"
+          accept=".csv"
+          className="hidden"
+          onChange={(e) => { if (e.target.files[0]) handleFile(e.target.files[0]); }}
+        />
+        {file ? (
+          <div className="space-y-1">
+            <FiCheckCircle className="w-8 h-8 text-green-500 mx-auto" />
+            <p className="font-semibold text-green-700">{file.name}</p>
+            <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB · click to change</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <FiUpload className="w-8 h-8 text-gray-400 mx-auto" />
+            <p className="font-semibold text-gray-600">Drop your CSV here, or click to browse</p>
+            <p className="text-xs text-gray-400">Accepts .csv files only</p>
+          </div>
+        )}
+      </div>
+
+      {/* Warning + confirmation */}
+      {file && (
+        <div className="card bg-amber-50 border border-amber-300">
+          <p className="text-sm font-semibold text-amber-800 mb-2">⚠️ This will permanently delete all existing fixtures, predictions and results.</p>
+          <label className="flex items-center gap-2 text-sm text-amber-900 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+              className="w-4 h-4"
+            />
+            I understand — replace all data with the new season's fixtures
+          </label>
+        </div>
+      )}
+
+      {/* Upload button */}
+      {file && (
+        <button
+          onClick={handleUpload}
+          disabled={uploading || !confirmed}
+          className="btn-primary flex items-center gap-2 disabled:opacity-50"
+        >
+          {uploading ? (
+            <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Uploading…</>
+          ) : (
+            <><FiUpload className="w-4 h-4" />Upload & Import Fixtures</>
+          )}
+        </button>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="card bg-red-50 border border-red-300">
+          <p className="font-semibold text-red-700 mb-2">{error.message}</p>
+          {error.errors?.length > 0 && (
+            <ul className="text-xs text-red-600 space-y-1 list-disc list-inside">
+              {error.errors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Success */}
+      {result && (
+        <div className="card bg-green-50 border border-green-300">
+          <p className="font-bold text-green-700 text-lg mb-1">Import successful!</p>
+          <p className="text-sm text-green-800">{result.imported} fixtures loaded across gameweeks {result.gameweeks[0]}–{result.gameweeks[result.gameweeks.length - 1]}.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Admin Page ───────────────────────────────────────────────────────────
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -467,6 +642,7 @@ export default function Admin() {
         {activeTab === 'users' && <UsersTab />}
         {activeTab === 'predictions' && <PredictionsTab />}
         {activeTab === 'missing' && <MissingTab />}
+        {activeTab === 'fixtures' && <FixturesTab />}
       </div>
     </div>
   );
