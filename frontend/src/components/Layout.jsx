@@ -45,6 +45,7 @@ export default function Layout({ children }) {
     { to: '/leaderboard', label: 'Leaderboard' },
     ...(isAuthenticated() ? [{ to: '/dashboard', label: 'Dashboard' }] : []),
     ...(isAdmin() ? [{ to: '/results', label: 'Results' }] : []),
+    ...(isAdmin() ? [{ to: '/admin', label: 'Admin Panel' }] : []),
   ];
 
   return (

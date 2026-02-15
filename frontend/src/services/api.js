@@ -93,4 +93,17 @@ export const statsAPI = {
   getMyStats: () => api.get('/users/me/stats'),
 };
 
+// ============================================================================
+// Admin API
+// ============================================================================
+
+export const adminAPI = {
+  getOverview: () => api.get('/admin/overview'),
+  getUsers: () => api.get('/admin/users'),
+  updateUserRole: (userId, role) => api.patch(`/admin/users/${userId}/role`, { role }),
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+  getPredictions: (gameweek) => api.get('/admin/predictions', { params: { gameweek } }),
+  getMissingPredictions: (gameweek) => api.get('/admin/missing-predictions', { params: { gameweek } }),
+};
+
 export default api;

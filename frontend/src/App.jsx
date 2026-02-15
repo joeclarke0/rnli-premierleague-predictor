@@ -13,6 +13,7 @@ import Predictions from "./pages/Predictions";
 import Results from "./pages/Results";
 import Leaderboard from "./pages/Leaderboard";
 import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -69,6 +70,14 @@ export default function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <Results />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <Admin />
                 </ProtectedRoute>
               }
             />

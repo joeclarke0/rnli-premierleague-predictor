@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from database import create_tables
-from routes import fixtures, predictions, results, leaderboard, auth, users
+from routes import fixtures, predictions, results, leaderboard, auth, users, admin
 
 
 @asynccontextmanager
@@ -48,6 +48,7 @@ app.include_router(predictions.router)
 app.include_router(results.router)
 app.include_router(leaderboard.router)
 app.include_router(users.router)
+app.include_router(admin.router)
 
 
 @app.get("/")
