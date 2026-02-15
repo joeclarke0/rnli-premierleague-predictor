@@ -61,7 +61,7 @@ export default function Layout({ children }) {
               <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-8 w-auto" />
               <div>
                 <div className="text-lg font-bold leading-tight">RNLI Premier League</div>
-                <div className="text-[10px] text-rnli-yellow leading-tight">Predictions {seasonName}</div>
+                <div className="text-[10px] text-rnli-yellow leading-tight">{seasonName}</div>
               </div>
             </Link>
 
@@ -198,7 +198,7 @@ export default function Layout({ children }) {
               <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-7 w-auto" />
               <div>
                 <p className="font-bold text-sm">RNLI Premier League</p>
-                <p className="text-xs text-blue-300">Predictions {seasonName}</p>
+                <p className="text-xs text-blue-300">{seasonName}</p>
               </div>
             </div>
             <div className="flex gap-6 text-xs text-blue-300">
