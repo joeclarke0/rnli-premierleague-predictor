@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
+import { SettingsProvider } from "./context/SettingsContext";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -19,6 +20,7 @@ import NotFound from "./pages/NotFound";
 export default function App() {
   return (
     <AuthProvider>
+      <SettingsProvider>
       <Router>
         <Toaster
           position="top-right"
@@ -88,6 +90,7 @@ export default function App() {
           </Routes>
         </Layout>
       </Router>
+      </SettingsProvider>
     </AuthProvider>
   );
 }

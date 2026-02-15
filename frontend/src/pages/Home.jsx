@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { FiTarget, FiAward, FiTrendingUp, FiUsers, FiCheckCircle, FiStar } from 'react-icons/fi';
 
 const HOW_IT_WORKS = [
@@ -40,6 +41,7 @@ const FEATURES = [
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
+  const { seasonName } = useSettings();
 
   return (
     <div className="space-y-16">
@@ -50,7 +52,7 @@ export default function Home() {
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 bg-white bg-opacity-15 text-rnli-yellow text-sm font-bold px-4 py-1.5 rounded-full mb-6 tracking-wide uppercase">
             <FiStar className="w-3.5 h-3.5" />
-            Premier League 2024/25
+            Premier League {seasonName}
           </div>
           <div className="flex items-center justify-center gap-4 mb-4">
             <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-14 w-auto" />

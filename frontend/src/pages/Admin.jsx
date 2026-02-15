@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { adminAPI } from '../services/api';
+import { adminAPI, settingsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import toast from 'react-hot-toast';
 import {
   FiUsers, FiBarChart2, FiAlertCircle, FiGrid,
   FiTrash2, FiShield, FiUser, FiChevronDown, FiRefreshCw,
-  FiCheckCircle, FiXCircle,
+  FiCheckCircle, FiXCircle, FiEdit2,
 } from 'react-icons/fi';
 
 const TABS = [
@@ -19,6 +20,10 @@ const TABS = [
 function OverviewTab() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { seasonName, reload: reloadSettings } = useSettings();
+  const [editingSeason, setEditingSeason] = useState(false);
+  const [seasonInput, setSeasonInput] = useState('');
+  const [savingSeason, setSavingSeason] = useState(false);
 
   useEffect(() => {
     adminAPI.getOverview()
@@ -26,6 +31,22 @@ function OverviewTab() {
       .catch(() => toast.error('Failed to load overview'))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleSeasonSave = async () => {
+    const trimmed = seasonInput.trim();
+    if (!trimmed) return;
+    setSavingSeason(true);
+    try {
+      await settingsAPI.update('season_name', trimmed);
+      reloadSettings();
+      setEditingSeason(false);
+      toast.success(`Season updated to ${trimmed}`);
+    } catch {
+      toast.error('Failed to update season');
+    } finally {
+      setSavingSeason(false);
+    }
+  };
 
   if (loading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="card h-20 bg-gray-100" />)}</div>;
   if (!data) return null;
@@ -59,6 +80,49 @@ function OverviewTab() {
           {data.total_results} of {data.total_fixtures} fixtures have results entered.
           {data.next_gameweek && <> Next up: <span className="font-semibold text-gray-700">Gameweek {data.next_gameweek}</span></>}
         </p>
+      </div>
+
+      {/* Season label setting */}
+      <div className="card">
+        <h3 className="font-bold text-gray-700 mb-1">Season Label</h3>
+        <p className="text-xs text-gray-400 mb-3">Displayed in the navbar, footer, and homepage. Change this at the start of each new season.</p>
+        {editingSeason ? (
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={seasonInput}
+              onChange={(e) => setSeasonInput(e.target.value)}
+              placeholder="e.g. 2025/26"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rnli-blue w-40"
+              onKeyDown={(e) => e.key === 'Enter' && handleSeasonSave()}
+              autoFocus
+            />
+            <button
+              onClick={handleSeasonSave}
+              disabled={savingSeason}
+              className="btn-primary text-sm px-4 py-2"
+            >
+              {savingSeason ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              onClick={() => setEditingSeason(false)}
+              className="text-sm text-gray-500 hover:text-gray-700 px-2 py-2"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-bold text-rnli-blue">{seasonName}</span>
+            <button
+              onClick={() => { setSeasonInput(seasonName); setEditingSeason(true); }}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-rnli-blue transition-colors border border-gray-200 rounded-lg px-3 py-1.5 hover:border-rnli-blue"
+            >
+              <FiEdit2 className="w-3.5 h-3.5" />
+              Change season
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

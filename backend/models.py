@@ -76,3 +76,11 @@ class Result(Base):
 
     # Relationships
     fixture = relationship("Fixture", back_populates="result")
+
+
+class SiteSetting(Base):
+    __tablename__ = "site_settings"
+
+    key = Column(String(100), primary_key=True)
+    value = Column(String(255), nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

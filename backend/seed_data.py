@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import SessionLocal, create_tables, engine
-from models import User, Fixture
+from models import User, Fixture, SiteSetting
 import bcrypt
 
 
@@ -143,6 +143,24 @@ def seed_test_users(db):
     return True
 
 
+def seed_settings(db):
+    """Seed default site settings."""
+    print("⚙️  Seeding site settings...")
+    defaults = {"season_name": "2024/25"}
+    added = 0
+    for key, value in defaults.items():
+        existing = db.query(SiteSetting).filter(SiteSetting.key == key).first()
+        if not existing:
+            db.add(SiteSetting(key=key, value=value))
+            added += 1
+    db.commit()
+    if added:
+        print(f"✅ Added {added} default setting(s)")
+    else:
+        print("⚠️  Settings already exist. Skipping...")
+    return True
+
+
 def main():
     """Main seeding function."""
     print("\n" + "="*60)
@@ -167,6 +185,7 @@ def main():
         success = seed_fixtures(db) and success
         success = seed_admin_user(db) and success
         success = seed_test_users(db) and success
+        success = seed_settings(db) and success
 
         if success:
             print("\n" + "="*60)

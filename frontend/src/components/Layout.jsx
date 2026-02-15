@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { FiMenu, FiX, FiLogOut, FiUser, FiSun, FiMoon } from 'react-icons/fi';
 
 export default function Layout({ children }) {
   const { user, logout, isAdmin, isAuthenticated } = useAuth();
+  const { seasonName } = useSettings();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -59,7 +61,7 @@ export default function Layout({ children }) {
               <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-8 w-auto" />
               <div>
                 <div className="text-lg font-bold leading-tight">RNLI Premier League</div>
-                <div className="text-[10px] text-rnli-yellow leading-tight">Predictions 2024/25</div>
+                <div className="text-[10px] text-rnli-yellow leading-tight">Predictions {seasonName}</div>
               </div>
             </Link>
 
@@ -196,7 +198,7 @@ export default function Layout({ children }) {
               <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-7 w-auto" />
               <div>
                 <p className="font-bold text-sm">RNLI Premier League</p>
-                <p className="text-xs text-blue-300">Predictions 2024/25</p>
+                <p className="text-xs text-blue-300">Predictions {seasonName}</p>
               </div>
             </div>
             <div className="flex gap-6 text-xs text-blue-300">
