@@ -406,11 +406,9 @@ function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, m
         <table className="min-w-full">
           <thead>
             <tr className="bg-gray-50 text-xs text-gray-500 uppercase border-b border-gray-200">
-              <th className="px-4 py-3 text-left w-16">Rank</th>
+              <th className="px-4 py-3 text-left w-16">GW Rank</th>
               <th className="px-4 py-3 text-left">Player</th>
-              <th className="px-4 py-3 text-center">GW{selectedGameweek} Score</th>
-              <th className="px-4 py-3 text-center">Overall Rank</th>
-              <th className="px-4 py-3 text-center">Overall Total</th>
+              <th className="px-4 py-3 text-center w-32">GW{selectedGameweek} Points</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -434,14 +432,8 @@ function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, m
                       <span className="ml-2 text-xs text-rnli-blue bg-blue-100 px-1.5 py-0.5 rounded">You</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center">
-                    <ScoreBadge score={row.gwScore} />
-                  </td>
-                  <td className="px-4 py-3 text-center text-sm text-gray-500">
-                    {row.rank === 1 ? "🥇" : row.rank === 2 ? "🥈" : row.rank === 3 ? "🥉" : `#${row.rank}`}
-                  </td>
-                  <td className="px-4 py-3 text-center font-bold text-rnli-blue text-sm">
-                    {row.total}
+                  <td className="px-4 py-3 text-center font-bold text-rnli-blue text-base bg-gray-100">
+                    {row.gwScore}
                   </td>
                 </tr>
               );
