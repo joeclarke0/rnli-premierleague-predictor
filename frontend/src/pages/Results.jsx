@@ -1,20 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fixturesAPI, resultsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { FiSave, FiCheckCircle } from 'react-icons/fi';
 
 export default function Results() {
   const [fixtures, setFixtures] = useState([]);
-  const [results, setResults] = useState({});
+  const [results, setResults] = useState({});       // local input state
+  const [savedIds, setSavedIds] = useState(new Set()); // server-confirmed IDs
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [selectedGameweek, setSelectedGameweek] = useState(1);
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedGameweek]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [fixturesRes, resultsRes] = await Promise.all([
@@ -23,34 +21,36 @@ export default function Results() {
       ]);
 
       const resultsLookup = {};
+      const serverSavedIds = new Set();
       resultsRes.data.results.forEach((r) => {
         resultsLookup[r.fixture_id] = { home: r.actual_home, away: r.actual_away };
+        serverSavedIds.add(r.fixture_id);
       });
 
       setFixtures(fixturesRes.data.fixtures);
       setResults(resultsLookup);
+      setSavedIds(serverSavedIds);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load fixtures');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedGameweek]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleResultChange = (fixtureId, type, value) => {
     setResults((prev) => ({
       ...prev,
-      [fixtureId]: { ...prev[fixtureId], [type]: value },
+      [fixtureId]: { ...prev[fixtureId] ?? { home: 0, away: 0 }, [type]: value },
     }));
   };
 
   const handleSubmit = async (fixture) => {
-    const result = results[fixture.id];
-    if (!result || result.home === undefined || result.away === undefined || result.home === '' || result.away === '') {
-      toast.error('Please enter both scores');
-      return;
-    }
-
+    const result = results[fixture.id] ?? { home: 0, away: 0 };
     try {
       setSavingId(fixture.id);
       await resultsAPI.submit({
@@ -59,7 +59,14 @@ export default function Results() {
         actual_home: parseInt(result.home) || 0,
         actual_away: parseInt(result.away) || 0,
       });
-      toast.success(`${fixture.home_team} ${result.home}–${result.away} ${fixture.away_team} saved!`);
+      // Mark as server-confirmed
+      setSavedIds((prev) => new Set([...prev, fixture.id]));
+      // Normalise local state to integers so display is consistent
+      setResults((prev) => ({
+        ...prev,
+        [fixture.id]: { home: parseInt(result.home) || 0, away: parseInt(result.away) || 0 },
+      }));
+      toast.success(`${fixture.home_team} ${parseInt(result.home) || 0}–${parseInt(result.away) || 0} ${fixture.away_team} saved!`);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to save result');
     } finally {
@@ -67,9 +74,32 @@ export default function Results() {
     }
   };
 
+  const saveAll = async () => {
+    if (fixtures.length === 0) return;
+    setBulkSaving(true);
+    let saved = 0;
+    for (const fixture of fixtures) {
+      const result = results[fixture.id] ?? { home: 0, away: 0 };
+      try {
+        await resultsAPI.submit({
+          fixture_id: fixture.id,
+          gameweek: selectedGameweek,
+          actual_home: parseInt(result.home) || 0,
+          actual_away: parseInt(result.away) || 0,
+        });
+        setSavedIds((prev) => new Set([...prev, fixture.id]));
+        saved++;
+      } catch {
+        // continue with remaining fixtures
+      }
+    }
+    toast.success(`${saved} result${saved !== 1 ? 's' : ''} saved!`);
+    setBulkSaving(false);
+  };
+
   const gameweeks = Array.from({ length: 38 }, (_, i) => i + 1);
-  const resultsCount = fixtures.filter((f) => results[f.id]?.home !== undefined && results[f.id]?.home !== '').length;
-  const progressPct = fixtures.length ? Math.round((resultsCount / fixtures.length) * 100) : 0;
+  const savedCount = fixtures.filter((f) => savedIds.has(f.id)).length;
+  const progressPct = fixtures.length ? Math.round((savedCount / fixtures.length) * 100) : 0;
 
   if (loading) {
     return (
@@ -101,7 +131,7 @@ export default function Results() {
         </select>
       </div>
 
-      {/* Progress card */}
+      {/* Progress + Save All */}
       <div className="card bg-amber-50 border border-amber-200 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1">
@@ -110,7 +140,7 @@ export default function Results() {
                 Gameweek {selectedGameweek} Progress
               </span>
               <span className="font-bold text-amber-700">
-                {resultsCount}/{fixtures.length} ({progressPct}%)
+                {savedCount}/{fixtures.length} saved ({progressPct}%)
               </span>
             </div>
             <div className="w-full bg-amber-100 rounded-full h-2.5">
@@ -120,11 +150,23 @@ export default function Results() {
               />
             </div>
           </div>
-          {resultsCount === fixtures.length && fixtures.length > 0 && (
-            <div className="flex items-center gap-2 text-green-700 font-semibold text-sm">
+          {savedCount === fixtures.length && fixtures.length > 0 ? (
+            <div className="flex items-center gap-2 text-green-700 font-semibold text-sm whitespace-nowrap">
               <FiCheckCircle className="w-5 h-5" />
-              All results entered!
+              All results saved!
             </div>
+          ) : (
+            <button
+              onClick={saveAll}
+              disabled={bulkSaving || fixtures.length === 0}
+              className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap"
+            >
+              {bulkSaving ? (
+                <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Saving…</>
+              ) : (
+                <><FiSave className="w-4 h-4" />Save All ({fixtures.length})</>
+              )}
+            </button>
           )}
         </div>
       </div>
@@ -132,14 +174,14 @@ export default function Results() {
       {/* Fixture rows */}
       <div className="space-y-3">
         {fixtures.map((fixture) => {
-          const result = results[fixture.id] || { home: '', away: '' };
-          const hasResult = result.home !== '' && result.home !== undefined;
+          const result = results[fixture.id] ?? { home: 0, away: 0 };
+          const isSaved = savedIds.has(fixture.id);  // only green if server-confirmed
           const isSaving = savingId === fixture.id;
 
           return (
             <div
               key={fixture.id}
-              className={`card transition-all ${hasResult ? 'border-2 border-green-400 bg-green-50' : 'hover:shadow-md'}`}
+              className={`card transition-all ${isSaved ? 'border-2 border-green-400 bg-green-50' : 'hover:shadow-md'}`}
             >
               <div className="grid md:grid-cols-12 gap-4 items-center">
                 {/* Date */}
@@ -170,7 +212,6 @@ export default function Results() {
                     value={result.home}
                     onChange={(e) => handleResultChange(fixture.id, 'home', e.target.value)}
                     className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue"
-                    placeholder="0"
                   />
                   <span className="font-bold text-gray-400">–</span>
                   <input
@@ -180,7 +221,6 @@ export default function Results() {
                     value={result.away}
                     onChange={(e) => handleResultChange(fixture.id, 'away', e.target.value)}
                     className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue"
-                    placeholder="0"
                   />
                 </div>
 
@@ -190,7 +230,7 @@ export default function Results() {
                     onClick={() => handleSubmit(fixture)}
                     disabled={isSaving}
                     className={`w-full text-sm py-2 px-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                      hasResult
+                      isSaved
                         ? 'bg-green-600 hover:bg-green-700 text-white'
                         : 'btn-primary'
                     }`}
@@ -200,7 +240,7 @@ export default function Results() {
                     ) : (
                       <>
                         <FiSave className="w-3.5 h-3.5" />
-                        {hasResult ? 'Update' : 'Submit'}
+                        {isSaved ? 'Update' : 'Save'}
                       </>
                     )}
                   </button>
