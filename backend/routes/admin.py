@@ -9,18 +9,9 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Fixture, Prediction, Result
 from auth import get_current_admin
+from scoring import calculate_points
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
-
-
-def calculate_points(pred_home, pred_away, act_home, act_away):
-    if pred_home == act_home and pred_away == act_away:
-        return 5
-    elif (pred_home > pred_away and act_home > act_away) or \
-         (pred_home < pred_away and act_home < act_away) or \
-         (pred_home == pred_away and act_home == act_away):
-        return 2
-    return 0
 
 
 # ── Overview ────────────────────────────────────────────────────────────────

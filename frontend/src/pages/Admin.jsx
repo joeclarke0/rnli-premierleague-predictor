@@ -174,7 +174,7 @@ function UsersTab() {
     <div className="space-y-3">
       <div className="flex justify-between items-center mb-2">
         <p className="text-sm text-gray-500">{users.length} users registered</p>
-        <button onClick={load} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+        <button onClick={load} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" aria-label="Refresh list">
           <FiRefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -233,6 +233,7 @@ function UsersTab() {
                       <button
                         onClick={() => setConfirmDelete(u.id)}
                         className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                        aria-label={`Delete user ${u.username}`}
                       >
                         <FiTrash2 className="w-4 h-4" />
                       </button>
@@ -465,7 +466,6 @@ function FixturesTab() {
     if (!file || !confirmed) return;
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('replace', 'true');
     setUploading(true);
     setError(null);
     try {

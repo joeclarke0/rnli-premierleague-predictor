@@ -4,31 +4,9 @@ from collections import defaultdict
 
 from database import get_db
 from models import Prediction, Result, User
+from scoring import calculate_points
 
 router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
-
-POINTS = {
-    "exact": 5,
-    "result": 2,
-    "wrong": 0,
-}
-
-
-def calculate_points(pred_home, pred_away, act_home, act_away):
-    """
-    Calculate points for a prediction.
-
-    - 5 points: Exact score prediction
-    - 2 points: Correct result (win/loss/draw)
-    - 0 points: Wrong prediction
-    """
-    if pred_home == act_home and pred_away == act_away:
-        return POINTS["exact"]
-    elif (pred_home > pred_away and act_home > act_away) or \
-         (pred_home < pred_away and act_home < act_away) or \
-         (pred_home == pred_away and act_home == act_away):
-        return POINTS["result"]
-    return POINTS["wrong"]
 
 
 @router.get("/")

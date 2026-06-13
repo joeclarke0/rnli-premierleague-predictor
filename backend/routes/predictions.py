@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
 
 from database import get_db
-from models import User, Prediction, Fixture
+from models import User, Prediction, Fixture, Result
 from auth import get_current_user, get_current_admin
 
 router = APIRouter(prefix="/predictions", tags=["Predictions"])
@@ -13,9 +13,9 @@ router = APIRouter(prefix="/predictions", tags=["Predictions"])
 
 class PredictionSubmit(BaseModel):
     fixture_id: int
-    gameweek: int
-    predicted_home: int
-    predicted_away: int
+    gameweek: int = Field(ge=1, le=38)
+    predicted_home: int = Field(ge=0, le=20)
+    predicted_away: int = Field(ge=0, le=20)
 
 
 @router.post("/")
@@ -40,6 +40,11 @@ def submit_prediction(
         fixture = db.query(Fixture).filter(Fixture.id == prediction.fixture_id).first()
         if not fixture:
             raise HTTPException(status_code=404, detail="Fixture not found")
+
+        # Block predictions after result has been entered
+        existing_result = db.query(Result).filter(Result.fixture_id == prediction.fixture_id).first()
+        if existing_result:
+            raise HTTPException(status_code=400, detail="Predictions cannot be changed after the result has been entered")
 
         # Check if prediction already exists for this user and fixture
         existing = db.query(Prediction).filter(

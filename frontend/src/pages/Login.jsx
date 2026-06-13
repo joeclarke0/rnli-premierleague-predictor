@@ -16,13 +16,13 @@ export default function Login() {
   const location = useLocation();
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (isAuthenticated) {
       navigate('/predictions');
     }
     if (location.state?.message) {
       toast.success(location.state.message);
     }
-  }, [isAuthenticated, navigate, location.state]);
+  }, [isAuthenticated, navigate, location.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -130,11 +130,13 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-          <p className="text-xs text-gray-500 font-semibold mb-1.5">Demo Accounts:</p>
-          <p className="text-xs text-gray-500">Admin: <span className="font-mono">admin@rnli.org</span> / <span className="font-mono">changeme123</span></p>
-          <p className="text-xs text-gray-500">User: <span className="font-mono">joe@test.com</span> / <span className="font-mono">test123</span></p>
-        </div>
+        {import.meta.env.DEV && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <p className="text-xs text-gray-500 font-semibold mb-1.5">Demo Accounts:</p>
+            <p className="text-xs text-gray-500">Admin: <span className="font-mono">admin@rnli.org</span> / <span className="font-mono">changeme123</span></p>
+            <p className="text-xs text-gray-500">User: <span className="font-mono">joe@test.com</span> / <span className="font-mono">test123</span></p>
+          </div>
+        )}
       </div>
     </div>
   );

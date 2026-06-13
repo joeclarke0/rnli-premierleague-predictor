@@ -70,13 +70,9 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const isAdmin = () => {
-    return user?.role === 'admin';
-  };
+  const isAdmin = user?.role === 'admin';
 
-  const isAuthenticated = () => {
-    return !!token && !!user;
-  };
+  const isAuthenticated = !!token && !!user;
 
   const value = {
     user,

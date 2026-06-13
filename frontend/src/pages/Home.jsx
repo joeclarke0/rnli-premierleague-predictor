@@ -67,7 +67,7 @@ export default function Home() {
             Predict scores, climb the leaderboard, and prove you know football.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            {isAuthenticated() ? (
+            {isAuthenticated ? (
               <>
                 <Link to="/predictions" className="btn-secondary text-base px-8 py-3 shadow-lg">
                   Make Predictions
@@ -87,7 +87,7 @@ export default function Home() {
               </>
             )}
           </div>
-          {isAuthenticated() && (
+          {isAuthenticated && (
             <p className="mt-6 text-blue-200 text-sm">
               Welcome back, <span className="font-semibold text-white">{user?.username}</span>! Ready to predict?
             </p>
@@ -160,7 +160,7 @@ export default function Home() {
       </div>
 
       {/* ── CTA ── */}
-      {!isAuthenticated() && (
+      {!isAuthenticated && (
         <div className="card bg-gradient-to-r from-rnli-blue to-rnli-blue-light text-white text-center py-12">
           <h2 className="text-3xl font-black mb-3">Ready to Play?</h2>
           <p className="mb-8 text-blue-200 max-w-md mx-auto">

@@ -113,29 +113,27 @@ export default function Predictions() {
   };
 
   const saveAll = async () => {
-    const toSave = fixtures;
-    if (toSave.length === 0) {
-      toast.error('No fixtures to save');
-      return;
-    }
+    if (fixtures.length === 0) return;
     setBulkSaving(true);
-    let saved = 0;
-    for (const fixture of toSave) {
-      const pred = predictions[fixture.id] ?? { home: 0, away: 0 };
-      try {
-        await predictionsAPI.submit({
-          fixture_id: fixture.id,
-          gameweek: selectedGameweek,
-          predicted_home: parseInt(pred.home) || 0,
-          predicted_away: parseInt(pred.away) || 0,
-        });
-        saved++;
-      } catch {
-        // continue
-      }
+    try {
+      const settledResults = await Promise.allSettled(
+        fixtures.map((fixture) => {
+          const pred = predictions[fixture.id] ?? { home: 0, away: 0 };
+          return predictionsAPI.submit({
+            fixture_id: fixture.id,
+            gameweek: selectedGameweek,
+            predicted_home: parseInt(pred.home) || 0,
+            predicted_away: parseInt(pred.away) || 0,
+          });
+        })
+      );
+      const saved = settledResults.filter((r) => r.status === 'fulfilled').length;
+      toast.success(`${saved} prediction${saved !== 1 ? 's' : ''} saved!`);
+    } catch (err) {
+      toast.error('Failed to save predictions');
+    } finally {
+      setBulkSaving(false);
     }
-    toast.success(`${saved} prediction${saved !== 1 ? 's' : ''} saved!`);
-    setBulkSaving(false);
   };
 
   const gameweeks = Array.from({ length: 38 }, (_, i) => i + 1);

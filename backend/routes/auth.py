@@ -2,12 +2,13 @@
 Authentication routes for RNLI Premier League Predictor.
 Handles user registration, login, and profile retrieval.
 """
-from fastapi import APIRouter, HTTPException, Depends, status
-from pydantic import BaseModel, EmailStr, validator
+from fastapi import APIRouter, HTTPException, Depends, Request, status
+from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from database import get_db
+from limiter import limiter
 from models import User
 from auth import hash_password, authenticate_user, create_access_token, get_current_user
 
@@ -23,16 +24,18 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
 
-    @validator('username')
-    def username_length(cls, v):
+    @field_validator('username')
+    @classmethod
+    def username_length(cls, v: str) -> str:
         if len(v) < 3:
             raise ValueError('Username must be at least 3 characters long')
         if len(v) > 50:
             raise ValueError('Username must be at most 50 characters long')
         return v
 
-    @validator('password')
-    def password_strength(cls, v):
+    @field_validator('password')
+    @classmethod
+    def password_strength(cls, v: str) -> str:
         if len(v) < 6:
             raise ValueError('Password must be at least 6 characters long')
         return v
@@ -64,7 +67,8 @@ class TokenResponse(BaseModel):
 # ============================================================================
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(request: RegisterRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, body: RegisterRequest, db: Session = Depends(get_db)):
     """
     Register a new user account.
 
@@ -76,7 +80,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """
     try:
         # Check if username already exists
-        existing_username = db.query(User).filter(User.username == request.username).first()
+        existing_username = db.query(User).filter(User.username == body.username).first()
         if existing_username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,7 +88,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
             )
 
         # Check if email already exists
-        existing_email = db.query(User).filter(User.email == request.email).first()
+        existing_email = db.query(User).filter(User.email == body.email).first()
         if existing_email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -93,9 +97,9 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
         # Create new user
         new_user = User(
-            username=request.username,
-            email=request.email,
-            password_hash=hash_password(request.password),
+            username=body.username,
+            email=body.email,
+            password_hash=hash_password(body.password),
             role="user"
         )
 
@@ -133,7 +137,8 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(request: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
     """
     Login with email and password to receive a JWT access token.
 
@@ -143,7 +148,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     Returns a JWT token and user details on successful authentication.
     """
     # Authenticate user
-    user = authenticate_user(db, request.email, request.password)
+    user = authenticate_user(db, body.email, body.password)
 
     if not user:
         raise HTTPException(
