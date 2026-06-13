@@ -1,31 +1,93 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { leaderboardAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, Cell,
 } from "recharts";
+import {
+  FiTrendingUp, FiTrendingDown, FiMinus, FiAward, FiTarget, FiZap, FiCalendar,
+} from "react-icons/fi";
 
 const VIEWS = {
   OVERALL: "overall",
   GAMEWEEK: "gameweek",
 };
 
+/* ─────────────────────────────────────────────
+   Shared helpers
+───────────────────────────────────────────── */
+
+// Deterministic avatar colour from a name — same name always maps to the
+// same gradient so a player is visually consistent everywhere on the page.
+const AVATAR_PALETTE = [
+  "from-blue-500 to-indigo-600",
+  "from-rose-500 to-pink-600",
+  "from-emerald-500 to-teal-600",
+  "from-amber-500 to-orange-600",
+  "from-violet-500 to-purple-600",
+  "from-cyan-500 to-sky-600",
+  "from-fuchsia-500 to-pink-600",
+  "from-lime-500 to-green-600",
+];
+
+function avatarGradient(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
+}
+
+function Avatar({ name, size = "md" }) {
+  const dims = size === "lg" ? "w-12 h-12 text-base" : size === "sm" ? "w-7 h-7 text-[11px]" : "w-9 h-9 text-sm";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient(name)} ${dims} font-bold text-white shadow-sm ring-2 ring-white/70 dark:ring-white/10`}
+      aria-hidden="true"
+    >
+      {name.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+// Rank movement badge — overall rank vs rank "last week" (rank computed from
+// total minus the most recent played week's score).
+function RankDelta({ delta }) {
+  if (delta === null || delta === undefined) return null;
+  if (delta > 0)
+    return (
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[11px] font-bold text-green-700 dark:bg-green-900/40 dark:text-green-400">
+        <FiTrendingUp className="h-3 w-3" />{delta}
+      </span>
+    );
+  if (delta < 0)
+    return (
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-700 dark:bg-red-900/40 dark:text-red-400">
+        <FiTrendingDown className="h-3 w-3" />{Math.abs(delta)}
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[11px] font-bold text-gray-400 dark:bg-gray-700/60 dark:text-gray-400">
+      <FiMinus className="h-3 w-3" />
+    </span>
+  );
+}
+
 // Colour a score value based on points
 function ScoreBadge({ score }) {
   if (score === 5)
     return (
-      <span className="inline-flex w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold items-center justify-center">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700 dark:bg-green-900/50 dark:text-green-400">
         5
       </span>
     );
   if (score === 2)
     return (
-      <span className="inline-flex w-7 h-7 rounded-full bg-blue-100 text-blue-600 text-xs font-bold items-center justify-center">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
         2
       </span>
     );
   return (
-    <span className="inline-flex w-7 h-7 rounded-full bg-gray-100 text-gray-400 text-xs items-center justify-center">
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-400 dark:bg-gray-700 dark:text-gray-500">
       0
     </span>
   );
@@ -38,15 +100,21 @@ function RecentForm({ playerRow, maxWeek }) {
     const s = playerRow[`week_${w}`];
     if (s !== undefined) weeks.unshift({ w, s });
   }
-  if (weeks.length === 0) return <span className="text-gray-400 text-xs">No data</span>;
+  if (weeks.length === 0)
+    return <span className="text-xs text-gray-400 dark:text-gray-500">No data</span>;
   return (
-    <div className="flex gap-1 items-center">
+    <div className="flex items-center gap-1">
       {weeks.map(({ w, s }) => (
         <span
           key={w}
           title={`GW${w}: ${s} pts`}
-          className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-            ${s === 5 ? "bg-green-500 text-white" : s === 2 ? "bg-blue-400 text-white" : "bg-gray-200 text-gray-500"}`}
+          className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+            s === 5
+              ? "bg-green-500 text-white"
+              : s === 2
+              ? "bg-blue-400 text-white"
+              : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+          }`}
         >
           {s}
         </span>
@@ -55,6 +123,66 @@ function RecentForm({ playerRow, maxWeek }) {
   );
 }
 
+// Reusable surface — replaces the global `.card` class with explicit Tailwind
+// so dark mode is handled inline rather than via the global override sheet.
+function Surface({ className = "", children }) {
+  return (
+    <div
+      className={`rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Loading skeleton — mimics the real table layout
+───────────────────────────────────────────── */
+function LeaderboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="space-y-2">
+          <div className="h-8 w-56 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+          <div className="h-4 w-40 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+        </div>
+        <div className="h-10 w-48 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+      </div>
+
+      {/* Podium skeleton */}
+      <Surface className="p-6">
+        <div className="flex items-end justify-center gap-4">
+          {["h-24", "h-36", "h-20"].map((h, i) => (
+            <div key={i} className="flex w-24 flex-col items-center gap-3">
+              <div className="h-12 w-12 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+              <div className="h-4 w-16 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+              <div className={`w-full animate-pulse rounded-t-xl bg-gray-200 dark:bg-gray-700 ${h}`} />
+            </div>
+          ))}
+        </div>
+      </Surface>
+
+      {/* Table skeleton */}
+      <Surface className="overflow-hidden">
+        <div className="h-12 animate-pulse bg-gray-200 dark:bg-gray-700" />
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+              <div className="h-6 w-6 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="h-9 w-9 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
+              <div className="h-4 flex-1 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="h-6 w-12 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+            </div>
+          ))}
+        </div>
+      </Surface>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Main component
+───────────────────────────────────────────── */
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -72,100 +200,135 @@ export default function Leaderboard() {
   }, []);
 
   // Highest gameweek that has any non-zero score
-  const maxWeekPlayed = (() => {
+  const maxWeekPlayed = useMemo(() => {
     for (let w = 38; w >= 1; w--) {
       if (leaderboard.some((r) => r[`week_${w}`] > 0)) return w;
     }
     return 1;
-  })();
+  }, [leaderboard]);
+
+  // Default the gameweek selector to the latest played week once data arrives.
+  useEffect(() => {
+    if (leaderboard.length > 0) setSelectedGameweek(maxWeekPlayed);
+  }, [leaderboard.length, maxWeekPlayed]);
+
+  // Rank-movement map: compare current overall rank with the rank a player
+  // would have held *before* the most recent played gameweek.
+  const rankDeltas = useMemo(() => {
+    const map = {};
+    if (leaderboard.length === 0) return map;
+    const lastWeekKey = `week_${maxWeekPlayed}`;
+    const prev = [...leaderboard]
+      .map((r) => ({ player: r.player, prevTotal: r.total - (r[lastWeekKey] || 0) }))
+      .sort((a, b) => b.prevTotal - a.prevTotal);
+    const prevRank = {};
+    prev.forEach((r, i) => (prevRank[r.player] = i + 1));
+    leaderboard.forEach((r) => {
+      // Positive delta == moved up the table (improved).
+      map[r.player] = prevRank[r.player] - r.rank;
+    });
+    return map;
+  }, [leaderboard, maxWeekPlayed]);
 
   // Gameweek view: re-rank players by selected week
-  const gameweekRanked = [...leaderboard]
-    .map((r) => ({ ...r, gwScore: r[`week_${selectedGameweek}`] || 0 }))
-    .sort((a, b) => b.gwScore - a.gwScore)
-    .map((r, i) => ({ ...r, gwRank: i + 1 }));
+  const gameweekRanked = useMemo(
+    () =>
+      [...leaderboard]
+        .map((r) => ({ ...r, gwScore: r[`week_${selectedGameweek}`] || 0 }))
+        .sort((a, b) => b.gwScore - a.gwScore)
+        .map((r, i) => ({ ...r, gwRank: i + 1 })),
+    [leaderboard, selectedGameweek]
+  );
 
-  if (loading)
-    return (
-      <div className="text-center py-24">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rnli-blue mx-auto" />
-        <p className="mt-4 text-gray-500">Loading leaderboard…</p>
-      </div>
-    );
+  if (loading) return <LeaderboardSkeleton />;
 
   if (error)
     return (
-      <div className="card bg-red-50 text-red-700">
-        <p>{error}</p>
-      </div>
+      <Surface className="border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
+        <p className="font-semibold">{error}</p>
+        <p className="mt-1 text-sm opacity-80">Please refresh the page or try again shortly.</p>
+      </Surface>
     );
 
   const top3 = leaderboard.slice(0, 3);
-  const rest = leaderboard.slice(3);
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @keyframes lb-fade-in {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes lb-grow {
+          from { transform: scaleY(0); }
+          to   { transform: scaleY(1); }
+        }
+        .lb-row { animation: lb-fade-in 0.45s ease-out both; }
+        .lb-step { transform-origin: bottom; animation: lb-grow 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+      `}</style>
+
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold text-rnli-blue">🏆 Leaderboard</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight text-rnli-blue dark:text-white">
+            <FiAward className="h-7 w-7 text-rnli-yellow" />
+            Leaderboard
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {leaderboard.length} players · {maxWeekPlayed} gameweek
             {maxWeekPlayed !== 1 ? "s" : ""} played
           </p>
         </div>
 
         {/* View toggle */}
-        <div className="flex rounded-lg overflow-hidden border border-gray-200 self-start sm:self-auto">
-          <button
-            onClick={() => setView(VIEWS.OVERALL)}
-            className={`px-5 py-2 text-sm font-semibold transition-colors ${
-              view === VIEWS.OVERALL
-                ? "bg-rnli-blue text-white"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            Overall
-          </button>
-          <button
-            onClick={() => setView(VIEWS.GAMEWEEK)}
-            className={`px-5 py-2 text-sm font-semibold transition-colors border-l border-gray-200 ${
-              view === VIEWS.GAMEWEEK
-                ? "bg-rnli-blue text-white"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            By Gameweek
-          </button>
+        <div className="inline-flex self-start rounded-xl border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-gray-800 sm:self-auto">
+          {[
+            { key: VIEWS.OVERALL, label: "Overall" },
+            { key: VIEWS.GAMEWEEK, label: "By Gameweek" },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              className={`rounded-lg px-5 py-1.5 text-sm font-semibold transition-all ${
+                view === key
+                  ? "bg-rnli-blue text-white shadow-sm"
+                  : "text-gray-600 hover:text-rnli-blue dark:text-gray-300 dark:hover:text-white"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* ── Scoring legend ── */}
-      <div className="flex flex-wrap gap-4 text-sm">
+      <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600 dark:text-gray-300">
         <span className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded-full bg-green-500 inline-block" />
-          <strong>5 pts</strong> — Exact score
+          <span className="inline-block h-3.5 w-3.5 rounded-full bg-green-500" />
+          <strong className="text-gray-800 dark:text-gray-100">5 pts</strong> — Exact score
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded-full bg-blue-400 inline-block" />
-          <strong>2 pts</strong> — Correct result
+          <span className="inline-block h-3.5 w-3.5 rounded-full bg-blue-400" />
+          <strong className="text-gray-800 dark:text-gray-100">2 pts</strong> — Correct result
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-4 h-4 rounded-full bg-gray-200 inline-block" />
-          <strong>0 pts</strong> — Incorrect
+          <span className="inline-block h-3.5 w-3.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+          <strong className="text-gray-800 dark:text-gray-100">0 pts</strong> — Incorrect
         </span>
       </div>
 
       {leaderboard.length === 0 ? (
-        <div className="card text-center py-16 text-gray-500">
-          No data yet — start predicting to see scores!
-        </div>
+        <Surface className="p-16 text-center text-gray-500 dark:text-gray-400">
+          <FiTarget className="mx-auto mb-3 h-10 w-10 opacity-40" />
+          <p className="font-medium">No data yet</p>
+          <p className="text-sm">Start predicting to see scores appear here!</p>
+        </Surface>
       ) : view === VIEWS.OVERALL ? (
         <OverallView
           top3={top3}
-          rest={rest}
           leaderboard={leaderboard}
           maxWeekPlayed={maxWeekPlayed}
+          rankDeltas={rankDeltas}
           currentUser={user}
         />
       ) : (
@@ -186,135 +349,298 @@ export default function Leaderboard() {
 ═══════════════════════════════════════════ */
 const CHART_COLORS = ["#003087","#FFB81C","#ef4444","#22c55e","#8b5cf6","#f97316","#06b6d4","#ec4899","#84cc16","#f59e0b"];
 
-function OverallView({ top3, rest, leaderboard, maxWeekPlayed, currentUser }) {
+function StatCard({ icon, label, value, sub, accent }) {
+  return (
+    <Surface className="flex items-center gap-3 p-4">
+      <span
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accent}`}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-base font-bold text-gray-900 dark:text-white">{value}</p>
+        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{label}</p>
+        {sub && <p className="truncate text-[11px] text-gray-400 dark:text-gray-500">{sub}</p>}
+      </div>
+    </Surface>
+  );
+}
+
+function OverallView({ top3, leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
+  const [chartTopN, setChartTopN] = useState("all"); // "all" | 5 | 3
+
   // Build chart data: one entry per week with each player's cumulative points
-  const chartData = [];
-  for (let w = 1; w <= maxWeekPlayed; w++) {
-    const entry = { week: w };
+  const chartData = useMemo(() => {
+    const data = [];
+    for (let w = 1; w <= maxWeekPlayed; w++) {
+      const entry = { week: w };
+      leaderboard.forEach((row) => {
+        let cum = 0;
+        for (let i = 1; i <= w; i++) cum += row[`week_${i}`] || 0;
+        entry[row.player] = cum;
+      });
+      data.push(entry);
+    }
+    return data;
+  }, [leaderboard, maxWeekPlayed]);
+
+  // Players to draw on the chart based on the Top-N toggle.
+  const chartPlayers = useMemo(() => {
+    if (chartTopN === "all") return leaderboard;
+    return leaderboard.slice(0, chartTopN);
+  }, [leaderboard, chartTopN]);
+
+  // ── Client-side summary stats ──
+  const summary = useMemo(() => {
+    const lastWeekKey = `week_${maxWeekPlayed}`;
+    let mostExact = { player: "—", count: -1 };
+    let mostImproved = { player: "—", gain: -1 };
+
     leaderboard.forEach((row) => {
-      // Cumulative sum up to week w
-      let cum = 0;
-      for (let i = 1; i <= w; i++) cum += row[`week_${i}`] || 0;
-      entry[row.player] = cum;
+      let fives = 0;
+      for (let w = 1; w <= 38; w++) if (row[`week_${w}`] === 5) fives++;
+      if (fives > mostExact.count) mostExact = { player: row.player, count: fives };
+
+      const gain = row[lastWeekKey] || 0;
+      if (gain > mostImproved.gain) mostImproved = { player: row.player, gain };
     });
-    chartData.push(entry);
-  }
+
+    return {
+      leader: leaderboard[0],
+      mostExact,
+      mostImproved,
+    };
+  }, [leaderboard, maxWeekPlayed]);
 
   // Podium order: 2nd, 1st, 3rd
   const podium = [top3[1], top3[0], top3[2]].filter(Boolean);
-  const podiumHeights = ["h-24", "h-32", "h-20"];
-  const podiumLabels = ["2nd", "1st", "3rd"];
-  const podiumColors = ["bg-gray-200", "bg-rnli-yellow", "bg-orange-200"];
-  const podiumTextColors = ["text-gray-600", "text-gray-900", "text-orange-700"];
-  const medals = ["🥈", "🥇", "🥉"];
+  const podiumMeta = [
+    { place: "2nd", height: "h-24", grad: "from-gray-300 to-gray-400 dark:from-gray-500 dark:to-gray-600", medal: "🥈", delay: "0.1s" },
+    { place: "1st", height: "h-36", grad: "from-rnli-yellow to-amber-400 dark:from-amber-500 dark:to-amber-600", medal: "🥇", delay: "0s" },
+    { place: "3rd", height: "h-20", grad: "from-orange-300 to-orange-400 dark:from-orange-600 dark:to-orange-700", medal: "🥉", delay: "0.2s" },
+  ];
+  // Re-map podiumMeta to the 2nd/1st/3rd ordering used by `podium`.
+  const orderedMeta = [podiumMeta[0], podiumMeta[1], podiumMeta[2]];
 
   return (
     <div className="space-y-6">
+      {/* ── Summary stat cards ── */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          icon={<FiAward className="h-5 w-5" />}
+          label="Current Leader"
+          value={summary.leader?.player ?? "—"}
+          sub={summary.leader ? `${summary.leader.total} pts` : undefined}
+          accent="bg-rnli-yellow/20 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+        />
+        <StatCard
+          icon={<FiTarget className="h-5 w-5" />}
+          label="Exact Scores"
+          value={summary.mostExact.player}
+          sub={summary.mostExact.count > 0 ? `${summary.mostExact.count} × 5pt` : "None yet"}
+          accent="bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400"
+        />
+        <StatCard
+          icon={<FiZap className="h-5 w-5" />}
+          label="Top GW Scorer"
+          value={summary.mostImproved.player}
+          sub={summary.mostImproved.gain > 0 ? `${summary.mostImproved.gain} pts in GW${maxWeekPlayed}` : "—"}
+          accent="bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"
+        />
+        <StatCard
+          icon={<FiCalendar className="h-5 w-5" />}
+          label="GW Played"
+          value={maxWeekPlayed}
+          sub={`of 38`}
+          accent="bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400"
+        />
+      </div>
+
       {/* ── Top 3 Podium ── */}
       {top3.length >= 1 && (
-        <div className="card">
-          <h2 className="text-lg font-bold text-rnli-blue mb-6 text-center">Top 3</h2>
-          <div className="flex items-end justify-center gap-4">
-            {podium.map((player, idx) => (
-              <div key={player.player} className="flex flex-col items-center gap-2 w-28">
-                <span className="text-3xl">{medals[idx]}</span>
-                <p
-                  className={`text-sm font-bold text-center truncate w-full text-center ${
-                    currentUser?.username === player.player ? "text-rnli-blue" : ""
-                  }`}
-                >
-                  {player.player}
-                  {currentUser?.username === player.player && (
-                    <span className="block text-xs text-rnli-blue font-normal">(You)</span>
-                  )}
-                </p>
-                <p className="text-xl font-bold">{player.total} <span className="text-sm font-normal text-gray-500">pts</span></p>
-                <div
-                  className={`w-full rounded-t-lg ${podiumColors[idx]} ${podiumHeights[idx]} flex items-center justify-center`}
-                >
-                  <span className={`text-2xl font-black ${podiumTextColors[idx]}`}>
-                    {podiumLabels[idx]}
-                  </span>
-                </div>
-              </div>
-            ))}
+        <Surface className="overflow-hidden">
+          <div className="bg-gradient-to-br from-rnli-blue via-rnli-blue-light to-rnli-blue p-6 dark:from-gray-900 dark:via-rnli-blue-dark dark:to-gray-900">
+            <h2 className="mb-6 text-center text-lg font-bold text-white">🏆 Top 3</h2>
+            <div className="flex items-end justify-center gap-3 sm:gap-5">
+              {podium.map((player, idx) => {
+                const meta = orderedMeta[idx];
+                const isWinner = meta.place === "1st";
+                const isYou = currentUser?.username === player.player;
+                return (
+                  <div key={player.player} className="flex w-24 flex-col items-center gap-2 sm:w-28">
+                    <span
+                      className={`${isWinner ? "animate-bounce text-5xl" : "text-4xl"}`}
+                      style={{ animationDuration: "2.2s" }}
+                    >
+                      {meta.medal}
+                    </span>
+                    <Avatar name={player.player} size={isWinner ? "lg" : "md"} />
+                    <p
+                      className={`w-full truncate text-center text-sm font-bold ${
+                        isYou ? "text-rnli-yellow" : "text-white"
+                      }`}
+                      title={player.player}
+                    >
+                      {player.player}
+                    </p>
+                    {isYou && (
+                      <span className="-mt-1 text-[10px] font-semibold uppercase tracking-wide text-rnli-yellow">
+                        You
+                      </span>
+                    )}
+                    <p className="text-lg font-black text-white">
+                      {player.total}
+                      <span className="ml-1 text-xs font-normal text-white/70">pts</span>
+                    </p>
+                    <div
+                      className={`lb-step flex w-full items-center justify-center rounded-t-xl bg-gradient-to-b ${meta.grad} ${meta.height} shadow-inner`}
+                      style={{ animationDelay: meta.delay }}
+                    >
+                      <span className="text-2xl font-black text-white/90 drop-shadow">{meta.place}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </Surface>
       )}
 
       {/* ── Full Rankings Table ── */}
-      <div className="card overflow-hidden p-0">
-        <table className="min-w-full">
-          <thead>
-            <tr className="bg-rnli-blue text-white text-sm">
-              <th className="px-4 py-3 text-left w-14">Rank</th>
-              <th className="px-4 py-3 text-left">Player</th>
-              <th className="px-4 py-3 text-center hidden sm:table-cell">Recent Form</th>
-              <th className="px-4 py-3 text-center hidden md:table-cell">Best Week</th>
-              <th className="px-4 py-3 text-center hidden md:table-cell">Played</th>
-              <th className="px-4 py-3 text-center w-20 bg-rnli-blue-dark">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {leaderboard.map((row, idx) => {
-              const isCurrentUser = currentUser?.username === row.player;
-              const weekScores = Array.from({ length: 38 }, (_, i) => row[`week_${i + 1}`] || 0);
-              const bestWeek = Math.max(...weekScores);
-              const weeksPlayed = weekScores.filter((s) => s > 0).length;
+      <Surface className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-rnli-blue text-left text-xs uppercase tracking-wide text-white/90">
+                <th className="w-14 px-4 py-3">Rank</th>
+                <th className="px-4 py-3">Player</th>
+                <th className="hidden px-4 py-3 text-center sm:table-cell">Move</th>
+                <th className="hidden px-4 py-3 text-center sm:table-cell">Recent Form</th>
+                <th className="hidden px-4 py-3 text-center md:table-cell">Best Week</th>
+                <th className="hidden px-4 py-3 text-center md:table-cell">Played</th>
+                <th className="w-20 bg-rnli-blue-dark px-4 py-3 text-center">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              {leaderboard.map((row, idx) => {
+                const isCurrentUser = currentUser?.username === row.player;
+                const weekScores = Array.from({ length: 38 }, (_, i) => row[`week_${i + 1}`] || 0);
+                const bestWeek = Math.max(...weekScores);
+                const weeksPlayed = weekScores.filter((s) => s > 0).length;
+                const delta = rankDeltas[row.player];
 
-              return (
-                <tr
-                  key={row.player}
-                  className={`transition-colors ${
-                    isCurrentUser
-                      ? "bg-blue-50 font-semibold"
-                      : idx % 2 === 0
-                      ? "bg-white"
-                      : "bg-gray-50"
-                  } hover:bg-blue-50`}
-                >
-                  <td className="px-4 py-3 text-center">
-                    {row.rank === 1 ? "🥇" : row.rank === 2 ? "🥈" : row.rank === 3 ? "🥉" : (
-                      <span className="text-sm text-gray-500 font-medium">{row.rank}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="font-semibold text-sm">{row.player}</span>
-                    {isCurrentUser && (
-                      <span className="ml-2 text-xs text-rnli-blue bg-blue-100 px-1.5 py-0.5 rounded">You</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <RecentForm playerRow={row} maxWeek={maxWeekPlayed} />
-                  </td>
-                  <td className="px-4 py-3 text-center hidden md:table-cell">
-                    {bestWeek > 0 ? (
-                      <span className="text-green-600 font-bold text-sm">{bestWeek} pts</span>
-                    ) : (
-                      <span className="text-gray-400 text-sm">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center hidden md:table-cell text-sm text-gray-500">
-                    {weeksPlayed}
-                  </td>
-                  <td className="px-4 py-3 text-center font-bold text-rnli-blue bg-gray-100 text-base">
-                    {row.total}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                return (
+                  <tr
+                    key={row.player}
+                    className={`lb-row group transition-all hover:-translate-y-px hover:shadow-md ${
+                      isCurrentUser
+                        ? "border-l-4 border-rnli-yellow bg-amber-50/60 dark:bg-amber-500/10"
+                        : "border-l-4 border-transparent bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                    }`}
+                    style={{ animationDelay: `${Math.min(idx * 0.04, 0.6)}s` }}
+                  >
+                    <td className="px-4 py-3 text-center">
+                      {row.rank <= 3 ? (
+                        <span className="text-lg">{["🥇", "🥈", "🥉"][row.rank - 1]}</span>
+                      ) : (
+                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">
+                          {row.rank}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={row.player} size="sm" />
+                        <div className="min-w-0">
+                          <span className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                            <span className="truncate">{row.player}</span>
+                            {isCurrentUser && (
+                              <span className="rounded bg-rnli-yellow/30 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-rnli-yellow/20 dark:text-rnli-yellow">
+                                You
+                              </span>
+                            )}
+                          </span>
+                          {/* Mobile-only: form dots inline under the name */}
+                          <div className="mt-1 sm:hidden">
+                            <RecentForm playerRow={row} maxWeek={maxWeekPlayed} />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="hidden px-4 py-3 text-center sm:table-cell">
+                      <RankDelta delta={delta} />
+                    </td>
+                    <td className="hidden px-4 py-3 sm:table-cell">
+                      <div className="flex justify-center">
+                        <RecentForm playerRow={row} maxWeek={maxWeekPlayed} />
+                      </div>
+                    </td>
+                    <td className="hidden px-4 py-3 text-center md:table-cell">
+                      {bestWeek > 0 ? (
+                        <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                          {bestWeek} pts
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
+                      )}
+                    </td>
+                    <td className="hidden px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 md:table-cell">
+                      {weeksPlayed}
+                    </td>
+                    <td className="bg-gray-50 px-4 py-3 text-center text-base font-extrabold text-rnli-blue dark:bg-gray-700/40 dark:text-white">
+                      {row.total}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Surface>
 
       {/* ── Points Progression Chart ── */}
       {maxWeekPlayed > 1 && chartData.length > 0 && (
-        <div className="card">
-          <h2 className="text-lg font-bold text-rnli-blue mb-1">Points Progression</h2>
-          <p className="text-xs text-gray-400 mb-4">Cumulative points by gameweek</p>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+        <Surface className="p-6">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-rnli-blue dark:text-white">Points Progression</h2>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Cumulative points by gameweek</p>
+            </div>
+            {/* Show top-N toggle to avoid chart spaghetti */}
+            <div className="inline-flex self-start rounded-lg border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-700 dark:bg-gray-900 sm:self-auto">
+              {[
+                { key: "all", label: "All" },
+                { key: 5, label: "Top 5" },
+                { key: 3, label: "Top 3" },
+              ].map(({ key, label }) => (
+                <button
+                  key={label}
+                  onClick={() => setChartTopN(key)}
+                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
+                    chartTopN === key
+                      ? "bg-rnli-blue text-white shadow-sm"
+                      : "text-gray-500 hover:text-rnli-blue dark:text-gray-400 dark:hover:text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+              <defs>
+                {chartPlayers.map((row, i) => {
+                  const color = CHART_COLORS[leaderboard.indexOf(row) % CHART_COLORS.length];
+                  return (
+                    <linearGradient key={row.player} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity={0.28} />
+                      <stop offset="100%" stopColor={color} stopOpacity={0} />
+                    </linearGradient>
+                  );
+                })}
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-gray-200 dark:text-gray-700" />
               <XAxis
                 dataKey="week"
                 tickFormatter={(v) => `GW${v}`}
@@ -326,23 +652,36 @@ function OverallView({ top3, rest, leaderboard, maxWeekPlayed, currentUser }) {
               <Tooltip
                 formatter={(value, name) => [`${value} pts`, name]}
                 labelFormatter={(l) => `Gameweek ${l}`}
-                contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+                contentStyle={{
+                  borderRadius: "10px",
+                  fontSize: "12px",
+                  border: "1px solid rgba(148,163,184,0.3)",
+                  background: "rgba(17,24,39,0.92)",
+                  color: "#fff",
+                }}
+                itemStyle={{ color: "#fff" }}
+                labelStyle={{ color: "#cbd5e1", fontWeight: 600 }}
               />
               <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
-              {leaderboard.map((row, i) => (
-                <Line
-                  key={row.player}
-                  type="monotone"
-                  dataKey={row.player}
-                  stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                  strokeWidth={currentUser?.username === row.player ? 3 : 1.5}
-                  dot={false}
-                  activeDot={{ r: 5 }}
-                />
-              ))}
-            </LineChart>
+              {chartPlayers.map((row, i) => {
+                const color = CHART_COLORS[leaderboard.indexOf(row) % CHART_COLORS.length];
+                const isYou = currentUser?.username === row.player;
+                return (
+                  <Area
+                    key={row.player}
+                    type="monotone"
+                    dataKey={row.player}
+                    stroke={color}
+                    strokeWidth={isYou ? 3 : 1.8}
+                    fill={`url(#grad-${i})`}
+                    dot={false}
+                    activeDot={{ r: 5 }}
+                  />
+                );
+              })}
+            </AreaChart>
           </ResponsiveContainer>
-        </div>
+        </Surface>
       )}
     </div>
   );
@@ -354,93 +693,193 @@ function OverallView({ top3, rest, leaderboard, maxWeekPlayed, currentUser }) {
 function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, maxWeekPlayed, currentUser }) {
   const totalPoints = gameweekRanked.reduce((sum, r) => sum + r.gwScore, 0);
   const topScore = gameweekRanked[0]?.gwScore ?? 0;
+  const isFuture = selectedGameweek > maxWeekPlayed;
+
+  // Bar chart data — only players that scored, capped to keep it readable.
+  const barData = useMemo(
+    () =>
+      gameweekRanked
+        .filter((r) => r.gwScore > 0)
+        .slice(0, 12)
+        .map((r) => ({ player: r.player, score: r.gwScore, you: currentUser?.username === r.player })),
+    [gameweekRanked, currentUser]
+  );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Gameweek selector */}
-      <div className="card py-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm font-semibold text-gray-700 shrink-0">Select Gameweek:</span>
-          <div className="flex flex-wrap gap-1.5">
-            {Array.from({ length: 38 }, (_, i) => i + 1).map((gw) => (
+      <Surface className="p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Select Gameweek</span>
+          <span className="rounded-full bg-rnli-blue px-3 py-1 text-sm font-bold text-white">
+            GW{selectedGameweek}
+          </span>
+        </div>
+
+        {/* Slider for fast scrubbing across played weeks */}
+        {maxWeekPlayed > 1 && (
+          <input
+            type="range"
+            min={1}
+            max={maxWeekPlayed}
+            value={Math.min(selectedGameweek, maxWeekPlayed)}
+            onChange={(e) => setSelectedGameweek(Number(e.target.value))}
+            className="mb-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-rnli-blue dark:bg-gray-700"
+            aria-label="Select gameweek"
+          />
+        )}
+
+        {/* Grid — played weeks are vivid, future weeks are dimmed & disabled */}
+        <div className="flex flex-wrap gap-1.5">
+          {Array.from({ length: 38 }, (_, i) => i + 1).map((gw) => {
+            const played = gw <= maxWeekPlayed;
+            const active = selectedGameweek === gw;
+            return (
               <button
                 key={gw}
                 onClick={() => setSelectedGameweek(gw)}
-                className={`w-9 h-9 rounded-lg text-xs font-bold transition-colors ${
-                  selectedGameweek === gw
-                    ? "bg-rnli-blue text-white shadow-md"
-                    : gw <= maxWeekPlayed
-                    ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                    : "bg-gray-50 text-gray-300 cursor-not-allowed"
+                disabled={!played}
+                className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${
+                  active
+                    ? "scale-110 bg-rnli-blue text-white shadow-md ring-2 ring-rnli-yellow"
+                    : played
+                    ? "bg-gray-100 text-gray-700 hover:bg-rnli-blue/10 hover:text-rnli-blue dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                    : "cursor-not-allowed bg-gray-50 text-gray-300 dark:bg-gray-800 dark:text-gray-600"
                 }`}
-                disabled={gw > maxWeekPlayed}
               >
                 {gw}
               </button>
-            ))}
+            );
+          })}
+        </div>
+      </Surface>
+
+      {isFuture ? (
+        <Surface className="p-12 text-center text-gray-500 dark:text-gray-400">
+          <FiCalendar className="mx-auto mb-3 h-9 w-9 opacity-40" />
+          <p className="font-medium">Gameweek {selectedGameweek} hasn't been played yet.</p>
+        </Surface>
+      ) : (
+        <>
+          {/* Gameweek stats */}
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard
+              icon={<FiAward className="h-5 w-5" />}
+              label={`GW${selectedGameweek} Winner`}
+              value={gameweekRanked[0]?.player ?? "—"}
+              accent="bg-rnli-yellow/20 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+            />
+            <StatCard
+              icon={<FiTarget className="h-5 w-5" />}
+              label="Highest Score"
+              value={`${topScore} pts`}
+              accent="bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400"
+            />
+            <StatCard
+              icon={<FiZap className="h-5 w-5" />}
+              label="Total Points Scored"
+              value={totalPoints}
+              accent="bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400"
+            />
           </div>
-        </div>
-      </div>
 
-      {/* Gameweek stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="card text-center py-3">
-          <p className="text-2xl font-bold text-rnli-blue">{gameweekRanked[0]?.player ?? "—"}</p>
-          <p className="text-xs text-gray-500 mt-1">GW{selectedGameweek} Winner</p>
-        </div>
-        <div className="card text-center py-3">
-          <p className="text-2xl font-bold text-green-600">{topScore} <span className="text-sm font-normal">pts</span></p>
-          <p className="text-xs text-gray-500 mt-1">Highest Score</p>
-        </div>
-        <div className="card text-center py-3">
-          <p className="text-2xl font-bold text-gray-700">{totalPoints}</p>
-          <p className="text-xs text-gray-500 mt-1">Total Points Scored</p>
-        </div>
-      </div>
+          {/* Bar chart of GW scores — CSS bars avoid Recharts Cell/layout quirks */}
+          {barData.length > 0 && (
+            <Surface className="p-6">
+              <h2 className="mb-4 text-lg font-bold text-rnli-blue dark:text-white">
+                Gameweek {selectedGameweek} Scores
+              </h2>
+              <div className="space-y-2.5">
+                {barData.map((entry) => {
+                  const pct = (entry.score / 5) * 100;
+                  const barColor = entry.you
+                    ? "bg-rnli-yellow"
+                    : entry.score === 5
+                    ? "bg-green-500"
+                    : entry.score === 2
+                    ? "bg-blue-400"
+                    : "bg-gray-400";
+                  return (
+                    <div key={entry.player} className="flex items-center gap-3">
+                      <span className="w-24 shrink-0 truncate text-right text-xs text-gray-500 dark:text-gray-400">
+                        {entry.player}
+                      </span>
+                      <div className="flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
+                        <div
+                          className={`flex h-6 items-center justify-end rounded-full pr-2 transition-all duration-700 ${barColor}`}
+                          style={{ width: `${Math.max(pct, 8)}%` }}
+                        >
+                          <span className="text-xs font-bold text-white drop-shadow">{entry.score}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Surface>
+          )}
 
-      {/* Gameweek rankings */}
-      <div className="card overflow-hidden p-0">
-        <div className="bg-rnli-blue text-white px-4 py-3">
-          <h2 className="font-bold text-sm">Gameweek {selectedGameweek} Rankings</h2>
-        </div>
-        <table className="min-w-full">
-          <thead>
-            <tr className="bg-gray-50 text-xs text-gray-500 uppercase border-b border-gray-200">
-              <th className="px-4 py-3 text-left w-16">GW Rank</th>
-              <th className="px-4 py-3 text-left">Player</th>
-              <th className="px-4 py-3 text-center w-32">GW{selectedGameweek} Points</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {gameweekRanked.map((row, idx) => {
-              const isCurrentUser = currentUser?.username === row.player;
-              return (
-                <tr
-                  key={row.player}
-                  className={`transition-colors ${
-                    isCurrentUser ? "bg-blue-50 font-semibold" : idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-blue-50`}
-                >
-                  <td className="px-4 py-3 text-center">
-                    {row.gwRank === 1 ? "🥇" : row.gwRank === 2 ? "🥈" : row.gwRank === 3 ? "🥉" : (
-                      <span className="text-sm text-gray-500">{row.gwRank}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="font-semibold text-sm">{row.player}</span>
-                    {isCurrentUser && (
-                      <span className="ml-2 text-xs text-rnli-blue bg-blue-100 px-1.5 py-0.5 rounded">You</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center font-bold text-rnli-blue text-base bg-gray-100">
-                    {row.gwScore}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+          {/* Gameweek rankings */}
+          <Surface className="overflow-hidden">
+            <div className="bg-rnli-blue px-4 py-3">
+              <h2 className="text-sm font-bold text-white">Gameweek {selectedGameweek} Rankings</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                    <th className="w-16 px-4 py-3">GW Rank</th>
+                    <th className="px-4 py-3">Player</th>
+                    <th className="w-32 px-4 py-3 text-center">GW{selectedGameweek} Points</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {gameweekRanked.map((row, idx) => {
+                    const isCurrentUser = currentUser?.username === row.player;
+                    return (
+                      <tr
+                        key={row.player}
+                        className={`lb-row transition-all hover:-translate-y-px hover:shadow-md ${
+                          isCurrentUser
+                            ? "border-l-4 border-rnli-yellow bg-amber-50/60 dark:bg-amber-500/10"
+                            : "border-l-4 border-transparent bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                        }`}
+                        style={{ animationDelay: `${Math.min(idx * 0.04, 0.6)}s` }}
+                      >
+                        <td className="px-4 py-3 text-center">
+                          {row.gwRank <= 3 ? (
+                            <span className="text-lg">{["🥇", "🥈", "🥉"][row.gwRank - 1]}</span>
+                          ) : (
+                            <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">
+                              {row.gwRank}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2.5">
+                            <Avatar name={row.player} size="sm" />
+                            <span className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                              <span className="truncate">{row.player}</span>
+                              {isCurrentUser && (
+                                <span className="rounded bg-rnli-yellow/30 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-rnli-yellow/20 dark:text-rnli-yellow">
+                                  You
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <ScoreBadge score={row.gwScore} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Surface>
+        </>
+      )}
     </div>
   );
 }
