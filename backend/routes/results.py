@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from sqlalchemy.orm import Session
 
@@ -11,10 +11,10 @@ router = APIRouter(prefix="/results", tags=["Results"])
 
 
 class ResultSubmit(BaseModel):
-    gameweek: int
+    gameweek: int = Field(ge=1, le=38)
     fixture_id: int
-    actual_home: int
-    actual_away: int
+    actual_home: int = Field(ge=0, le=20)
+    actual_away: int = Field(ge=0, le=20)
 
 
 @router.post("/")

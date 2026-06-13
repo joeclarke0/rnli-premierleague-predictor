@@ -14,18 +14,18 @@ const VIEWS = {
 function ScoreBadge({ score }) {
   if (score === 5)
     return (
-      <span className="inline-block w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center justify-center">
+      <span className="inline-flex w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold items-center justify-center">
         5
       </span>
     );
   if (score === 2)
     return (
-      <span className="inline-block w-7 h-7 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center">
+      <span className="inline-flex w-7 h-7 rounded-full bg-blue-100 text-blue-600 text-xs font-bold items-center justify-center">
         2
       </span>
     );
   return (
-    <span className="inline-block w-7 h-7 rounded-full bg-gray-100 text-gray-400 text-xs flex items-center justify-center">
+    <span className="inline-flex w-7 h-7 rounded-full bg-gray-100 text-gray-400 text-xs items-center justify-center">
       0
     </span>
   );

@@ -5,12 +5,12 @@ import { FiSearch, FiCalendar, FiFilter } from 'react-icons/fi';
 function getStatus(fixture, results) {
   if (results[fixture.id]) return 'completed';
   try {
-    const [day, month, year] = fixture.date.split('/');
-    const kickoff = new Date(`20${year}-${month}-${day}T${fixture.time || '15:00'}`);
+    const kickoff = new Date(`${fixture.date}T${fixture.time || '15:00'}:00`);
     const now = new Date();
     const diff = kickoff - now;
-    if (diff < 0) return 'upcoming'; // past but no result entered yet
-    if (diff < 2 * 60 * 60 * 1000) return 'live';
+    if (diff < 0 && diff > -105 * 60 * 1000) return 'live';
+    if (diff < 0) return 'past';
+    if (diff < 2 * 60 * 60 * 1000) return 'upcoming_soon';
     return 'upcoming';
   } catch {
     return 'upcoming';
@@ -21,12 +21,20 @@ function StatusBadge({ status }) {
   const cfg = {
     completed: 'bg-green-100 text-green-700 border-green-200',
     live: 'bg-red-100 text-red-700 border-red-200',
+    upcoming_soon: 'bg-orange-100 text-orange-700 border-orange-200',
+    past: 'bg-gray-100 text-gray-500 border-gray-200',
     upcoming: 'bg-blue-50 text-blue-600 border-blue-200',
   };
-  const labels = { completed: '✓ Result In', live: '● Live', upcoming: 'Upcoming' };
+  const labels = {
+    completed: '✓ Result In',
+    live: '● Live',
+    upcoming_soon: 'Starting Soon',
+    past: 'Awaiting Result',
+    upcoming: 'Upcoming',
+  };
   return (
-    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg[status]}`}>
-      {labels[status]}
+    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cfg[status] ?? cfg.upcoming}`}>
+      {labels[status] ?? 'Upcoming'}
     </span>
   );
 }
@@ -52,6 +60,8 @@ function FixtureCard({ fixture, result }) {
     <div className={`card hover:shadow-lg transition-all relative overflow-hidden ${
       status === 'completed' ? 'border-l-4 border-l-green-400' :
       status === 'live' ? 'border-l-4 border-l-red-400' :
+      status === 'upcoming_soon' ? 'border-l-4 border-l-orange-400' :
+      status === 'past' ? 'border-l-4 border-l-gray-300' :
       'border-l-4 border-l-blue-300'
     }`}>
       <div className="flex justify-between items-start mb-3">

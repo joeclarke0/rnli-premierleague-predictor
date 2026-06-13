@@ -43,11 +43,11 @@ export default function Layout({ children }) {
   const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/fixtures', label: 'Fixtures' },
-    ...(isAuthenticated() ? [{ to: '/predictions', label: 'Predictions' }] : []),
+    ...(isAuthenticated ? [{ to: '/predictions', label: 'Predictions' }] : []),
     { to: '/leaderboard', label: 'Leaderboard' },
-    ...(isAuthenticated() ? [{ to: '/dashboard', label: 'Dashboard' }] : []),
-    ...(isAdmin() ? [{ to: '/results', label: 'Results' }] : []),
-    ...(isAdmin() ? [{ to: '/admin', label: 'Admin Panel' }] : []),
+    ...(isAuthenticated ? [{ to: '/dashboard', label: 'Dashboard' }] : []),
+    ...(isAdmin ? [{ to: '/results', label: 'Results' }] : []),
+    ...(isAdmin ? [{ to: '/admin', label: 'Admin Panel' }] : []),
   ];
 
   return (
@@ -84,12 +84,12 @@ export default function Layout({ children }) {
               >
                 {darkMode ? <FiSun className="w-4 h-4" /> : <FiMoon className="w-4 h-4" />}
               </button>
-              {isAuthenticated() ? (
+              {isAuthenticated ? (
                 <>
                   <div className="flex items-center gap-2 text-sm">
                     <FiUser className="w-4 h-4 text-rnli-yellow" />
                     <span>{user?.username}</span>
-                    {isAdmin() && (
+                    {isAdmin && (
                       <span className="text-[10px] bg-rnli-yellow text-gray-900 font-bold px-1.5 py-0.5 rounded">
                         ADMIN
                       </span>
@@ -148,7 +148,7 @@ export default function Layout({ children }) {
                 </Link>
               ))}
               <div className="pt-2 border-t border-rnli-blue-light mt-2">
-                {isAuthenticated() ? (
+                {isAuthenticated ? (
                   <div className="flex items-center justify-between px-3 py-2">
                     <span className="text-sm text-blue-200">{user?.username}</span>
                     <button

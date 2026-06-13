@@ -77,24 +77,28 @@ export default function Results() {
   const saveAll = async () => {
     if (fixtures.length === 0) return;
     setBulkSaving(true);
-    let saved = 0;
-    for (const fixture of fixtures) {
-      const result = results[fixture.id] ?? { home: 0, away: 0 };
-      try {
-        await resultsAPI.submit({
-          fixture_id: fixture.id,
-          gameweek: selectedGameweek,
-          actual_home: parseInt(result.home) || 0,
-          actual_away: parseInt(result.away) || 0,
-        });
-        setSavedIds((prev) => new Set([...prev, fixture.id]));
-        saved++;
-      } catch {
-        // continue with remaining fixtures
-      }
+    try {
+      const settledResults = await Promise.allSettled(
+        fixtures.map((fixture) => {
+          const result = results[fixture.id] ?? { home: 0, away: 0 };
+          return resultsAPI.submit({
+            fixture_id: fixture.id,
+            gameweek: selectedGameweek,
+            actual_home: parseInt(result.home) || 0,
+            actual_away: parseInt(result.away) || 0,
+          }).then((res) => {
+            setSavedIds((prev) => new Set([...prev, fixture.id]));
+            return res;
+          });
+        })
+      );
+      const saved = settledResults.filter((r) => r.status === 'fulfilled').length;
+      toast.success(`${saved} result${saved !== 1 ? 's' : ''} saved!`);
+    } catch (err) {
+      toast.error('Failed to save results');
+    } finally {
+      setBulkSaving(false);
     }
-    toast.success(`${saved} result${saved !== 1 ? 's' : ''} saved!`);
-    setBulkSaving(false);
   };
 
   const gameweeks = Array.from({ length: 38 }, (_, i) => i + 1);
