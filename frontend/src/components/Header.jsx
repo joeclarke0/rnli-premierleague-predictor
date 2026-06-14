@@ -83,7 +83,7 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
                 Logout
               </button>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ color: 'var(--rnli-white)', fontWeight: '600' }}>
+                <span style={{ color: 'var(--rnli-on-accent)', fontWeight: '600' }}>
                   Welcome, {currentUser.username || currentUser}
                 </span>
                 {isAdmin && (
@@ -101,7 +101,7 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
                   fontSize: '1rem',
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--rnli-white)',
+                  color: 'var(--rnli-on-accent)',
                   cursor: 'pointer',
                   borderRadius: '50%',
                   width: '40px',
@@ -136,7 +136,7 @@ const Header = ({ currentUser, setCurrentUser, onLogout }) => {
                   fontSize: '1rem',
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--rnli-white)',
+                  color: 'var(--rnli-on-accent)',
                   cursor: 'pointer',
                   borderRadius: '50%',
                   width: '40px',

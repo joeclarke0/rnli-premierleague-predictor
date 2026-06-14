@@ -19,6 +19,12 @@
   --rnli-bg: #FFFFFF;
   --rnli-card-bg: #FFFFFF;
   --rnli-shadow: rgba(0, 0, 0, 0.1);
+  /* Text colour for content sitting ON a saturated accent surface
+     (buttons, badges, table header, nav). Stays light in BOTH themes
+     because those surfaces are dark/saturated in both. Do not reuse
+     --rnli-white here: that token flips to a dark surface colour in
+     dark mode and turns this text illegible. */
+  --rnli-on-accent: #FFFFFF;
 }
 
 [data-theme="dark"] {
@@ -39,6 +45,9 @@
   --rnli-bg: #111827;
   --rnli-card-bg: #1F2937;
   --rnli-shadow: rgba(0, 0, 0, 0.3);
+  /* Accent surfaces stay dark/saturated in dark mode, so on-accent text
+     remains white (see :root note above). */
+  --rnli-on-accent: #FFFFFF;
 }
 
 /* Reset and Base Styles */
@@ -103,7 +112,7 @@ p {
 /* Button Styles */
 .btn-primary {
   background: linear-gradient(135deg, var(--rnli-orange) 0%, #FB923C 100%);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   border: none;
   padding: 12px 24px;
   border-radius: 10px;
@@ -146,7 +155,7 @@ p {
 
 .btn-secondary:hover {
   background: var(--rnli-blue);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   transform: translateY(-1px);
 }
 
@@ -177,7 +186,7 @@ p {
 
 .btn-logout:hover {
   background: var(--rnli-orange);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   border-color: var(--rnli-orange);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
@@ -237,7 +246,7 @@ p {
 .nav-brand {
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--rnli-white); /* Changed from blue */
+  color: var(--rnli-on-accent); /* Changed from blue */
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -255,7 +264,7 @@ p {
 }
 
 .nav-link {
-  color: var(--rnli-white); /* Changed from text */
+  color: var(--rnli-on-accent); /* Changed from text */
   text-decoration: none;
   font-weight: 500;
   padding: 0.5rem 1rem;
@@ -264,12 +273,12 @@ p {
 }
 
 .nav-link:hover {
-  color: var(--rnli-white); /* Changed from blue */
+  color: var(--rnli-on-accent); /* Changed from blue */
   background: rgba(255, 255, 255, 0.2); /* Changed from light-blue */
 }
 
 .nav-link.active {
-  color: var(--rnli-white); /* Changed from blue */
+  color: var(--rnli-on-accent); /* Changed from blue */
   background: rgba(255, 255, 255, 0.3); /* Changed from light-blue */
 }
 
@@ -345,7 +354,7 @@ p {
   width: 60px;
   height: 60px;
   background: linear-gradient(135deg, var(--rnli-orange) 0%, #FB923C 100%);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -442,7 +451,7 @@ p {
 
 .table th {
   background: var(--rnli-blue);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   padding: 1rem;
   text-align: left;
   font-weight: 600;
@@ -475,7 +484,7 @@ p {
   border-radius: 50%;
   font-weight: 700;
   font-size: 0.875rem;
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
 }
 
 .rank-1 {
@@ -602,7 +611,7 @@ p {
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
   background: var(--rnli-orange);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   border-radius: 8px;
   font-weight: 700;
   font-size: 0.875rem;
@@ -872,7 +881,11 @@ p {
 .score-input.home-score:disabled,
 .score-input.away-score:disabled {
   background: var(--rnli-gray);
-  color: var(--rnli-dark-gray);
+  /* Keep the submitted score fully legible. --rnli-dark-gray on
+     --rnli-gray is too low-contrast in dark mode, so use the primary
+     text colour and convey the disabled state via reduced opacity. */
+  color: var(--rnli-text);
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -884,7 +897,7 @@ p {
 
 .submit-btn {
   background: linear-gradient(135deg, var(--rnli-orange) 0%, #FB923C 100%);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   border: none;
   padding: 1rem 3rem;
   border-radius: 12px;
@@ -1164,7 +1177,7 @@ button:disabled {
 /* Footer Banner */
 .footer-banner {
   background: linear-gradient(135deg, var(--rnli-blue) 0%, var(--rnli-dark-blue) 100%);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   padding: 3rem 0 2rem 0;
   margin-top: auto;
   position: relative;
@@ -1188,7 +1201,7 @@ button:disabled {
 .footer-title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   margin-bottom: 2rem;
   text-align: center;
 }
@@ -1220,7 +1233,7 @@ button:disabled {
   width: 40px;
   height: 40px;
   background: var(--rnli-orange);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1233,7 +1246,7 @@ button:disabled {
 .footer-step-content h5 {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   margin-bottom: 0.5rem;
   line-height: 1.3;
 }
@@ -1323,7 +1336,7 @@ button:disabled {
 
 .user-card:hover {
   background: var(--rnli-blue);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -1331,7 +1344,7 @@ button:disabled {
 .user-card.selected {
   border-color: var(--rnli-orange);
   background: var(--rnli-blue);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
   box-shadow: 0 2px 8px rgba(234, 88, 12, 0.2);
 }
 
@@ -1373,7 +1386,7 @@ button:disabled {
 
 .role-badge.admin {
   background: var(--rnli-orange);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
 }
 
 .role-badge.user {
@@ -1392,7 +1405,7 @@ button:disabled {
 
 .role-badge.admin {
   background: var(--rnli-orange);
-  color: var(--rnli-white);
+  color: var(--rnli-on-accent);
 }
 
 .role-badge.user {

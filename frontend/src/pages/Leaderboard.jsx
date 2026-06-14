@@ -125,9 +125,14 @@ const Leaderboard = () => {
                 border: score > 0 ? '1px solid var(--rnli-blue)' : '1px solid var(--rnli-border)'
               }}>
                 <div className="text-sm font-medium" style={{ color: 'var(--rnli-blue)' }}>GW {week}</div>
-                <div className={`text-lg font-bold ${
-                  score > 0 ? 'text-green-600' : 'text-gray-400'
-                }`}>
+                {/* Use theme-aware vars so the score stays legible in dark mode.
+                    The old text-green-600 / text-gray-400 utility classes are
+                    not defined in this project's plain CSS, so they rendered
+                    with no colour rule and lost their meaning. */}
+                <div
+                  className="text-lg font-bold"
+                  style={{ color: score > 0 ? 'var(--rnli-success)' : 'var(--rnli-dark-gray)' }}
+                >
                   {score}
                 </div>
               </div>

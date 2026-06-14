@@ -141,18 +141,26 @@ const Admin = ({ currentUser }) => {
   const handleSubmitPrediction = async (fixtureId) => {
     if (!selectedUser) return
     
-    const prediction = userPredictions[fixtureId]
-    if (!prediction) return
-    
+    // Fall back to an empty object so the admin can submit a 0-0 override
+    // for a fixture they haven't typed into yet.
+    const prediction = userPredictions[fixtureId] || {}
+
+    // Normalise scores: a field the admin never touched can be undefined.
+    // The API requires integer 0-100 for both sides, so default missing
+    // values to 0 — otherwise the request body fails validation (422) and
+    // the "Override Prediction" button silently errors.
+    const predictedHome = Number.isInteger(prediction.home) ? prediction.home : 0
+    const predictedAway = Number.isInteger(prediction.away) ? prediction.away : 0
+
     try {
       setSubmitting(true)
       const token = sessionManager.getToken()
-      
+
       if (prediction.id) {
         // Update existing prediction
         await api.updatePrediction(prediction.id, {
-          predicted_home: prediction.home,
-          predicted_away: prediction.away
+          predicted_home: predictedHome,
+          predicted_away: predictedAway
         }, token)
       } else {
         // Create new prediction
@@ -160,8 +168,8 @@ const Admin = ({ currentUser }) => {
           user_id: selectedUser.id,
           gameweek: selectedGameweek,
           fixture_id: fixtureId,
-          predicted_home: prediction.home,
-          predicted_away: prediction.away
+          predicted_home: predictedHome,
+          predicted_away: predictedAway
         }, token)
       }
       
@@ -301,7 +309,11 @@ const Admin = ({ currentUser }) => {
               <div className="fixtures-grid">
                 {fixtures.map(fixture => {
                   const prediction = userPredictions[fixture.id]
-                  const hasPrediction = prediction && (prediction.home > 0 || prediction.away > 0)
+                  // A prediction is "entered" if it exists in the DB (has an id),
+                  // not if its score is non-zero — a legitimate 0-0 prediction is
+                  // still a real prediction. Keeps this consistent with the
+                  // Delete-button guard below, which also keys off prediction.id.
+                  const hasPrediction = !!prediction?.id
                   
                   return (
                     <div key={fixture.id} className="fixture-card">
