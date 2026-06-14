@@ -254,8 +254,7 @@ def get_me(current_user: User = Depends(get_current_user)):
     )
 
 
-@register_router.get("/validate-invite")
-def validate_invite(token: str = Query(...), db: Session = Depends(get_db)):
+def _validate_invite_impl(token: str, db: Session):
     """
     Public endpoint: check whether an invite token is valid and unused.
 
@@ -267,3 +266,15 @@ def validate_invite(token: str = Query(...), db: Session = Depends(get_db)):
     if invite is None:
         raise HTTPException(status_code=404, detail="Invalid or expired invite")
     return {"valid": True}
+
+
+@register_router.get("/validate-invite")
+def validate_invite_register(token: str = Query(...), db: Session = Depends(get_db)):
+    """Validate an invite token. Mirrors the frontend /register route."""
+    return _validate_invite_impl(token, db)
+
+
+@router.get("/validate-invite")
+def validate_invite_auth(token: str = Query(...), db: Session = Depends(get_db)):
+    """Validate an invite token (canonical /auth-prefixed path per the API spec)."""
+    return _validate_invite_impl(token, db)
