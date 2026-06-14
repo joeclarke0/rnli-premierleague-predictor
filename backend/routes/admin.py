@@ -1,17 +1,20 @@
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import User, Fixture, Prediction, Result
-from auth import get_current_admin
+from models import User, Fixture, Prediction, Result, Invite
+from auth import get_current_admin, hash_password
 from scoring import calculate_points
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
+VALID_FIXTURE_STATUSES = ("scheduled", "postponed", "completed")
 
 
 # ── Overview ────────────────────────────────────────────────────────────────
@@ -122,6 +125,28 @@ def delete_user(
     db.delete(user)
     db.commit()
     return {"message": f"User {user.username} deleted"}
+
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str
+
+
+@router.post("/users/{user_id}/reset-password")
+def reset_user_password(
+    user_id: str,
+    body: ResetPasswordRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Admin-initiated password reset for a user."""
+    if len(body.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"message": f"Password reset for {user.username}"}
 
 
 # ── Predictions viewer ───────────────────────────────────────────────────────
@@ -236,6 +261,24 @@ def _normalise_header(raw: str) -> str:
     return COL_ALIASES.get(key, key)
 
 
+def _parse_kickoff(fixture_date, time_str: str):
+    """
+    Build a kickoff datetime from the date column and an optional time column.
+
+    Returns None if no usable time is present (so kickoff-based locking is simply
+    disabled for that fixture). Accepts "HH:MM" and "HH:MM:SS".
+    """
+    if not time_str:
+        return None
+    for fmt in ("%H:%M", "%H:%M:%S"):
+        try:
+            parsed = datetime.strptime(time_str, fmt).time()
+            return datetime.combine(fixture_date, parsed)
+        except ValueError:
+            continue
+    return None
+
+
 @router.post("/fixtures/upload")
 async def upload_fixtures(
     file: UploadFile = File(...),
@@ -247,7 +290,11 @@ async def upload_fixtures(
     Upload a CSV file of fixtures for the new season.
     Required columns: week, date, home, away
     Optional columns: time, day (auto-computed if absent), venue
-    Set replace=true (default) to clear existing fixtures first.
+
+    Fixtures are upserted: existing rows (matched on home_team + away_team +
+    gameweek) are updated in place and new rows are inserted. Existing fixtures
+    are never deleted, so predictions and results are preserved. The ``replace``
+    flag is retained for API compatibility but no longer deletes data.
     """
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="File must be a .csv")
@@ -293,15 +340,16 @@ async def upload_fixtures(
             time_str = row.get("time") or ""
             venue = row.get("venue") or ""
 
-            rows.append(Fixture(
-                gameweek=week,
-                date=fixture_date,
-                day=day,
-                time=time_str,
-                home_team=home,
-                away_team=away,
-                venue=venue,
-            ))
+            rows.append({
+                "gameweek": week,
+                "date": fixture_date,
+                "day": day,
+                "time": time_str,
+                "home_team": home,
+                "away_team": away,
+                "venue": venue,
+                "kickoff_time": _parse_kickoff(fixture_date, time_str),
+            })
         except (ValueError, KeyError) as e:
             errors.append(f"Row {i}: {e}")
 
@@ -311,18 +359,151 @@ async def upload_fixtures(
             detail={"message": "CSV contains invalid rows", "errors": errors[:20]},
         )
 
-    if replace:
-        # Delete results and predictions first (FK constraints), then fixtures
-        db.query(Result).delete()
-        db.query(Prediction).delete()
-        db.query(Fixture).delete()
-        db.commit()
+    # Non-destructive upsert: match on (home_team, away_team, gameweek). Update
+    # the mutable details of existing fixtures and insert any that are new. This
+    # preserves predictions and results tied to existing fixtures.
+    inserted = 0
+    updated = 0
+    for r in rows:
+        existing = (
+            db.query(Fixture)
+            .filter(
+                Fixture.home_team == r["home_team"],
+                Fixture.away_team == r["away_team"],
+                Fixture.gameweek == r["gameweek"],
+            )
+            .first()
+        )
+        if existing:
+            existing.date = r["date"]
+            existing.day = r["day"]
+            existing.time = r["time"]
+            existing.venue = r["venue"]
+            existing.kickoff_time = r["kickoff_time"]
+            # Don't clobber a postponed/completed status on re-import.
+            if existing.status is None:
+                existing.status = "scheduled"
+            updated += 1
+        else:
+            db.add(Fixture(status="scheduled", **r))
+            inserted += 1
 
-    db.add_all(rows)
     db.commit()
 
     return {
         "imported": len(rows),
-        "replaced": replace,
-        "gameweeks": sorted({r.gameweek for r in rows}),
+        "inserted": inserted,
+        "updated": updated,
+        "replaced": False,
+        "gameweeks": sorted({r["gameweek"] for r in rows}),
     }
+
+
+# ── Fixture status (postpone / reschedule / complete) ─────────────────────────
+
+class UpdateFixtureStatusRequest(BaseModel):
+    status: str
+
+
+@router.patch("/fixtures/{fixture_id}/status")
+def update_fixture_status(
+    fixture_id: int,
+    body: UpdateFixtureStatusRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Mark a fixture as scheduled, postponed, or completed."""
+    if body.status not in VALID_FIXTURE_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Status must be one of: {', '.join(VALID_FIXTURE_STATUSES)}",
+        )
+    fixture = db.query(Fixture).filter(Fixture.id == fixture_id).first()
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Fixture not found")
+    fixture.status = body.status
+    db.commit()
+    return {
+        "message": f"{fixture.home_team} vs {fixture.away_team} is now {body.status}",
+        "fixture_id": fixture.id,
+        "status": fixture.status,
+    }
+
+
+# ── Invites ───────────────────────────────────────────────────────────────────
+
+def _invite_status(invite: Invite) -> str:
+    """Derive a human-friendly status for an invite."""
+    if invite.used_at is not None:
+        return "used"
+    expires_at = invite.expires_at
+    # Stored values may be naive (SQLite); compare on the same basis.
+    now = datetime.now(timezone.utc)
+    if expires_at is not None and expires_at.tzinfo is None:
+        now = now.replace(tzinfo=None)
+    if expires_at is not None and now >= expires_at:
+        return "expired"
+    return "pending"
+
+
+@router.post("/invites")
+def create_invite(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Generate a single-use invite token."""
+    invite = Invite(created_by=current_admin.id)
+    db.add(invite)
+    db.commit()
+    db.refresh(invite)
+    return {
+        "token": invite.token,
+        "invite_url": f"/register?invite={invite.token}",
+    }
+
+
+@router.get("/invites")
+def list_invites(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """List all invites with derived status (pending / used / expired)."""
+    invites = db.query(Invite).order_by(Invite.created_at.desc()).all()
+    redeemer_ids = [i.used_by for i in invites if i.used_by]
+    redeemer_lookup = {}
+    if redeemer_ids:
+        redeemers = db.query(User).filter(User.id.in_(redeemer_ids)).all()
+        redeemer_lookup = {u.id: u.username for u in redeemers}
+
+    return {
+        "invites": [
+            {
+                "id": i.id,
+                "token": i.token,
+                "status": _invite_status(i),
+                "created_at": i.created_at.isoformat() if i.created_at else None,
+                "expires_at": i.expires_at.isoformat() if i.expires_at else None,
+                "used_at": i.used_at.isoformat() if i.used_at else None,
+                "used_by": redeemer_lookup.get(i.used_by),
+                "invite_url": f"/register?invite={i.token}",
+            }
+            for i in invites
+        ]
+    }
+
+
+@router.delete("/invites/{invite_id}")
+def revoke_invite(
+    invite_id: str,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Revoke an unused invite. Used invites cannot be revoked."""
+    invite = db.query(Invite).filter(Invite.id == invite_id).first()
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite not found")
+    if invite.used_at is not None:
+        raise HTTPException(status_code=400, detail="Cannot revoke an invite that has been used")
+    db.delete(invite)
+    db.commit()
+    return {"message": "Invite revoked"}

@@ -2,17 +2,51 @@
 Authentication routes for RNLI Premier League Predictor.
 Handles user registration, login, and profile retrieval.
 """
-from fastapi import APIRouter, HTTPException, Depends, Request, status
+import os
+from datetime import datetime, timezone
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Depends, Request, status, Query
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from database import get_db
 from limiter import limiter
-from models import User
+from models import User, Invite
 from auth import hash_password, authenticate_user, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# A separate router (no /auth prefix) for the public invite-validation endpoint,
+# which lives under /register to mirror the frontend route.
+register_router = APIRouter(prefix="/register", tags=["Authentication"])
+
+
+def _invite_only_enabled() -> bool:
+    """INVITE_ONLY defaults to false; accept common truthy spellings."""
+    return os.getenv("INVITE_ONLY", "false").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _get_valid_invite(db: Session, token: Optional[str]) -> Optional[Invite]:
+    """
+    Return a usable invite for the given token, or None.
+
+    Usable means: exists, not yet used, and not expired. Handles both naive
+    (SQLite) and aware (Postgres) expiry timestamps.
+    """
+    if not token:
+        return None
+    invite = db.query(Invite).filter(Invite.token == token).first()
+    if not invite or invite.used_at is not None:
+        return None
+    expires_at = invite.expires_at
+    now = datetime.now(timezone.utc)
+    if expires_at is not None and expires_at.tzinfo is None:
+        now = now.replace(tzinfo=None)
+    if expires_at is not None and now >= expires_at:
+        return None
+    return invite
 
 
 # ============================================================================
@@ -23,6 +57,7 @@ class RegisterRequest(BaseModel):
     username: str
     email: EmailStr
     password: str
+    invite_token: Optional[str] = None
 
     @field_validator('username')
     @classmethod
@@ -79,6 +114,17 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
     Returns the created user details (without password).
     """
     try:
+        # Enforce invite-only registration when enabled. The token is validated
+        # here and consumed only after the user is successfully created.
+        invite = None
+        if _invite_only_enabled():
+            invite = _get_valid_invite(db, body.invite_token)
+            if invite is None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="A valid invite is required to register",
+                )
+
         # Check if username already exists
         existing_username = db.query(User).filter(User.username == body.username).first()
         if existing_username:
@@ -104,6 +150,13 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
         )
 
         db.add(new_user)
+        db.flush()  # assign new_user.id without ending the transaction
+
+        # Consume the invite (single-use) as part of the same transaction.
+        if invite is not None:
+            invite.used_by = new_user.id
+            invite.used_at = datetime.now(timezone.utc)
+
         db.commit()
         db.refresh(new_user)
 
@@ -116,6 +169,11 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
             role=new_user.role
         )
 
+    except HTTPException:
+        # Intentional HTTP errors (e.g. invite required, duplicate user) must
+        # propagate unchanged rather than being swallowed by the catch-all below.
+        db.rollback()
+        raise
     except IntegrityError as e:
         db.rollback()
         raise HTTPException(
@@ -194,3 +252,18 @@ def get_me(current_user: User = Depends(get_current_user)):
         email=current_user.email,
         role=current_user.role
     )
+
+
+@register_router.get("/validate-invite")
+def validate_invite(token: str = Query(...), db: Session = Depends(get_db)):
+    """
+    Public endpoint: check whether an invite token is valid and unused.
+
+    Returns 200 with {"valid": true} when usable, 404 otherwise. Always 200/404
+    regardless of whether INVITE_ONLY is enabled, so the frontend can show an
+    "invited" banner in either mode.
+    """
+    invite = _get_valid_invite(db, token)
+    if invite is None:
+        raise HTTPException(status_code=404, detail="Invalid or expired invite")
+    return {"valid": True}

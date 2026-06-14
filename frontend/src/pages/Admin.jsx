@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { adminAPI, settingsAPI } from '../services/api';
+import { adminAPI, settingsAPI, fixturesAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import toast from 'react-hot-toast';
@@ -7,6 +7,7 @@ import {
   FiUsers, FiBarChart2, FiAlertCircle, FiGrid,
   FiTrash2, FiShield, FiUser, FiChevronDown, FiRefreshCw,
   FiCheckCircle, FiXCircle, FiEdit2, FiUpload, FiDownload,
+  FiKey, FiX, FiMail, FiCopy, FiPlus, FiSlash, FiCalendar,
 } from 'react-icons/fi';
 
 const TABS = [
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'predictions', label: 'Predictions', icon: FiBarChart2 },
   { id: 'missing', label: 'Missing', icon: FiAlertCircle },
   { id: 'fixtures', label: 'Fixtures', icon: FiUpload },
+  { id: 'invites', label: 'Invites', icon: FiMail },
 ];
 
 // ── Overview Tab ─────────────────────────────────────────────────────────────
@@ -129,12 +131,98 @@ function OverviewTab() {
   );
 }
 
+// ── Reset Password Modal ──────────────────────────────────────────────────────
+function ResetPasswordModal({ user, onClose }) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const tooShort = password.length > 0 && password.length < 8;
+  const mismatch = confirm.length > 0 && password !== confirm;
+  const canSubmit = password.length >= 8 && password === confirm && !saving;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setSaving(true);
+    try {
+      await adminAPI.resetUserPassword(user.id, password);
+      toast.success(`Password reset for ${user.username}`);
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to reset password');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reset-pw-title"
+    >
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 id="reset-pw-title" className="font-bold text-gray-900 flex items-center gap-2">
+            <FiKey className="w-4 h-4 text-rnli-blue" /> Reset password
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Set a new password for <span className="font-semibold text-gray-700">{user.username}</span>.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label htmlFor="new-pw" className="block text-xs font-semibold text-gray-600 mb-1">New password</label>
+            <input
+              id="new-pw"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input-field"
+              placeholder="At least 8 characters"
+              autoFocus
+            />
+            {tooShort && <p className="text-xs text-orange-500 mt-1">Min 8 characters</p>}
+          </div>
+          <div>
+            <label htmlFor="confirm-pw" className="block text-xs font-semibold text-gray-600 mb-1">Confirm password</label>
+            <input
+              id="confirm-pw"
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="input-field"
+              placeholder="Re-enter password"
+            />
+            {mismatch && <p className="text-xs text-red-500 mt-1">Passwords do not match</p>}
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 text-sm py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" disabled={!canSubmit} className="btn-primary flex-1 text-sm py-2 disabled:opacity-50">
+              {saving ? 'Saving…' : 'Reset'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Users Tab ─────────────────────────────────────────────────────────────────
 function UsersTab() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [resetUser, setResetUser] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -222,22 +310,31 @@ function UsersTab() {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {u.id !== currentUser?.id && (
-                    confirmDelete === u.id ? (
-                      <div className="flex items-center gap-2 justify-end">
-                        <span className="text-xs text-red-600 font-medium">Delete?</span>
-                        <button onClick={() => deleteUser(u)} className="text-xs text-red-600 font-bold hover:underline">Yes</button>
-                        <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-500 hover:underline">No</button>
-                      </div>
-                    ) : (
+                  {confirmDelete === u.id ? (
+                    <div className="flex items-center gap-2 justify-end">
+                      <span className="text-xs text-red-600 font-medium">Delete?</span>
+                      <button onClick={() => deleteUser(u)} className="text-xs text-red-600 font-bold hover:underline">Yes</button>
+                      <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-500 hover:underline">No</button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 justify-end">
                       <button
-                        onClick={() => setConfirmDelete(u.id)}
-                        className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                        aria-label={`Delete user ${u.username}`}
+                        onClick={() => setResetUser(u)}
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:text-rnli-blue hover:border-rnli-blue transition-colors"
+                        aria-label={`Reset password for ${u.username}`}
                       >
-                        <FiTrash2 className="w-4 h-4" />
+                        <FiKey className="w-3.5 h-3.5" /> Reset Password
                       </button>
-                    )
+                      {u.id !== currentUser?.id && (
+                        <button
+                          onClick={() => setConfirmDelete(u.id)}
+                          className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                          aria-label={`Delete user ${u.username}`}
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </td>
               </tr>
@@ -245,6 +342,10 @@ function UsersTab() {
           </tbody>
         </table>
       </div>
+
+      {resetUser && (
+        <ResetPasswordModal user={resetUser} onClose={() => setResetUser(null)} />
+      )}
     </div>
   );
 }
@@ -437,6 +538,110 @@ const TEMPLATE_ROWS = [
   '1,2025-08-16,15:00,Liverpool,Everton,Anfield',
 ];
 
+// Manage per-fixture status (scheduled / postponed). Lets an admin postpone a
+// fixture (excluding it from scoring + locking predictions) or reschedule it.
+function FixtureStatusManager() {
+  const [gameweek, setGameweek] = useState(1);
+  const [fixtures, setFixtures] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
+
+  const load = useCallback((gw) => {
+    setLoading(true);
+    fixturesAPI.getByGameweek(gw)
+      .then((r) => setFixtures(r.data.fixtures))
+      .catch(() => toast.error('Failed to load fixtures'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(gameweek); }, [gameweek, load]);
+
+  const setStatus = async (fixture, status) => {
+    setUpdatingId(fixture.id);
+    try {
+      await adminAPI.updateFixtureStatus(fixture.id, status);
+      setFixtures((prev) => prev.map((f) => (f.id === fixture.id ? { ...f, status } : f)));
+      toast.success(`${fixture.home_team} vs ${fixture.away_team} → ${status}`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update status');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const statusBadge = (status) => {
+    if (status === 'postponed') return 'bg-amber-100 text-amber-700';
+    if (status === 'completed') return 'bg-green-100 text-green-700';
+    return 'bg-gray-100 text-gray-600';
+  };
+
+  return (
+    <div className="card">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 className="font-bold text-gray-700">Fixture Status</h3>
+          <p className="text-xs text-gray-400">Postpone a fixture to exclude it from scoring, or reschedule it back.</p>
+        </div>
+        <div className="relative">
+          <select
+            value={gameweek}
+            onChange={(e) => setGameweek(Number(e.target.value))}
+            className="input-field w-36 pr-8 appearance-none"
+          >
+            {Array.from({ length: 38 }, (_, i) => i + 1).map((gw) => (
+              <option key={gw} value={gw}>Gameweek {gw}</option>
+            ))}
+          </select>
+          <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="animate-pulse space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-gray-100 rounded" />)}</div>
+      ) : fixtures.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-6">No fixtures for this gameweek.</p>
+      ) : (
+        <ul className="divide-y divide-gray-100">
+          {fixtures.map((f) => {
+            const postponed = f.status === 'postponed';
+            const busy = updatingId === f.id;
+            return (
+              <li key={f.id} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{f.home_team} vs {f.away_team}</p>
+                  <p className="text-xs text-gray-400">{f.date}{f.time ? ` · ${f.time}` : ''}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadge(f.status)}`}>
+                    {f.status || 'scheduled'}
+                  </span>
+                  {postponed ? (
+                    <button
+                      onClick={() => setStatus(f, 'scheduled')}
+                      disabled={busy}
+                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-gray-200 text-gray-600 hover:border-rnli-blue hover:text-rnli-blue transition-colors disabled:opacity-50"
+                    >
+                      <FiCalendar className="w-3.5 h-3.5" /> Reschedule
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setStatus(f, 'postponed')}
+                      disabled={busy}
+                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                    >
+                      <FiSlash className="w-3.5 h-3.5" /> Postpone
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function FixturesTab() {
   const [file, setFile] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -498,15 +703,18 @@ function FixturesTab() {
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {/* Fixture status management */}
+      <FixtureStatusManager />
+
       {/* Instructions */}
       <div className="card bg-blue-50 border border-blue-200">
-        <h3 className="font-bold text-rnli-blue mb-2">How to load a new season's fixtures</h3>
+        <h3 className="font-bold text-rnli-blue mb-2">How to load or update fixtures</h3>
         <ol className="text-sm text-gray-700 space-y-1.5 list-decimal list-inside">
           <li>Download the <strong>CSV template</strong> below to see the required format.</li>
           <li>Get the fixture list from <strong>football-data.co.uk</strong> (free, download the season CSV) or prepare your own using the template format.</li>
           <li>Ensure your CSV has these columns: <code className="bg-white px-1 rounded text-xs">week, date, home, away</code> — plus optional <code className="bg-white px-1 rounded text-xs">time, venue</code>.</li>
-          <li>Dates must be in <code className="bg-white px-1 rounded text-xs">YYYY-MM-DD</code> format.</li>
-          <li>Upload the file below — <strong>this will replace all existing fixtures, predictions and results.</strong></li>
+          <li>Dates must be in <code className="bg-white px-1 rounded text-xs">YYYY-MM-DD</code> format; times in <code className="bg-white px-1 rounded text-xs">HH:MM</code>.</li>
+          <li>Upload the file below — fixtures are <strong>matched on teams + gameweek and updated in place</strong>. New fixtures are added; existing predictions and results are preserved.</li>
         </ol>
         <button
           onClick={downloadTemplate}
@@ -549,18 +757,18 @@ function FixturesTab() {
         )}
       </div>
 
-      {/* Warning + confirmation */}
+      {/* Confirmation */}
       {file && (
-        <div className="card bg-amber-50 border border-amber-300">
-          <p className="text-sm font-semibold text-amber-800 mb-2">⚠️ This will permanently delete all existing fixtures, predictions and results.</p>
-          <label className="flex items-center gap-2 text-sm text-amber-900 cursor-pointer">
+        <div className="card bg-blue-50 border border-blue-200">
+          <p className="text-sm font-semibold text-blue-800 mb-2">This import updates matching fixtures and adds new ones. Existing predictions and results are preserved.</p>
+          <label className="flex items-center gap-2 text-sm text-blue-900 cursor-pointer">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
               className="w-4 h-4"
             />
-            I understand — replace all data with the new season's fixtures
+            I understand — import these fixtures
           </label>
         </div>
       )}
@@ -596,7 +804,153 @@ function FixturesTab() {
       {result && (
         <div className="card bg-green-50 border border-green-300">
           <p className="font-bold text-green-700 text-lg mb-1">Import successful!</p>
-          <p className="text-sm text-green-800">{result.imported} fixtures loaded across gameweeks {result.gameweeks[0]}–{result.gameweeks[result.gameweeks.length - 1]}.</p>
+          <p className="text-sm text-green-800">
+            {result.imported} fixtures processed across gameweeks {result.gameweeks[0]}–{result.gameweeks[result.gameweeks.length - 1]}
+            {typeof result.inserted === 'number' && (
+              <> ({result.inserted} added, {result.updated} updated).</>
+            )}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Invites Tab ───────────────────────────────────────────────────────────────
+function InvitesTab() {
+  const [invites, setInvites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    adminAPI.getInvites()
+      .then((r) => setInvites(r.data.invites))
+      .catch(() => toast.error('Failed to load invites'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Build an absolute URL for sharing from the relative invite_url the API returns.
+  const fullUrl = (path) => `${window.location.origin}${path}`;
+
+  const copyLink = async (path) => {
+    const url = fullUrl(path);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Invite link copied to clipboard');
+    } catch {
+      // Clipboard API can fail on insecure contexts; show the URL as a fallback.
+      toast.error('Could not copy automatically — copy manually');
+      window.prompt('Copy this invite link:', url);
+    }
+  };
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const res = await adminAPI.createInvite();
+      await copyLink(res.data.invite_url);
+      load();
+    } catch {
+      toast.error('Failed to generate invite');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const revoke = async (invite) => {
+    try {
+      await adminAPI.revokeInvite(invite.id);
+      toast.success('Invite revoked');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to revoke invite');
+    }
+  };
+
+  const statusBadge = (status) => {
+    if (status === 'used') return 'bg-green-100 text-green-700';
+    if (status === 'expired') return 'bg-gray-100 text-gray-500';
+    return 'bg-blue-100 text-blue-700';
+  };
+
+  const pending = invites.filter((i) => i.status === 'pending');
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <p className="text-sm text-gray-500">{pending.length} pending · {invites.length} total</p>
+          <p className="text-xs text-gray-400">Each invite link can be used once and expires after 7 days.</p>
+        </div>
+        <button
+          onClick={generate}
+          disabled={generating}
+          className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50"
+        >
+          {generating ? (
+            <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Generating…</>
+          ) : (
+            <><FiPlus className="w-4 h-4" />Generate Invite</>
+          )}
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="animate-pulse space-y-2">{[1, 2, 3].map((i) => <div key={i} className="card h-16 bg-gray-100" />)}</div>
+      ) : invites.length === 0 ? (
+        <div className="card text-center py-10 text-gray-400">No invites yet. Generate one to invite a player.</div>
+      ) : (
+        <div className="card p-0 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Used by</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Expires</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {invites.map((inv, i) => (
+                <tr key={inv.id} className={`border-b border-gray-200 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50'}`}>
+                  <td className="px-4 py-3">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadge(inv.status)}`}>
+                      {inv.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{inv.used_by || '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
+                    {inv.expires_at ? new Date(inv.expires_at).toLocaleDateString() : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center gap-1 justify-end">
+                      {inv.status === 'pending' && (
+                        <>
+                          <button
+                            onClick={() => copyLink(inv.invite_url)}
+                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:text-rnli-blue hover:border-rnli-blue transition-colors"
+                            aria-label="Copy invite link"
+                          >
+                            <FiCopy className="w-3.5 h-3.5" /> Copy
+                          </button>
+                          <button
+                            onClick={() => revoke(inv)}
+                            className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                            aria-label="Revoke invite"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -643,6 +997,7 @@ export default function Admin() {
         {activeTab === 'predictions' && <PredictionsTab />}
         {activeTab === 'missing' && <MissingTab />}
         {activeTab === 'fixtures' && <FixturesTab />}
+        {activeTab === 'invites' && <InvitesTab />}
       </div>
     </div>
   );

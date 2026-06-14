@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { FiEye, FiEyeOff, FiUserPlus, FiCheck, FiX } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiUserPlus, FiCheck, FiX, FiMail } from 'react-icons/fi';
 
 function getStrength(password) {
   let score = 0;
@@ -60,6 +61,21 @@ export default function Register() {
 
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite') || '';
+  // null = unknown/checking, true = valid, false = invalid
+  const [inviteValid, setInviteValid] = useState(null);
+
+  // Pre-validate an invite token from the URL so we can show a friendly banner.
+  useEffect(() => {
+    if (!inviteToken) return;
+    let cancelled = false;
+    authAPI
+      .validateInvite(inviteToken)
+      .then(() => { if (!cancelled) setInviteValid(true); })
+      .catch(() => { if (!cancelled) setInviteValid(false); });
+    return () => { cancelled = true; };
+  }, [inviteToken]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,7 +95,7 @@ export default function Register() {
     }
 
     setLoading(true);
-    const result = await register(username, email, password);
+    const result = await register(username, email, password, inviteToken || undefined);
 
     if (result.success) {
       toast.success('Account created! Please login.');
@@ -104,6 +120,20 @@ export default function Register() {
           <h1 className="text-3xl font-bold text-rnli-blue mb-1">Create Account</h1>
           <p className="text-gray-500 text-sm">Join the RNLI prediction competition</p>
         </div>
+
+        {/* Invite banner */}
+        {inviteToken && inviteValid === true && (
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4 text-sm flex items-start gap-2">
+            <FiMail className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span><strong>You've been invited!</strong> Complete the form below to join.</span>
+          </div>
+        )}
+        {inviteToken && inviteValid === false && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-4 text-sm flex items-start gap-2">
+            <FiX className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>This invite link is invalid or has expired. You may not be able to register unless registration is open.</span>
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm flex items-start gap-2">

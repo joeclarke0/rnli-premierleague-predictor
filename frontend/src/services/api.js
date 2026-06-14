@@ -44,8 +44,10 @@ api.interceptors.response.use(
 
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
-  register: (username, email, password) => api.post('/auth/register', { username, email, password }),
+  register: (username, email, password, inviteToken) =>
+    api.post('/auth/register', { username, email, password, invite_token: inviteToken || null }),
   me: () => api.get('/auth/me'),
+  validateInvite: (token) => api.get('/register/validate-invite', { params: { token } }),
 };
 
 // ============================================================================
@@ -111,8 +113,16 @@ export const adminAPI = {
   getUsers: () => api.get('/admin/users'),
   updateUserRole: (userId, role) => api.patch(`/admin/users/${userId}/role`, { role }),
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+  resetUserPassword: (userId, newPassword) =>
+    api.post(`/admin/users/${userId}/reset-password`, { new_password: newPassword }),
   getPredictions: (gameweek) => api.get('/admin/predictions', { params: { gameweek } }),
   getMissingPredictions: (gameweek) => api.get('/admin/missing-predictions', { params: { gameweek } }),
+  updateFixtureStatus: (fixtureId, status) =>
+    api.patch(`/admin/fixtures/${fixtureId}/status`, { status }),
+  // Invites
+  getInvites: () => api.get('/admin/invites'),
+  createInvite: () => api.post('/admin/invites'),
+  revokeInvite: (inviteId) => api.delete(`/admin/invites/${inviteId}`),
 };
 
 export default api;

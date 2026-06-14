@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from collections import defaultdict
 
 from database import get_db
-from models import Prediction, Result, User
+from models import Prediction, Result, User, Fixture
 from scoring import calculate_points
 
 router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
@@ -31,6 +31,12 @@ def get_leaderboard(db: Session = Depends(get_db)):
         results = db.query(Result).all()
         users = db.query(User).all()
 
+        # Fixtures that are postponed must not contribute to scoring even if a
+        # stale result lingers on them.
+        postponed_fixture_ids = {
+            f.id for f in db.query(Fixture).filter(Fixture.status == "postponed").all()
+        }
+
         # Create lookup dictionaries
         result_lookup = {r.fixture_id: r for r in results}
         user_lookup = {u.id: u.username for u in users}
@@ -43,6 +49,10 @@ def get_leaderboard(db: Session = Depends(get_db)):
             fixture_id = pred.fixture_id
             user_id = pred.user_id
             gameweek = pred.gameweek
+
+            # Skip postponed fixtures entirely
+            if fixture_id in postponed_fixture_ids:
+                continue
 
             # Only calculate points if result exists for this fixture
             if fixture_id in result_lookup:

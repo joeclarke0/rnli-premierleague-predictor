@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -41,6 +43,17 @@ def submit_prediction(
         if not fixture:
             raise HTTPException(status_code=404, detail="Fixture not found")
 
+        # Lock predictions once kickoff has passed. kickoff_time may be naive
+        # (SQLite) or aware (Postgres); normalise the comparison accordingly.
+        # When kickoff_time is null the fixture is never locked (backwards compat).
+        if fixture.kickoff_time is not None:
+            now = datetime.now(timezone.utc)
+            kickoff = fixture.kickoff_time
+            if kickoff.tzinfo is None:
+                now = now.replace(tzinfo=None)
+            if now >= kickoff:
+                raise HTTPException(status_code=403, detail="Predictions locked")
+
         # Block predictions after result has been entered
         existing_result = db.query(Result).filter(Result.fixture_id == prediction.fixture_id).first()
         if existing_result:
@@ -76,6 +89,11 @@ def submit_prediction(
             print(f"✅ Prediction created: {new_prediction.id}")
             return {"message": "Prediction submitted successfully", "prediction_id": new_prediction.id}
 
+    except HTTPException:
+        # Intentional HTTP errors (locked, result entered, not found) must
+        # propagate unchanged rather than being re-wrapped as a 500 below.
+        db.rollback()
+        raise
     except IntegrityError as e:
         db.rollback()
         print("❌ Database integrity error:", str(e))

@@ -1,12 +1,17 @@
 from sqlalchemy import Column, String, Integer, DateTime, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 from database import Base
 
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+
+def default_invite_expiry():
+    """Invites expire 7 days after creation by default."""
+    return datetime.now(timezone.utc) + timedelta(days=7)
 
 
 class User(Base):
@@ -34,6 +39,12 @@ class Fixture(Base):
     home_team = Column(String(50), nullable=False)
     away_team = Column(String(50), nullable=False)
     venue = Column(String(100))
+    # Full kickoff timestamp (date + time). Nullable for backwards compatibility
+    # with fixtures imported before this column existed — when null, predictions
+    # are never locked by kickoff.
+    kickoff_time = Column(DateTime, nullable=True)
+    # Lifecycle status: 'scheduled' | 'postponed' | 'completed'.
+    status = Column(String(20), default="scheduled", nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
@@ -84,3 +95,26 @@ class SiteSetting(Base):
     key = Column(String(100), primary_key=True)
     value = Column(String(255), nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+
+class Invite(Base):
+    """
+    Single-use registration invite.
+
+    When INVITE_ONLY is enabled, a valid, unused, non-expired token is required
+    to register. The token is consumed (used_by / used_at set) on successful
+    registration so it can never be reused.
+    """
+    __tablename__ = "invites"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    token = Column(String(36), unique=True, nullable=False, index=True, default=generate_uuid)
+    created_by = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    used_by = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    expires_at = Column(DateTime, default=default_invite_expiry, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+
+    # Relationships (explicit foreign_keys because there are two FKs to users)
+    creator = relationship("User", foreign_keys=[created_by])
+    redeemer = relationship("User", foreign_keys=[used_by])

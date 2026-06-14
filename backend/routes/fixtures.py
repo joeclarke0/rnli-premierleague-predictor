@@ -54,7 +54,9 @@ def get_fixtures(
                 "time": f.time,
                 "home_team": f.home_team,
                 "away_team": f.away_team,
-                "venue": f.venue
+                "venue": f.venue,
+                "kickoff_time": f.kickoff_time.isoformat() if f.kickoff_time else None,
+                "status": f.status,
             }
             for f in fixtures
         ]

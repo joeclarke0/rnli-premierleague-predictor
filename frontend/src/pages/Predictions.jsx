@@ -1,7 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fixturesAPI, predictionsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { FiSave, FiZap } from 'react-icons/fi';
+import { FiSave, FiZap, FiLock } from 'react-icons/fi';
+
+// A fixture is locked for predictions if kickoff has passed (and a kickoff time
+// is known) or if it has been postponed. Null kickoff_time = never locked.
+function getFixtureLock(fixture) {
+  if (fixture.status === 'postponed') {
+    return { locked: true, reason: 'postponed', label: 'Postponed' };
+  }
+  if (fixture.kickoff_time) {
+    const kickoff = new Date(fixture.kickoff_time);
+    if (!Number.isNaN(kickoff.getTime()) && Date.now() >= kickoff.getTime()) {
+      return { locked: true, reason: 'kickoff', label: 'Locked' };
+    }
+  }
+  return { locked: false, reason: null, label: null };
+}
 
 const QUICK_PICKS = [
   { label: '1–0', home: 1, away: 0 },
@@ -113,11 +128,13 @@ export default function Predictions() {
   };
 
   const saveAll = async () => {
-    if (fixtures.length === 0) return;
+    // Only attempt to save fixtures that are still open for predictions.
+    const savable = fixtures.filter((f) => !getFixtureLock(f).locked);
+    if (savable.length === 0) return;
     setBulkSaving(true);
     try {
       const settledResults = await Promise.allSettled(
-        fixtures.map((fixture) => {
+        savable.map((fixture) => {
           const pred = predictions[fixture.id] ?? { home: 0, away: 0 };
           return predictionsAPI.submit({
             fixture_id: fixture.id,
@@ -141,6 +158,7 @@ export default function Predictions() {
   const savedIds = new Set(Object.keys(predictions).map(Number));
   const predictedCount = fixtures.filter((f) => savedIds.has(f.id)).length;
   const maxPts = predictedCount * 5;
+  const openCount = fixtures.filter((f) => !getFixtureLock(f).locked).length;
 
   return (
     <div className="space-y-6">
@@ -180,13 +198,13 @@ export default function Predictions() {
           </div>
           <button
             onClick={saveAll}
-            disabled={bulkSaving || fixtures.length === 0}
-            className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap"
+            disabled={bulkSaving || openCount === 0}
+            className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50"
           >
             {bulkSaving ? (
               <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Saving…</>
             ) : (
-              <><FiSave className="w-4 h-4" />Save All ({fixtures.length})</>
+              <><FiSave className="w-4 h-4" />Save All ({openCount})</>
             )}
           </button>
         </div>
@@ -205,12 +223,19 @@ export default function Predictions() {
             const pred = predictions[fixture.id] || { home: 0, away: 0 };
             const hasPrediction = pred.home !== undefined;
             const isSaving = savingId === fixture.id;
-            const showQuickPick = quickPickTarget === fixture.id;
+            const { locked, reason, label: lockLabel } = getFixtureLock(fixture);
+            const showQuickPick = quickPickTarget === fixture.id && !locked;
 
             return (
               <div
                 key={fixture.id}
-                className={`card transition-all ${hasPrediction ? 'border-2 border-green-400 bg-green-50' : 'hover:shadow-md'}`}
+                className={`card transition-all ${
+                  locked
+                    ? 'bg-gray-100 border border-gray-200 opacity-75'
+                    : hasPrediction
+                    ? 'border-2 border-green-400 bg-green-50'
+                    : 'hover:shadow-md'
+                }`}
               >
                 <div className="grid md:grid-cols-12 gap-4 items-center">
                   {/* Date */}
@@ -227,6 +252,19 @@ export default function Predictions() {
                       <span className="text-gray-400 text-sm font-medium">vs</span>
                       <span className="font-bold text-sm flex-1 text-left">{fixture.away_team}</span>
                     </div>
+                    {locked && (
+                      <div className="flex justify-center mt-1.5">
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            reason === 'postponed'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-gray-200 text-gray-600'
+                          }`}
+                        >
+                          <FiLock className="w-2.5 h-2.5" /> {lockLabel}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Score Inputs */}
@@ -236,8 +274,9 @@ export default function Predictions() {
                       min="0"
                       max="20"
                       value={pred.home}
+                      disabled={locked}
                       onChange={(e) => handleChange(fixture.id, 'home', e.target.value)}
-                      className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue"
+                      className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                       placeholder="0"
                     />
                     <span className="font-bold text-gray-400">–</span>
@@ -246,37 +285,46 @@ export default function Predictions() {
                       min="0"
                       max="20"
                       value={pred.away}
+                      disabled={locked}
                       onChange={(e) => handleChange(fixture.id, 'away', e.target.value)}
-                      className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue"
+                      className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                       placeholder="0"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setQuickPickTarget(showQuickPick ? null : fixture.id)}
-                      className="text-rnli-blue hover:text-rnli-blue-light p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-                      title="Quick Pick"
-                    >
-                      <FiZap className="w-4 h-4" />
-                    </button>
+                    {!locked && (
+                      <button
+                        type="button"
+                        onClick={() => setQuickPickTarget(showQuickPick ? null : fixture.id)}
+                        className="text-rnli-blue hover:text-rnli-blue-light p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                        title="Quick Pick"
+                      >
+                        <FiZap className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Save Button */}
                   <div className="md:col-span-2">
-                    <button
-                      onClick={() => saveSingle(fixture)}
-                      disabled={isSaving}
-                      className={`w-full text-sm py-2 px-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                        hasPrediction
-                          ? 'bg-green-600 hover:bg-green-700 text-white'
-                          : 'btn-primary'
-                      }`}
-                    >
-                      {isSaving ? (
-                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
-                      ) : (
-                        <>{hasPrediction ? '✓ Update' : 'Save'}</>
-                      )}
-                    </button>
+                    {locked ? (
+                      <div className="w-full text-sm py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1.5 bg-gray-200 text-gray-500 cursor-not-allowed">
+                        <FiLock className="w-3.5 h-3.5" /> {lockLabel}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => saveSingle(fixture)}
+                        disabled={isSaving}
+                        className={`w-full text-sm py-2 px-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                          hasPrediction
+                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                            : 'btn-primary'
+                        }`}
+                      >
+                        {isSaving ? (
+                          <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                        ) : (
+                          <>{hasPrediction ? '✓ Update' : 'Save'}</>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
 

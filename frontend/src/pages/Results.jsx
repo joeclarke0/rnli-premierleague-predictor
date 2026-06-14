@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fixturesAPI, resultsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { FiSave, FiCheckCircle } from 'react-icons/fi';
+import { FiSave, FiCheckCircle, FiSlash } from 'react-icons/fi';
 
 export default function Results() {
   const [fixtures, setFixtures] = useState([]);
@@ -181,11 +181,18 @@ export default function Results() {
           const result = results[fixture.id] ?? { home: 0, away: 0 };
           const isSaved = savedIds.has(fixture.id);  // only green if server-confirmed
           const isSaving = savingId === fixture.id;
+          const isPostponed = fixture.status === 'postponed';
 
           return (
             <div
               key={fixture.id}
-              className={`card transition-all ${isSaved ? 'border-2 border-green-400 bg-green-50' : 'hover:shadow-md'}`}
+              className={`card transition-all ${
+                isPostponed
+                  ? 'bg-gray-100 border border-gray-200 opacity-75'
+                  : isSaved
+                  ? 'border-2 border-green-400 bg-green-50'
+                  : 'hover:shadow-md'
+              }`}
             >
               <div className="grid md:grid-cols-12 gap-4 items-center">
                 {/* Date */}
@@ -205,6 +212,13 @@ export default function Results() {
                   {fixture.venue && (
                     <p className="text-xs text-gray-400 text-center mt-1">{fixture.venue}</p>
                   )}
+                  {isPostponed && (
+                    <div className="flex justify-center mt-1.5">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                        <FiSlash className="w-2.5 h-2.5" /> Postponed
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Result Inputs */}
@@ -214,8 +228,9 @@ export default function Results() {
                     min="0"
                     max="20"
                     value={result.home}
+                    disabled={isPostponed}
                     onChange={(e) => handleResultChange(fixture.id, 'home', e.target.value)}
-                    className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue"
+                    className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                   />
                   <span className="font-bold text-gray-400">–</span>
                   <input
@@ -223,31 +238,38 @@ export default function Results() {
                     min="0"
                     max="20"
                     value={result.away}
+                    disabled={isPostponed}
                     onChange={(e) => handleResultChange(fixture.id, 'away', e.target.value)}
-                    className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue"
+                    className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                   />
                 </div>
 
                 {/* Save Button */}
                 <div className="md:col-span-2">
-                  <button
-                    onClick={() => handleSubmit(fixture)}
-                    disabled={isSaving}
-                    className={`w-full text-sm py-2 px-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                      isSaved
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'btn-primary'
-                    }`}
-                  >
-                    {isSaving ? (
-                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
-                    ) : (
-                      <>
-                        <FiSave className="w-3.5 h-3.5" />
-                        {isSaved ? 'Update' : 'Save'}
-                      </>
-                    )}
-                  </button>
+                  {isPostponed ? (
+                    <div className="w-full text-sm py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1.5 bg-gray-200 text-gray-500 cursor-not-allowed">
+                      <FiSlash className="w-3.5 h-3.5" /> Postponed
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleSubmit(fixture)}
+                      disabled={isSaving}
+                      className={`w-full text-sm py-2 px-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                        isSaved
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'btn-primary'
+                      }`}
+                    >
+                      {isSaving ? (
+                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                      ) : (
+                        <>
+                          <FiSave className="w-3.5 h-3.5" />
+                          {isSaved ? 'Update' : 'Save'}
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
