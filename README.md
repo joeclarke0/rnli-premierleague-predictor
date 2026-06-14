@@ -1,229 +1,147 @@
-# 🏆 RNLI Premier League Predictor – Fullstack App
+# 🏆 RNLI Premier League Predictor
 
-A modern, mobile-friendly Premier League prediction app built for RNLI colleagues, powered by FastAPI (backend) and React (frontend), with real-time data managed in Supabase.
-
----
-
-## 📦 Project Structure
-
-```
-rnli-premierleague-predictor/
-├── backend/               # FastAPI backend (✅ COMPLETE)
-│   ├── main.py           # ✅ FastAPI server with CORS
-│   ├── routes/           # ✅ All API endpoints working
-│   │   ├── fixtures.py   # ✅ Fixture management
-│   │   ├── predictions.py # ✅ Prediction submission with admin override
-│   │   ├── results.py    # ✅ Results entry (admin only)
-│   │   ├── leaderboard.py # ✅ Leaderboard calculation
-│   │   └── auth.py       # ✅ Authentication system with roles
-│   ├── supabase_client.py # ✅ Database operations with role support
-│   ├── create_admin_user.py # ✅ Admin user setup script
-│   └── setup_users_table.py # ✅ Database schema setup
-├── frontend/             # React frontend (✅ COMPLETE)
-│   ├── src/
-│   │   ├── components/   # ✅ Header with admin badge
-│   │   ├── pages/        # ✅ All pages with role-based UI
-│   │   ├── services/     # ✅ API service with admin functions
-│   │   └── utils/        # ✅ Session management
-└── fixtures.csv          # ✅ Premier League fixture data
-```
-
----
-
-## 🔐 Authentication & Role-Based Access
-
-### **User Roles**
-- **`user`** (default): Regular users can submit predictions and view leaderboard
-- **`admin`**: Admins can override predictions, manage results, and access all features
-
-### **Admin Features**
-- ✅ **Override Predictions**: Admins can resubmit predictions for any gameweek
-- ✅ **Manage Results**: Only admins can submit/edit/delete match results
-- ✅ **Delete Predictions**: Admins can delete any prediction, users can only delete their own
-- ✅ **Visual Indicators**: Admin badge in header and on pages
-- ✅ **Role-Based UI**: Different interfaces for admins vs regular users
-
-### **Security**
-- ✅ **JWT Tokens**: 24-hour session persistence
-- ✅ **Protected Routes**: Role-based access control
-- ✅ **API Authorization**: Backend validates user permissions
-- ✅ **Session Management**: Secure localStorage with expiration
-- ✅ **Supabase Auth**: Secure password storage and authentication
-
----
+A modern, full-stack Premier League prediction application built for RNLI colleagues. Features real-time predictions, admin management, and a comprehensive leaderboard system.
 
 ## 🚀 Quick Start
 
-### **1. Backend Setup**
+### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- Supabase account
+
+### Backend Setup
 ```bash
 cd backend
 pip install -r requirements.txt
 python -m uvicorn main:app --reload --port 8000
 ```
 
-### **2. Frontend Setup**
+### Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### **3. Database Setup**
-```bash
-# Add role column to users table
-python setup_users_table.py
-
-# Create admin user
-python create_admin_user.py
-```
-
-### **4. Admin Access**
-- **Email**: `admin@rnli.com`
-- **Password**: `password`
-- **Role**: `admin`
-
-**OR**
-
-- **Email**: `jea.clarke9307@gmail.com`
-- **Password**: `password`
-- **Role**: `admin`
-
----
-
-## 🎯 Core Features
-
-### **📊 Predictions System**
-- ✅ **User Predictions**: Submit scores for each fixture
-- ✅ **Auto 0-0**: Empty fields default to 0-0 predictions
-- ✅ **Gameweek Lock**: Prevent resubmission (except admins)
-- ✅ **Admin Override**: Admins can modify existing predictions
-- ✅ **Visual Feedback**: Clear submission status indicators
-- ✅ **Input Validation**: Real-time validation with 0-100 range enforcement
-- ✅ **Error Display**: Clear error messages for invalid inputs
-- ✅ **Dual Validation**: onChange and onBlur validation for better UX
-
-### **🏆 Leaderboard**
-- ✅ **Real-time Scoring**: 5 points exact, 2 points result, 0 incorrect
-- ✅ **Gameweek Breakdown**: Drill-down to see weekly scores
-- ✅ **Professional Design**: Clean table layout with RNLI branding
-- ✅ **Responsive**: Works on all devices
-
-### **📈 Results Management**
-- ✅ **Admin Only**: Only admins can submit/edit results
-- ✅ **Status Tracking**: Visual indicators for entered vs pending
-- ✅ **Override Capability**: Admins can modify existing results
-- ✅ **Bulk Operations**: Submit all results for a gameweek
-- ✅ **Upsert Logic**: Updates existing results instead of creating duplicates
-- ✅ **Input Validation**: Real-time validation with 0-100 range enforcement
-- ✅ **Error Display**: Clear error messages for invalid inputs
-- ✅ **Dual Validation**: onChange and onBlur validation for better UX
-
-### **🔐 Authentication**
-- ✅ **User Registration**: Email, password, username
-- ✅ **Session Persistence**: 24-hour JWT tokens
-- ✅ **Role-Based Access**: Different permissions for users vs admins
-- ✅ **Protected Routes**: Secure navigation based on login status
-- ✅ **Supabase Integration**: Secure password storage and authentication
-
----
-
-## 🎨 Design & UX
-
-### **RNLI Branding**
-- ✅ **Color Scheme**: Blue (#0052CC), Orange (#FF6B35), White
-- ✅ **Professional Layout**: Clean table-based design
-- ✅ **Responsive Design**: Mobile-friendly interface
-- ✅ **Consistent Styling**: Unified across all pages
-
-### **User Experience**
-- ✅ **Intuitive Navigation**: Clear menu structure
-- ✅ **Visual Feedback**: Loading states, success/error messages
-- ✅ **Admin Indicators**: Clear badges and role-based UI
-- ✅ **Accessibility**: Proper contrast and readable fonts
-
----
-
-## 🔧 Technical Implementation
-
-### **Backend (FastAPI)**
-- ✅ **Role-Based API**: Different endpoints for users vs admins
-- ✅ **JWT Authentication**: Secure token-based sessions
-- ✅ **Database Integration**: Supabase with role support
-- ✅ **Error Handling**: Graceful error responses
-- ✅ **CORS Support**: Frontend-backend communication
-- ✅ **Upsert Operations**: Smart update/insert logic for results
-
-### **Frontend (React)**
-- ✅ **Role-Aware Components**: Different UI for admins
-- ✅ **Session Management**: Secure localStorage handling
-- ✅ **API Integration**: Token-based authentication
-- ✅ **State Management**: React hooks for data flow
-- ✅ **Responsive Design**: Mobile-first approach
-
-### **Database (Supabase)**
-- ✅ **User Roles**: `role` field in users table
-- ✅ **Predictions**: User-specific prediction storage
-- ✅ **Results**: Admin-managed match results
-- ✅ **Fixtures**: Premier League fixture data
-- ✅ **Leaderboard**: Calculated from predictions and results
-
----
-
-## 📱 Pages & Features
-
-### **🏠 Home Page**
-- ✅ **Welcome Screen**: Clean landing page
-- ✅ **Login Prompt**: For unauthenticated users
-- ✅ **Action Cards**: Quick access to main features
-- ✅ **How It Works**: Scoring system explanation
-
-### **🔮 Predictions Page**
-- ✅ **Gameweek Selection**: Choose which week to predict
-- ✅ **Fixture Table**: Clean table layout for all matches
-- ✅ **Score Inputs**: Easy-to-use number inputs with validation
-- ✅ **Admin Override**: Admins can modify existing predictions
-- ✅ **Submission Status**: Clear feedback on submission state
-- ✅ **Input Validation**: Real-time validation with error display
-- ✅ **Range Enforcement**: 0-100 score limits with clear feedback
-
-### **🏆 Leaderboard Page**
-- ✅ **Rankings Table**: Professional leaderboard display
-- ✅ **Player Details**: Drill-down to see weekly scores
-- ✅ **Visual Rankings**: Color-coded position indicators
-- ✅ **Scoring System**: Footer with point breakdown
-
-### **📊 Results Page**
-- ✅ **Admin Only**: Restricted to admin users
-- ✅ **Result Entry**: Input actual match scores with validation
-- ✅ **Status Tracking**: Visual indicators for entered vs pending
-- ✅ **Admin Management**: Delete/edit existing results
-- ✅ **Override Functionality**: Update existing results instead of duplicates
-- ✅ **Input Validation**: Real-time validation with error display
-- ✅ **Range Enforcement**: 0-100 score limits with clear feedback
-
-### **🔐 Login/Register Page**
-- ✅ **User Registration**: Create new accounts
-- ✅ **User Login**: Secure authentication
-- ✅ **Session Management**: Persistent login state
-- ✅ **Role Assignment**: Automatic role assignment
-
----
-
-## 🛠️ Development
-
-### **Environment Variables**
+### Environment Configuration
 ```bash
 # Backend (.env)
 SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
+SUPABASE_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-
-# Frontend (no env needed)
 ```
 
-### **Database Schema**
+## 🏗️ Architecture
+
+### Tech Stack
+- **Backend**: FastAPI (Python)
+- **Frontend**: React 18 + Vite
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: JWT + Supabase Auth
+- **Styling**: Custom CSS with RNLI branding
+
+### Project Structure
+```
+├── backend/
+│   ├── main.py              # FastAPI application
+│   ├── routes/              # API endpoints
+│   │   ├── auth.py          # Authentication
+│   │   ├── predictions.py   # Prediction management
+│   │   ├── results.py       # Results management
+│   │   ├── leaderboard.py   # Leaderboard calculation
+│   │   └── admin.py         # Admin operations
+│   └── supabase_client.py   # Database operations
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Reusable components
+│   │   ├── pages/           # Page components
+│   │   ├── services/        # API services
+│   │   ├── contexts/        # React contexts
+│   │   └── utils/           # Utility functions
+│   └── public/              # Static assets
+```
+
+## 🔐 Authentication & Authorization
+
+### User Roles
+- **User**: Submit predictions, view leaderboard
+- **Admin**: Full access including results management
+
+### Security Features
+- JWT token-based authentication
+- Role-based access control (RBAC)
+- Protected API endpoints
+- Session persistence (24-hour tokens)
+- Input validation (0-100 score range)
+
+## 📊 Core Features
+
+### Prediction System
+- **Gameweek Selection**: Choose specific weeks to predict
+- **Score Input**: Validated number inputs (0-100)
+- **Auto Defaults**: Empty fields default to 0-0
+- **Admin Override**: Admins can modify any prediction
+- **Real-time Validation**: Immediate feedback on inputs
+
+### Leaderboard
+- **Real-time Scoring**: 5 points exact, 2 points result
+- **Gameweek Breakdown**: Detailed weekly scores
+- **Professional Design**: Clean, responsive layout
+- **Ranking System**: Visual position indicators
+
+### Results Management (Admin Only)
+- **Bulk Operations**: Submit all results for a gameweek
+- **Status Tracking**: Visual indicators for entered/pending
+- **Override Capability**: Modify existing results
+- **Upsert Logic**: Smart update/insert operations
+
+## 🎨 Design System
+
+### RNLI Branding
+- **Primary Colors**: Blue (#1E40AF), Orange (#EA580C), White
+- **Typography**: Clean, readable fonts
+- **Layout**: Mobile-first responsive design
+- **Dark Mode**: Full theme support
+
+### User Experience
+- **Intuitive Navigation**: Clear menu structure
+- **Visual Feedback**: Loading states and notifications
+- **Admin Indicators**: Clear role-based UI elements
+- **Accessibility**: Proper contrast and keyboard navigation
+
+## 🔧 API Reference
+
+### Authentication Endpoints
+```
+POST   /auth/login          # User login
+POST   /auth/register       # User registration
+GET    /auth/validate       # Session validation
+POST   /auth/logout         # User logout
+```
+
+### Core Endpoints
+```
+GET    /fixtures/           # Get fixtures by gameweek
+GET    /predictions/        # Get user predictions
+POST   /predictions/        # Submit prediction
+PUT    /predictions/{id}    # Update prediction
+DELETE /predictions/{id}    # Delete prediction
+GET    /results/            # Get match results
+POST   /results/            # Submit result (admin)
+PUT    /results/{id}        # Update result (admin)
+DELETE /results/{id}        # Delete result (admin)
+GET    /leaderboard/        # Get leaderboard
+```
+
+### Admin Endpoints
+```
+GET    /admin/users         # Get all users (admin)
+```
+
+## 🗄️ Database Schema
+
+### Users Table
 ```sql
--- Users table with role support
 CREATE TABLE users (
     id UUID PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
@@ -231,8 +149,10 @@ CREATE TABLE users (
     role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+```
 
--- Predictions table
+### Predictions Table
+```sql
 CREATE TABLE predictions (
     id UUID PRIMARY KEY,
     user_id UUID REFERENCES users(id),
@@ -242,8 +162,10 @@ CREATE TABLE predictions (
     predicted_away INTEGER,
     inserted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+```
 
--- Results table
+### Results Table
+```sql
 CREATE TABLE results (
     id UUID PRIMARY KEY,
     gameweek INTEGER,
@@ -254,106 +176,97 @@ CREATE TABLE results (
 );
 ```
 
-### **API Endpoints**
+## 🚀 Deployment
+
+### Backend Deployment
+- **Platform**: Railway, Fly.io, or Heroku
+- **Environment**: Python 3.8+
+- **Dependencies**: FastAPI, uvicorn, supabase
+- **Configuration**: Environment variables for Supabase
+
+### Frontend Deployment
+- **Platform**: Vercel, Netlify, or GitHub Pages
+- **Build**: Vite production build
+- **Configuration**: API URL environment variable
+- **Assets**: Optimized static files
+
+## 🧪 Development
+
+### Local Development
+```bash
+# Backend
+cd backend
+uvicorn main:app --reload --port 8000
+
+# Frontend
+cd frontend
+npm run dev
 ```
-GET    /                    # Health check
-GET    /fixtures/          # Get fixtures (filtered by gameweek)
-GET    /predictions/       # Get predictions (role-based access)
-POST   /predictions/       # Submit prediction (role-based)
-DELETE /predictions/{id}   # Delete prediction (admin or owner)
-PUT    /predictions/{id}   # Update prediction (admin or owner)
-GET    /results/           # Get results (admin only for submit)
-POST   /results/           # Submit result (admin only)
-DELETE /results/{id}       # Delete result (admin only)
-PUT    /results/{id}       # Update result (admin only)
-GET    /leaderboard/       # Get leaderboard
-POST   /auth/login         # User login
-POST   /auth/register      # User registration
-GET    /auth/validate      # Validate session
-POST   /auth/logout        # User logout
-```
 
----
+### Testing
+- **Backend**: pytest for API testing
+- **Frontend**: Manual testing with browser dev tools
+- **Integration**: Full user journey testing
 
-## 🚀 Deployment Ready
+### Code Quality
+- **Python**: Type hints and docstrings
+- **JavaScript**: ESLint configuration
+- **CSS**: Consistent naming conventions
+- **Git**: Conventional commit messages
 
-### **Backend Deployment**
-- ✅ **Railway/Fly.io**: Ready for deployment
-- ✅ **Environment Variables**: Properly configured
-- ✅ **CORS Settings**: Frontend communication enabled
-- ✅ **Database**: Supabase cloud database
+## 📈 Performance
 
-### **Frontend Deployment**
-- ✅ **Vercel/Netlify**: Ready for deployment
-- ✅ **Build Configuration**: Vite build setup
-- ✅ **API Integration**: Backend URL configuration
-- ✅ **Static Assets**: Optimized for production
+### Optimizations
+- **Frontend**: React.memo for component optimization
+- **Backend**: Efficient database queries
+- **Assets**: Optimized images and static files
+- **Caching**: Browser caching for static assets
 
----
+### Monitoring
+- **Error Tracking**: Console logging and error boundaries
+- **Performance**: React DevTools and browser profiling
+- **User Analytics**: Basic usage tracking
 
-## 🔒 Security Features
+## 🔮 Future Enhancements
 
-### **Authentication**
-- ✅ **JWT Tokens**: Secure session management
-- ✅ **Role-Based Access**: Different permissions per user type
-- ✅ **Protected Routes**: Frontend and backend validation
-- ✅ **Session Expiration**: Automatic logout after 24 hours
-- ✅ **Supabase Auth**: Secure password storage and validation
+### Planned Features
+- Real-time updates via WebSocket
+- Email notifications for results
+- Advanced analytics dashboard
+- Season history tracking
+- Team-based competitions
 
-### **Data Protection**
-- ✅ **User Isolation**: Users can only see their own predictions
-- ✅ **Admin Controls**: Restricted access to sensitive operations
-- ✅ **Input Validation**: Server-side and client-side validation for all inputs
-- ✅ **Error Handling**: Secure error responses
-- ✅ **Range Enforcement**: 0-100 score limits enforced on frontend and backend
-
----
-
-## 📈 Future Enhancements
-
-### **Planned Features**
-- 🔄 **Real-time Updates**: Live leaderboard updates
-- 📧 **Email Notifications**: Gameweek reminders and results
-- 📊 **Advanced Analytics**: Detailed prediction statistics
-- 🏆 **Season History**: Historical performance tracking
-- 👥 **Team Management**: Group-based competitions
-
-### **Technical Improvements**
-- 🔄 **WebSocket Integration**: Real-time communication
-- 📱 **PWA Support**: Progressive web app features
-- 🎨 **Dark Mode**: User preference support
-- 🌐 **Internationalization**: Multi-language support
-
----
+### Technical Improvements
+- Progressive Web App (PWA) support
+- Enhanced dark mode customization
+- Internationalization (i18n)
+- Advanced caching strategies
 
 ## 🤝 Contributing
 
-### **Development Workflow**
-1. **Fork** the repository
-2. **Create** a feature branch
-3. **Implement** your changes
-4. **Test** thoroughly
-5. **Submit** a pull request
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch
+3. Implement changes with tests
+4. Submit a pull request
+5. Code review and merge
 
-### **Code Standards**
-- ✅ **TypeScript**: Frontend type safety
-- ✅ **Python**: Backend code quality
-- ✅ **ESLint**: Code formatting
-- ✅ **Documentation**: Clear code comments
-
----
+### Code Standards
+- **Python**: PEP 8 compliance
+- **JavaScript**: ESLint rules
+- **CSS**: BEM methodology
+- **Git**: Conventional commits
 
 ## 📞 Support
 
-### **Getting Help**
-- 📧 **Email**: Contact the development team
-- 📖 **Documentation**: Check this README
-- 🐛 **Issues**: Report bugs via GitHub
-- 💡 **Feature Requests**: Suggest new features
+### Getting Help
+- **Documentation**: Check this README
+- **Issues**: Report bugs via GitHub
+- **Feature Requests**: Use GitHub discussions
 
-### **Common Issues**
-- **Login Problems**: Check your email/password
-- **Admin Access**: Ensure role is set to 'admin'
+### Common Issues
+- **Login Problems**: Verify email/password
+- **Admin Access**: Check user role in database
 - **Database Issues**: Verify Supabase connection
 - **Frontend Errors**: Check browser console
 
@@ -364,5 +277,3 @@ POST   /auth/logout        # User logout
 This project is developed for RNLI internal use. All rights reserved.
 
 ---
-
-**🎉 Production Ready!** Your RNLI Premier League Predictor is fully functional with role-based access control, admin override capabilities, secure authentication, and a professional user interface. All features are working and tested!

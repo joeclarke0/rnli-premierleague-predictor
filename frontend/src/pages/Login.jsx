@@ -1,121 +1,68 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import api from '../services/api'
-import sessionManager from '../utils/session'
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
+import { FiEye, FiEyeOff, FiLogIn } from 'react-icons/fi';
 
-const Login = ({ setCurrentUser }) => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [isRegistering, setIsRegistering] = useState(false)
-  const [username, setUsername] = useState('')
-  const navigate = useNavigate()
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/predictions');
+    }
+    if (location.state?.message) {
+      toast.success(location.state.message);
+    }
+  }, [isAuthenticated, navigate, location.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!email.trim() || !password.trim()) {
-      setError('Please enter both email and password')
-      return
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const result = await login(email, password);
+
+    if (result.success) {
+      toast.success('Welcome back!');
+      navigate('/predictions');
+    } else {
+      setError(result.error);
     }
 
-    if (isRegistering && !username.trim()) {
-      setError('Please enter a username')
-      return
-    }
-
-    setIsLoading(true)
-    setError('')
-
-    try {
-      let response
-      
-      if (isRegistering) {
-        response = await api.register(email.trim(), password, username.trim())
-      } else {
-        response = await api.login(email.trim(), password)
-      }
-
-      // Save session
-      sessionManager.saveSession(response)
-      
-      // Update app state
-      setCurrentUser(response.user)
-      
-      // Navigate to home
-      navigate('/')
-      
-    } catch (error) {
-      console.error('Authentication error:', error)
-      
-      if (error.message.includes('401')) {
-        setError('Invalid email or password')
-      } else if (error.message.includes('409')) {
-        setError('User already exists. Please login instead.')
-      } else if (error.message.includes('500')) {
-        setError('Server error. Please try again.')
-      } else {
-        setError('Authentication failed. Please try again.')
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const toggleMode = () => {
-    setIsRegistering(!isRegistering)
-    setError('')
-    setEmail('')
-    setPassword('')
-    setUsername('')
-  }
+    setLoading(false);
+  };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '0 auto' }}>
-      <div className="card p-8">
-        <div className="text-center mb-6">
-          <div style={{ marginBottom: '1rem' }}>
-            <img 
-              src="/premXrnli.png" 
-              alt="Premier League x RNLI" 
-              style={{ 
-                width: '120px', 
-                height: 'auto',
-                maxWidth: '100%'
-              }} 
-            />
+    <div className="max-w-md mx-auto mt-10">
+      <div className="card shadow-lg">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-rnli-blue text-white mb-4">
+            <FiLogIn className="w-6 h-6" />
           </div>
-          <h1>{isRegistering ? 'Create Account' : 'Welcome Back'}</h1>
-          <p className="text-lg">
-            {isRegistering 
-              ? 'Join the RNLI prediction league' 
-              : 'Sign in to your account'
-            }
-          </p>
+          <h1 className="text-3xl font-bold text-rnli-blue mb-1">Welcome Back</h1>
+          <p className="text-gray-500 text-sm">Login to continue predicting</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {isRegistering && (
-            <div className="mb-4">
-              <label htmlFor="username" className="block mb-2 font-medium">
-                Username
-              </label>
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="input-field"
-                placeholder="Enter your username"
-                disabled={isLoading}
-              />
-            </div>
-          )}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm flex items-start gap-2">
+            <span className="text-red-500 mt-0.5 font-bold">✕</span>
+            {error}
+          </div>
+        )}
 
-          <div className="mb-4">
-            <label htmlFor="email" className="block mb-2 font-medium">
-              Email
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Email Address
             </label>
             <input
               type="email"
@@ -123,68 +70,74 @@ const Login = ({ setCurrentUser }) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input-field"
-              placeholder="Enter your email"
-              disabled={isLoading}
+              required
+              autoComplete="email"
+              placeholder="you@rnli.org"
             />
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="password" className="block mb-2 font-medium">
+          <div>
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1.5">
               Password
             </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-              placeholder="Enter your password"
-              disabled={isLoading}
-            />
-          </div>
-
-          {error && (
-            <div className="error-message mb-4">
-              {error}
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input-field pr-10"
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+              </button>
             </div>
-          )}
+          </div>
 
           <button
             type="submit"
-            disabled={isLoading}
-            className="btn-primary w-full"
+            disabled={loading}
+            className="btn-primary w-full text-base py-3 flex items-center justify-center gap-2"
           >
-            {isLoading 
-              ? (isRegistering ? 'Creating Account...' : 'Signing In...') 
-              : (isRegistering ? 'Create Account' : 'Sign In')
-            }
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                Logging in…
+              </>
+            ) : (
+              <>
+                <FiLogIn className="w-4 h-4" />
+                Login
+              </>
+            )}
           </button>
         </form>
 
-        <div className="text-center mt-6" style={{ paddingTop: '2rem' }}>
-          <button
-            onClick={toggleMode}
-            className="btn-secondary"
-            disabled={isLoading}
-          >
-            {isRegistering 
-              ? 'Already have an account? Sign In' 
-              : 'Need an account? Register'
-            }
-          </button>
-        </div>
-
-        <div className="text-center mt-6">
-          <p className="text-sm">
-            {isRegistering 
-              ? 'Your account will be created securely with Supabase'
-              : 'Sign in with your registered email and password'
-            }
+        <div className="mt-6 text-center">
+          <p className="text-gray-500 text-sm">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-rnli-blue font-semibold hover:underline">
+              Sign up here
+            </Link>
           </p>
         </div>
+
+        {import.meta.env.DEV && (
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <p className="text-xs text-gray-500 font-semibold mb-1.5">Demo Accounts:</p>
+            <p className="text-xs text-gray-500">Admin: <span className="font-mono">admin@rnli.org</span> / <span className="font-mono">changeme123</span></p>
+            <p className="text-xs text-gray-500">User: <span className="font-mono">joe@test.com</span> / <span className="font-mono">test123</span></p>
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 }
-
-export default Login 

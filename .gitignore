@@ -5,6 +5,10 @@ __pycache__/
 .env
 service_account.json
 
+# Database files
+backend/*.db
+*.db
+
 # Node.js / Frontend
 frontend/node_modules/
 frontend/.env.local

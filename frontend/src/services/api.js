@@ -1,316 +1,128 @@
-const API_BASE_URL = 'http://localhost:8000'
+import axios from 'axios';
 
-const api = {
-  // Authentication functions
-  async login(email, password) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error logging in:', error)
-      throw error
-    }
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  headers: {
+    'Content-Type': 'application/json',
   },
+});
 
-  async register(email, password, username) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, username }),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error registering:', error)
-      throw error
+// Request interceptor: Add Authorization header if token exists
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
   },
-
-  async validateSession(token) {
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
-      
-      const response = await fetch(`${API_BASE_URL}/auth/validate?token=${token}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('401 Unauthorized')
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error validating session:', error)
-      // Don't throw on network errors, let the app handle it gracefully
-      if (error.message.includes('401')) {
-        throw error
-      }
-      return { valid: false, user: null }
-    }
-  },
-
-  async logout() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error logging out:', error)
-      throw error
-    }
-  },
-
-  // Existing API functions
-  async getFixtures(gameweek = null) {
-    try {
-      const url = gameweek 
-        ? `${API_BASE_URL}/fixtures/?gameweek=${gameweek}`
-        : `${API_BASE_URL}/fixtures/`
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching fixtures:', error)
-      throw error
-    }
-  },
-
-  async getPredictions(userId = null, gameweek = null, token = null) {
-    try {
-      let url = userId 
-        ? `${API_BASE_URL}/predictions/?user_id=${userId}`
-        : `${API_BASE_URL}/predictions/`
-      
-      if (gameweek) {
-        url += userId ? '&' : '?' 
-        url += `gameweek=${gameweek}`
-      }
-
-      // Add token for authentication
-      if (token) {
-        url += userId || gameweek ? '&' : '?'
-        url += `token=${token}`
-      }
-      
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching predictions:', error)
-      return { predictions: [] }
-    }
-  },
-
-  async submitPrediction(prediction, token = null) {
-    try {
-      let url = `${API_BASE_URL}/predictions/`
-      
-      // Add token for authentication
-      if (token) {
-        url += `?token=${token}`
-      }
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(prediction),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error submitting prediction:', error)
-      throw error
-    }
-  },
-
-  async deletePrediction(predictionId, token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/predictions/${predictionId}?token=${token}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error deleting prediction:', error)
-      throw error
-    }
-  },
-
-  async updatePrediction(predictionId, predictionUpdate, token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/predictions/${predictionId}?token=${token}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(predictionUpdate),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error updating prediction:', error)
-      throw error
-    }
-  },
-
-  async getLeaderboard() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/leaderboard/`)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching leaderboard:', error)
-      // Return empty leaderboard instead of throwing
-      return { leaderboard: [] }
-    }
-  },
-
-  async getResults(gameweek = null, token = null) {
-    try {
-      let url = `${API_BASE_URL}/results/`
-      
-      if (gameweek) {
-        url += `?gameweek=${gameweek}`
-      }
-
-      // Add token for authentication
-      if (token) {
-        url += gameweek ? '&' : '?'
-        url += `token=${token}`
-      }
-      
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error fetching results:', error)
-      return { results: [] }
-    }
-  },
-
-  async submitResult(result, token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/results/?token=${token}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(result),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error submitting result:', error)
-      throw error
-    }
-  },
-
-  async deleteResult(resultId, token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/results/${resultId}?token=${token}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error deleting result:', error)
-      throw error
-    }
-  },
-
-  async updateResult(resultId, resultUpdate, token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/results/${resultId}?token=${token}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(resultUpdate),
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error updating result:', error)
-      throw error
-    }
-  },
-
-  // Admin functions
-  async getUsers(token) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/admin/users?token=${token}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('Error getting users:', error)
-      throw error
-    }
+  (error) => {
+    return Promise.reject(error);
   }
-}
+);
 
-export default api 
+// Response interceptor: Handle 401 errors (redirect to login)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem('token');
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ============================================================================
+// Authentication API
+// ============================================================================
+
+export const authAPI = {
+  login: (email, password) => api.post('/auth/login', { email, password }),
+  register: (username, email, password, inviteToken) =>
+    api.post('/auth/register', { username, email, password, invite_token: inviteToken || null }),
+  me: () => api.get('/auth/me'),
+  validateInvite: (token) => api.get('/register/validate-invite', { params: { token } }),
+};
+
+// ============================================================================
+// Fixtures API
+// ============================================================================
+
+export const fixturesAPI = {
+  getAll: (params) => api.get('/fixtures', { params }),
+  getByGameweek: (gameweek) => api.get('/fixtures', { params: { gameweek } }),
+};
+
+// ============================================================================
+// Predictions API
+// ============================================================================
+
+export const predictionsAPI = {
+  submit: (data) => api.post('/predictions', data),
+  get: (params) => api.get('/predictions', { params }),
+  getByGameweek: (gameweek) => api.get('/predictions', { params: { gameweek } }),
+};
+
+// ============================================================================
+// Results API
+// ============================================================================
+
+export const resultsAPI = {
+  submit: (data) => api.post('/results', data),
+  get: (params) => api.get('/results', { params }),
+  getByGameweek: (gameweek) => api.get('/results', { params: { gameweek } }),
+};
+
+// ============================================================================
+// Leaderboard API
+// ============================================================================
+
+export const leaderboardAPI = {
+  get: () => api.get('/leaderboard'),
+};
+
+// ============================================================================
+// User Stats API
+// ============================================================================
+
+export const statsAPI = {
+  getMyStats: () => api.get('/users/me/stats'),
+};
+
+// ============================================================================
+// Settings API
+// ============================================================================
+
+export const settingsAPI = {
+  getAll: () => api.get('/settings'),
+  update: (key, value) => api.put(`/settings/${key}`, { value }),
+};
+
+// ============================================================================
+// Admin API
+// ============================================================================
+
+export const adminAPI = {
+  getOverview: () => api.get('/admin/overview'),
+  getUsers: () => api.get('/admin/users'),
+  updateUserRole: (userId, role) => api.patch(`/admin/users/${userId}/role`, { role }),
+  deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
+  resetUserPassword: (userId, newPassword) =>
+    api.post(`/admin/users/${userId}/reset-password`, { new_password: newPassword }),
+  getPredictions: (gameweek) => api.get('/admin/predictions', { params: { gameweek } }),
+  getMissingPredictions: (gameweek) => api.get('/admin/missing-predictions', { params: { gameweek } }),
+  updateFixtureStatus: (fixtureId, status) =>
+    api.patch(`/admin/fixtures/${fixtureId}/status`, { status }),
+  // Invites
+  getInvites: () => api.get('/admin/invites'),
+  createInvite: () => api.post('/admin/invites'),
+  revokeInvite: (inviteId) => api.delete(`/admin/invites/${inviteId}`),
+};
+
+export default api;
