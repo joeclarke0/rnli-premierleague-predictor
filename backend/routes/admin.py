@@ -263,17 +263,22 @@ def _normalise_header(raw: str) -> str:
 
 def _parse_kickoff(fixture_date, time_str: str):
     """
-    Build a kickoff datetime from the date column and an optional time column.
+    Build a UTC-aware kickoff datetime from the date column and an optional time
+    column.
 
     Returns None if no usable time is present (so kickoff-based locking is simply
     disabled for that fixture). Accepts "HH:MM" and "HH:MM:SS".
+
+    The time in the CSV is treated as UTC so that the kickoff-lock comparison in
+    predictions.py always operates on two aware datetimes, avoiding any ambiguity
+    on non-UTC hosts.
     """
     if not time_str:
         return None
     for fmt in ("%H:%M", "%H:%M:%S"):
         try:
             parsed = datetime.strptime(time_str, fmt).time()
-            return datetime.combine(fixture_date, parsed)
+            return datetime.combine(fixture_date, parsed, tzinfo=timezone.utc)
         except ValueError:
             continue
     return None
@@ -381,8 +386,7 @@ async def upload_fixtures(
             existing.venue = r["venue"]
             existing.kickoff_time = r["kickoff_time"]
             # Don't clobber a postponed/completed status on re-import.
-            if existing.status is None:
-                existing.status = "scheduled"
+            # (existing.status is non-nullable so the None branch never fired.)
             updated += 1
         else:
             db.add(Fixture(status="scheduled", **r))

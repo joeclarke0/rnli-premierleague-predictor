@@ -43,14 +43,17 @@ def submit_prediction(
         if not fixture:
             raise HTTPException(status_code=404, detail="Fixture not found")
 
-        # Lock predictions once kickoff has passed. kickoff_time may be naive
-        # (SQLite) or aware (Postgres); normalise the comparison accordingly.
+        # Lock predictions once kickoff has passed.
+        # kickoff_time is stored as UTC-aware by _parse_kickoff. Rows that
+        # pre-date this fix may still carry a naive value (SQLite migration path),
+        # so we handle both: if the stored value lacks tzinfo, treat it as UTC
+        # by attaching it rather than stripping timezone from `now`.
         # When kickoff_time is null the fixture is never locked (backwards compat).
         if fixture.kickoff_time is not None:
             now = datetime.now(timezone.utc)
             kickoff = fixture.kickoff_time
             if kickoff.tzinfo is None:
-                now = now.replace(tzinfo=None)
+                kickoff = kickoff.replace(tzinfo=timezone.utc)
             if now >= kickoff:
                 raise HTTPException(status_code=403, detail="Predictions locked")
 
