@@ -58,6 +58,7 @@ function SkeletonRow() {
 export default function Predictions() {
   const [fixtures, setFixtures] = useState([]);
   const [predictions, setPredictions] = useState({});
+  const [savedOnServer, setSavedOnServer] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -82,6 +83,7 @@ export default function Predictions() {
 
       setFixtures(fixturesRes.data.fixtures);
       setPredictions(predictionsLookup);
+      setSavedOnServer(new Set(predictionsRes.data.predictions.map((p) => p.fixture_id)));
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load fixtures');
@@ -119,6 +121,7 @@ export default function Predictions() {
         predicted_home: parseInt(pred.home) || 0,
         predicted_away: parseInt(pred.away) || 0,
       });
+      setSavedOnServer((prev) => new Set([...prev, fixture.id]));
       toast.success(`${fixture.home_team} vs ${fixture.away_team} saved!`);
     } catch {
       toast.error('Failed to save prediction');
@@ -145,6 +148,7 @@ export default function Predictions() {
         })
       );
       const saved = settledResults.filter((r) => r.status === 'fulfilled').length;
+      setSavedOnServer((prev) => new Set([...prev, ...savable.map((f) => f.id)]));
       toast.success(`${saved} prediction${saved !== 1 ? 's' : ''} saved!`);
     } catch (err) {
       toast.error('Failed to save predictions');
@@ -154,9 +158,7 @@ export default function Predictions() {
   };
 
   const gameweeks = Array.from({ length: 38 }, (_, i) => i + 1);
-  // Count fixtures that have been saved to the server (present in API response lookup)
-  const savedIds = new Set(Object.keys(predictions).map(Number));
-  const predictedCount = fixtures.filter((f) => savedIds.has(f.id)).length;
+  const predictedCount = fixtures.filter((f) => savedOnServer.has(f.id)).length;
   const maxPts = predictedCount * 5;
   const openCount = fixtures.filter((f) => !getFixtureLock(f).locked).length;
 
@@ -221,7 +223,7 @@ export default function Predictions() {
         ) : (
           fixtures.map((fixture) => {
             const pred = predictions[fixture.id] || { home: 0, away: 0 };
-            const hasPrediction = pred.home !== undefined;
+            const hasPrediction = savedOnServer.has(fixture.id);
             const isSaving = savingId === fixture.id;
             const { locked, reason, label: lockLabel } = getFixtureLock(fixture);
             const showQuickPick = quickPickTarget === fixture.id && !locked;

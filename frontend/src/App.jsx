@@ -31,8 +31,8 @@ export default function App() {
               fontWeight: "500",
             },
             success: {
-              style: { background: "#003087", color: "#fff" },
-              iconTheme: { primary: "#FFB81C", secondary: "#fff" },
+              style: { background: "#16a34a", color: "#fff" },
+              iconTheme: { primary: "#fff", secondary: "#16a34a" },
             },
             error: {
               style: { background: "#dc2626", color: "#fff" },
