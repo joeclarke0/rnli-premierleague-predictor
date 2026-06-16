@@ -55,7 +55,7 @@ export default function Home() {
             Premier League {seasonName}
           </div>
           <div className="flex items-center justify-center gap-4 mb-4">
-            <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-14 w-auto" />
+            <img src="/placeholder-logo.svg" alt="Logo" className="h-14 w-auto" />
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
               Premier League Predictions
             </h1>

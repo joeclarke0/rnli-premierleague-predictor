@@ -58,7 +58,7 @@ export default function Layout({ children }) {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
-              <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-8 w-auto" />
+              <img src="/placeholder-logo.svg" alt="Logo" className="h-8 w-auto" />
               <div>
                 <div className="text-lg font-bold leading-tight">RNLI Premier League</div>
                 <div className="text-[10px] text-rnli-yellow leading-tight">{seasonName}</div>
@@ -195,7 +195,7 @@ export default function Layout({ children }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <img src="/Lifeboats Logo_2025_Blue Text_RGB_MASTER.png" alt="RNLI" className="h-7 w-auto" />
+              <img src="/placeholder-logo.svg" alt="Logo" className="h-7 w-auto" />
               <div>
                 <p className="font-bold text-sm">RNLI Premier League</p>
                 <p className="text-xs text-blue-300">{seasonName}</p>
