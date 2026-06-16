@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 from typing import Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from database import get_db
 from models import Result, Fixture, User
@@ -115,3 +116,43 @@ def get_results(
     except Exception as e:
         print("❌ Error fetching results:", str(e))
         raise HTTPException(status_code=500, detail="Failed to fetch results")
+
+
+@router.get("/completed-gameweeks")
+def get_completed_gameweeks(db: Session = Depends(get_db)):
+    """
+    Return the list of "completed" gameweek numbers.
+    Public endpoint - anyone can view.
+
+    A gameweek is completed only if it has at least one fixture AND every
+    fixture in it has a result. Empty gameweeks are never completed.
+
+    Computed in a single grouped query: per gameweek, compare the total
+    fixture count against the count of fixtures that have a matching result.
+    Using an outer join + COUNT(Result.id) means fixtures without a result
+    don't contribute to the result count, so a gameweek qualifies only when
+    every fixture is matched. This replaces the client-side 38x2 request scan.
+    """
+    try:
+        rows = (
+            db.query(
+                Fixture.gameweek,
+                func.count(Fixture.id).label("total"),
+                func.count(Result.id).label("with_result"),
+            )
+            .outerjoin(Result, Result.fixture_id == Fixture.id)
+            .group_by(Fixture.gameweek)
+            .all()
+        )
+
+        completed = [
+            row.gameweek
+            for row in rows
+            if row.total > 0 and row.total == row.with_result
+        ]
+
+        return {"completed_gameweeks": sorted(completed)}
+
+    except Exception as e:
+        print("❌ Error fetching completed gameweeks:", str(e))
+        raise HTTPException(status_code=500, detail="Failed to fetch completed gameweeks")

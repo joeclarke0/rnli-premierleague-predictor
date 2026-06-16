@@ -77,6 +77,9 @@ export const resultsAPI = {
   submit: (data) => api.post('/results', data),
   get: (params) => api.get('/results', { params }),
   getByGameweek: (gameweek) => api.get('/results', { params: { gameweek } }),
+  // Returns { completed_gameweeks: number[] } — gameweeks where every fixture
+  // has a result. One query, replaces the old per-gameweek client scan.
+  getCompletedGameweeks: () => api.get('/results/completed-gameweeks'),
 };
 
 // ============================================================================
