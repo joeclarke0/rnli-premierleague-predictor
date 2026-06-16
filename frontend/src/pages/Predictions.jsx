@@ -127,7 +127,10 @@ export default function Predictions() {
       try {
         const res = await resultsAPI.getCompletedGameweeks();
         if (cancelled) return;
-        setCompletedGameweeks(new Set(res.data?.completed_gameweeks ?? []));
+        const completed = new Set(res.data?.completed_gameweeks ?? []);
+        setCompletedGameweeks(completed);
+        const firstOpen = Array.from({ length: 38 }, (_, i) => i + 1).find((gw) => !completed.has(gw));
+        if (firstOpen) setSelectedGameweek(firstOpen);
       } catch (error) {
         // Dropdown markers are a non-critical enhancement — log and move on.
         console.error('Error loading completed gameweeks:', error);
@@ -284,7 +287,6 @@ export default function Predictions() {
               <option
                 key={gw}
                 value={gw}
-                disabled={resultsIn && gw !== selectedGameweek}
               >
                 Gameweek {gw}{resultsIn ? ' (Results in)' : ''}
               </option>
