@@ -475,6 +475,8 @@ def _invite_status(invite: Invite) -> str:
     """Derive a human-friendly status for an invite."""
     if invite.used_at is not None:
         return "used"
+    if getattr(invite, "revoked_at", None) is not None:
+        return "revoked"
     expires_at = invite.expires_at
     # Stored values may be naive (SQLite); compare on the same basis.
     now = datetime.now(timezone.utc)
@@ -485,19 +487,29 @@ def _invite_status(invite: Invite) -> str:
     return "pending"
 
 
+class CreateInviteRequest(BaseModel):
+    recipient_name: Optional[str] = None
+
+
 @router.post("/invites")
 def create_invite(
+    body: Optional[CreateInviteRequest] = None,
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """Generate a single-use invite token."""
-    invite = Invite(created_by=current_admin.id)
+    recipient_name = None
+    if body is not None and body.recipient_name is not None:
+        stripped = body.recipient_name.strip()
+        recipient_name = stripped or None
+    invite = Invite(created_by=current_admin.id, recipient_name=recipient_name)
     db.add(invite)
     db.commit()
     db.refresh(invite)
     return {
         "token": invite.token,
         "invite_url": f"/register?invite={invite.token}",
+        "recipient_name": invite.recipient_name,
     }
 
 
@@ -506,7 +518,7 @@ def list_invites(
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
-    """List all invites with derived status (pending / used / expired)."""
+    """List all invites with derived status (pending / used / revoked / expired)."""
     invites = db.query(Invite).order_by(Invite.created_at.desc()).all()
     redeemer_ids = [i.used_by for i in invites if i.used_by]
     redeemer_lookup = {}
@@ -520,6 +532,7 @@ def list_invites(
                 "id": i.id,
                 "token": i.token,
                 "status": _invite_status(i),
+                "recipient_name": i.recipient_name,
                 "created_at": i.created_at.isoformat() if i.created_at else None,
                 "expires_at": i.expires_at.isoformat() if i.expires_at else None,
                 "used_at": i.used_at.isoformat() if i.used_at else None,
@@ -543,6 +556,10 @@ def revoke_invite(
         raise HTTPException(status_code=404, detail="Invite not found")
     if invite.used_at is not None:
         raise HTTPException(status_code=400, detail="Cannot revoke an invite that has been used")
-    db.delete(invite)
+    if invite.revoked_at is not None:
+        raise HTTPException(status_code=400, detail="Invite is already revoked")
+    if _invite_status(invite) == "expired":
+        raise HTTPException(status_code=400, detail="Cannot revoke an invite that has already expired")
+    invite.revoked_at = datetime.now(timezone.utc)
     db.commit()
     return {"message": "Invite revoked"}

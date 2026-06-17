@@ -129,7 +129,7 @@ export const adminAPI = {
     api.patch(`/admin/fixtures/${fixtureId}/status`, { status }),
   // Invites
   getInvites: () => api.get('/admin/invites'),
-  createInvite: () => api.post('/admin/invites'),
+  createInvite: (recipientName) => api.post('/admin/invites', { recipient_name: recipientName || null }),
   revokeInvite: (inviteId) => api.delete(`/admin/invites/${inviteId}`),
 };
 

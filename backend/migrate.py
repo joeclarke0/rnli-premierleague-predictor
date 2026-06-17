@@ -46,6 +46,12 @@ def run_migrations() -> None:
         statements.append(
             "ALTER TABLE fixtures ADD COLUMN IF NOT EXISTS status VARCHAR DEFAULT 'scheduled'"
         )
+        statements.append(
+            "ALTER TABLE invites ADD COLUMN IF NOT EXISTS recipient_name VARCHAR"
+        )
+        statements.append(
+            "ALTER TABLE invites ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMP"
+        )
     else:
         # SQLite (and other dialects without IF NOT EXISTS support)
         if not _column_exists(inspector, "fixtures", "kickoff_time"):
@@ -54,6 +60,10 @@ def run_migrations() -> None:
             statements.append(
                 "ALTER TABLE fixtures ADD COLUMN status VARCHAR DEFAULT 'scheduled'"
             )
+        if not _column_exists(inspector, "invites", "recipient_name"):
+            statements.append("ALTER TABLE invites ADD COLUMN recipient_name VARCHAR")
+        if not _column_exists(inspector, "invites", "revoked_at"):
+            statements.append("ALTER TABLE invites ADD COLUMN revoked_at TIMESTAMP")
 
     if not statements:
         return

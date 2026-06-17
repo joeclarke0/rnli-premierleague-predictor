@@ -85,8 +85,8 @@ export default function Register() {
       setError('Passwords do not match');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
     if (username.length < 3) {
@@ -190,7 +190,7 @@ export default function Register() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field pr-10"
                 required
-                minLength="6"
+                minLength="8"
                 placeholder="••••••••"
               />
               <button
@@ -205,7 +205,7 @@ export default function Register() {
             <PasswordStrength password={password} />
             {password && (
               <ul className="mt-2 space-y-1">
-                <Requirement met={password.length >= 6} text="At least 6 characters" />
+                <Requirement met={password.length >= 8} text="At least 8 characters" />
                 <Requirement met={/[A-Z]/.test(password)} text="One uppercase letter" />
                 <Requirement met={/[0-9]/.test(password)} text="One number" />
               </ul>

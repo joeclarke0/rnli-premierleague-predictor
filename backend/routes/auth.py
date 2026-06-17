@@ -71,8 +71,8 @@ class RegisterRequest(BaseModel):
     @field_validator('password')
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if len(v) < 6:
-            raise ValueError('Password must be at least 6 characters long')
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
         return v
 
 
@@ -109,7 +109,7 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
 
     - **username**: Unique username (3-50 characters)
     - **email**: Valid email address (must be unique)
-    - **password**: Password (minimum 6 characters)
+    - **password**: Password (minimum 8 characters)
 
     Returns the created user details (without password).
     """

@@ -2971,3 +2971,33 @@
 @media (prefers-reduced-motion: reduce) {
   .lgn-input, .lgn-submit { transition: none !important; }
 }
+
+/* ── Invite recipient input ──────────────────────────────────────────────────
+   Explicit hex colours (not Tailwind classes) so global dark-mode !important
+   rules don't override them. App defaults to dark mode. */
+.inv-recipient-input {
+  width: 100%;
+  max-width: 14rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #f8fafc;
+  background-color: #0b1220;
+  border: 1px solid #2a3550;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inv-recipient-input::placeholder {
+  color: #94a3b8;
+}
+
+.inv-recipient-input:focus {
+  border-color: #FFB81C;
+  box-shadow: 0 0 0 3px rgba(255, 184, 28, 0.25);
+}
+
+@media (min-width: 640px) {
+  .inv-recipient-input { width: auto; }
+}

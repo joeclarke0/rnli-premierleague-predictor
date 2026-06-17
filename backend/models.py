@@ -143,6 +143,8 @@ class Invite(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     expires_at = Column(DateTime, default=default_invite_expiry, nullable=False)
     used_at = Column(DateTime, nullable=True)
+    recipient_name = Column(String(120), nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
 
     # Relationships (explicit foreign_keys because there are two FKs to users)
     creator = relationship("User", foreign_keys=[created_by])

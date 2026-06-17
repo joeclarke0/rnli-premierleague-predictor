@@ -756,6 +756,8 @@ function InvitesTab() {
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [bulkGenerating, setBulkGenerating] = useState(false);
+  const [recipientName, setRecipientName] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -780,16 +782,51 @@ function InvitesTab() {
     }
   };
 
+  const emailInvite = (inv) => {
+    const url = fullUrl(inv.invite_url);
+    const subject = encodeURIComponent("You've been invited to the RNLI Premier League Predictor");
+    const body = encodeURIComponent(`You've been invited to join the RNLI Premier League Predictor.\n\nClick here to register: ${url}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  // Human-friendly relative expiry label, computed client-side from expires_at.
+  const relativeExpiry = (iso) => {
+    if (!iso) return '—';
+    const diffMs = new Date(iso).getTime() - Date.now();
+    if (diffMs <= 0) return 'Soon';
+    const minutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    if (days >= 1) return `Expires in ${days} day${days === 1 ? '' : 's'}`;
+    if (hours >= 1) return `Expires in ${hours} hour${hours === 1 ? '' : 's'}`;
+    if (minutes >= 1) return `Expires in ${minutes} minute${minutes === 1 ? '' : 's'}`;
+    return 'Soon';
+  };
+
   const generate = async () => {
     setGenerating(true);
     try {
-      const res = await adminAPI.createInvite();
+      const res = await adminAPI.createInvite(recipientName);
       await copyLink(res.data.invite_url);
+      setRecipientName('');
       load();
     } catch {
       toast.error('Failed to generate invite');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const generateBulk = async () => {
+    setBulkGenerating(true);
+    try {
+      await Promise.all([...Array(5)].map(() => adminAPI.createInvite()));
+      load();
+      toast.success('5 invites generated — copy each link from the table below.');
+    } catch {
+      toast.error('Failed to generate invites');
+    } finally {
+      setBulkGenerating(false);
     }
   };
 
@@ -806,6 +843,7 @@ function InvitesTab() {
   const inviteStatusCls = (status) => {
     if (status === 'used')    return 'adm-status-badge adm-status-badge--green';
     if (status === 'expired') return 'adm-status-badge adm-status-badge--gray';
+    if (status === 'revoked') return 'adm-status-badge adm-status-badge--gray';
     return 'adm-status-badge adm-status-badge--blue';
   };
 
@@ -820,14 +858,32 @@ function InvitesTab() {
           </p>
           <p className="text-xs text-gray-400 mt-0.5">Each link can be used once, expires after 7 days.</p>
         </div>
-        <button onClick={generate} disabled={generating}
-          className="adm-btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50">
-          {generating ? (
-            <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Generating…</>
-          ) : (
-            <><FiPlus className="w-4 h-4" />Generate Invite</>
-          )}
-        </button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <input
+            type="text"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+            placeholder="For (optional)"
+            aria-label="Recipient name (optional)"
+            className="inv-recipient-input"
+          />
+          <button onClick={generate} disabled={generating || bulkGenerating}
+            className="adm-btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50">
+            {generating ? (
+              <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Generating…</>
+            ) : (
+              <><FiPlus className="w-4 h-4" />Generate Invite</>
+            )}
+          </button>
+          <button onClick={generateBulk} disabled={generating || bulkGenerating}
+            className="adm-btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50">
+            {bulkGenerating ? (
+              <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Generating…</>
+            ) : (
+              <><FiPlus className="w-4 h-4" />Generate 5</>
+            )}
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -840,6 +896,7 @@ function InvitesTab() {
             <thead>
               <tr className="adm-thead-row">
                 <th className="adm-th">Status</th>
+                <th className="adm-th hidden sm:table-cell">For</th>
                 <th className="adm-th hidden sm:table-cell">Used by</th>
                 <th className="adm-th hidden md:table-cell">Expires</th>
                 <th className="adm-th" />
@@ -851,15 +908,23 @@ function InvitesTab() {
                   <td className="adm-td">
                     <span className={inviteStatusCls(inv.status)}>{inv.status}</span>
                   </td>
+                  <td className="adm-td text-gray-500 dark:text-gray-400 hidden sm:table-cell">{inv.recipient_name || '—'}</td>
                   <td className="adm-td text-gray-500 dark:text-gray-400 hidden sm:table-cell">{inv.used_by || '—'}</td>
                   <td className="adm-td text-gray-500 dark:text-gray-400 hidden md:table-cell">
-                    {inv.expires_at ? new Date(inv.expires_at).toLocaleDateString() : '—'}
+                    {inv.status === 'pending'
+                      ? relativeExpiry(inv.expires_at)
+                      : inv.status === 'expired'
+                        ? 'Expired'
+                        : (inv.expires_at ? new Date(inv.expires_at).toLocaleDateString() : '—')}
                   </td>
                   <td className="adm-td text-right">
                     {inv.status === 'pending' && (
                       <div className="flex items-center gap-1 justify-end">
                         <button onClick={() => copyLink(inv.invite_url)} className="adm-action-btn" aria-label="Copy invite link">
                           <FiCopy className="w-3.5 h-3.5" /> Copy
+                        </button>
+                        <button onClick={() => emailInvite(inv)} className="adm-action-btn" aria-label="Email invite link">
+                          <FiMail className="w-3.5 h-3.5" /> Email
                         </button>
                         <button onClick={() => revoke(inv)}
                           className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
