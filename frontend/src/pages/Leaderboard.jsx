@@ -3,7 +3,7 @@ import { leaderboardAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area, BarChart, Bar, Cell,
+  AreaChart, Area,
 } from "recharts";
 import {
   FiTrendingUp, FiTrendingDown, FiMinus, FiAward, FiTarget, FiZap, FiCalendar,
@@ -41,7 +41,7 @@ function Avatar({ name, size = "md" }) {
   const dims = size === "lg" ? "w-12 h-12 text-base" : size === "sm" ? "w-7 h-7 text-[11px]" : "w-9 h-9 text-sm";
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient(name)} ${dims} font-bold text-white shadow-sm ring-2 ring-white/70 dark:ring-white/10`}
+      className={`lb2-avatar bg-gradient-to-br ${avatarGradient(name)} ${dims}`}
       aria-hidden="true"
     >
       {name.charAt(0).toUpperCase()}
@@ -55,18 +55,18 @@ function RankDelta({ delta }) {
   if (delta === null || delta === undefined) return null;
   if (delta > 0)
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[11px] font-bold text-green-700 dark:bg-green-900/40 dark:text-green-400">
+      <span className="lb2-delta up">
         <FiTrendingUp className="h-3 w-3" />{delta}
       </span>
     );
   if (delta < 0)
     return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[11px] font-bold text-red-700 dark:bg-red-900/40 dark:text-red-400">
+      <span className="lb2-delta down">
         <FiTrendingDown className="h-3 w-3" />{Math.abs(delta)}
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-0.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[11px] font-bold text-gray-400 dark:bg-gray-700/60 dark:text-gray-400">
+    <span className="lb2-delta same">
       <FiMinus className="h-3 w-3" />
     </span>
   );
@@ -76,23 +76,8 @@ function RankDelta({ delta }) {
 // totals above a single fixture's value, and wildcard-doubled scores (e.g. 10,
 // 4), still land in the right tier instead of the grey "0" fallback.
 function ScoreBadge({ score }) {
-  if (score >= 5)
-    return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700 dark:bg-green-900/50 dark:text-green-400">
-        {score}
-      </span>
-    );
-  if (score >= 2)
-    return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
-        {score}
-      </span>
-    );
-  return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-400 dark:bg-gray-700 dark:text-gray-500">
-      {score}
-    </span>
-  );
+  const tier = score >= 5 ? "hi" : score >= 2 ? "mid" : "lo";
+  return <span className={`lb2-score-badge ${tier}`}>{score}</span>;
 }
 
 // Sparkline — last 5 played gameweeks as coloured dots
@@ -105,7 +90,7 @@ function RecentForm({ playerRow, maxWeek }) {
   if (weeks.length === 0)
     return <span className="text-xs text-gray-400 dark:text-gray-500">No data</span>;
   return (
-    <div className="flex items-center gap-1">
+    <div className="lb2-form">
       {weeks.map(({ w, s }) => (
         <span
           key={w}
@@ -113,15 +98,7 @@ function RecentForm({ playerRow, maxWeek }) {
           // Threshold-based so wildcard-doubled weeks (e.g. 10, 4) map to the
           // same tier as their base value (5, 2). >=5 = exact-score tier, 2–4 =
           // correct-result tier, 0 = grey.
-          // min-w + px (instead of fixed w-5) so a two-digit doubled score like
-          // 10 doesn't clip inside the dot; single digits still render circular.
-          className={`flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[10px] font-bold ${
-            s >= 5
-              ? "bg-green-500 text-white"
-              : s >= 2
-              ? "bg-blue-400 text-white"
-              : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-          }`}
+          className={`lb2-dot ${s >= 5 ? "hi" : s >= 2 ? "mid" : "lo"}`}
         >
           {s}
         </span>
@@ -130,59 +107,45 @@ function RecentForm({ playerRow, maxWeek }) {
   );
 }
 
-// Reusable surface — replaces the global `.card` class with explicit Tailwind
-// so dark mode is handled inline rather than via the global override sheet.
-function Surface({ className = "", children }) {
-  return (
-    <div
-      className={`rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
-
 /* ─────────────────────────────────────────────
-   Loading skeleton — mimics the real table layout
+   Loading skeleton — dark editorial shimmer
 ───────────────────────────────────────────── */
 function LeaderboardSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="space-y-2">
-          <div className="h-8 w-56 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
-          <div className="h-4 w-40 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-        </div>
-        <div className="h-10 w-48 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
-      </div>
+      {/* Banner skeleton */}
+      <div className="lb2-skel h-32 w-full rounded-[1.1rem]" />
+
+      {/* Scoreboard skeleton */}
+      <div className="lb2-skel h-28 w-full rounded-2xl" />
 
       {/* Podium skeleton */}
-      <Surface className="p-6">
+      <div className="lb2-card-dark p-6">
         <div className="flex items-end justify-center gap-4">
           {["h-24", "h-36", "h-20"].map((h, i) => (
             <div key={i} className="flex w-24 flex-col items-center gap-3">
-              <div className="h-12 w-12 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
-              <div className="h-4 w-16 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-              <div className={`w-full animate-pulse rounded-t-xl bg-gray-200 dark:bg-gray-700 ${h}`} />
+              <div className="lb2-skel h-12 w-12 rounded-full" />
+              <div className="lb2-skel h-4 w-16" />
+              <div className={`lb2-skel w-full rounded-t-xl ${h}`} />
             </div>
           ))}
         </div>
-      </Surface>
+      </div>
 
-      {/* Table skeleton */}
-      <Surface className="overflow-hidden">
-        <div className="h-12 animate-pulse bg-gray-200 dark:bg-gray-700" />
-        <div className="divide-y divide-gray-100 dark:divide-gray-700">
+      {/* Rankings skeleton */}
+      <div className="lb2-card">
+        <div className="lb2-skel h-12 w-full" />
+        <div className="divide-y divide-gray-100 dark:divide-gray-800">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-              <div className="h-6 w-6 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-              <div className="h-9 w-9 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
-              <div className="h-4 flex-1 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
-              <div className="h-6 w-12 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="lb2-skel h-9 w-9 rounded" />
+              <div className="lb2-skel h-9 w-9 rounded-full" />
+              <div className="lb2-skel h-4 flex-1" />
+              <div className="lb2-skel h-6 w-12" />
             </div>
           ))}
         </div>
-      </Surface>
+      </div>
     </div>
   );
 }
@@ -251,85 +214,71 @@ export default function Leaderboard() {
 
   if (error)
     return (
-      <Surface className="border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
-        <p className="font-semibold">{error}</p>
+      <div className="lb2-error">
+        <p className="font-bold">{error}</p>
         <p className="mt-1 text-sm opacity-80">Please refresh the page or try again shortly.</p>
-      </Surface>
+      </div>
     );
 
   const top3 = leaderboard.slice(0, 3);
 
   return (
     <div className="space-y-6">
-      <style>{`
-        @keyframes lb-fade-in {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes lb-grow {
-          from { transform: scaleY(0); }
-          to   { transform: scaleY(1); }
-        }
-        .lb-row { animation: lb-fade-in 0.45s ease-out both; }
-        .lb-step { transform-origin: bottom; animation: lb-grow 0.6s cubic-bezier(0.22,1,0.36,1) both; }
-      `}</style>
-
-      {/* ── Header ── */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight text-rnli-blue dark:text-white">
-            <FiAward className="h-7 w-7 text-rnli-yellow" />
-            Leaderboard
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {leaderboard.length} players · {maxWeekPlayed} gameweek
-            {maxWeekPlayed !== 1 ? "s" : ""} played
-          </p>
-        </div>
-
-        {/* View toggle */}
-        <div className="inline-flex self-start rounded-xl border border-gray-200 bg-gray-100 p-1 dark:border-gray-700 dark:bg-gray-800 sm:self-auto">
-          {[
-            { key: VIEWS.OVERALL, label: "Overall" },
-            { key: VIEWS.GAMEWEEK, label: "By Gameweek" },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setView(key)}
-              className={`rounded-lg px-5 py-1.5 text-sm font-semibold transition-all ${
-                view === key
-                  ? "bg-rnli-blue text-white shadow-sm"
-                  : "text-gray-600 hover:text-rnli-blue dark:text-gray-300 dark:hover:text-white"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+      {/* ── Editorial header banner ── */}
+      <div className="lb2-banner">
+        <span className="lb2-goldbar" />
+        <span className="lb2-kicker">The Standings</span>
+        <h1 className="lb2-banner-title mt-3">Who's Top of the Table?</h1>
+        <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2">
+          <span className="lb2-pill">
+            <FiAward className="h-3.5 w-3.5 text-rnli-yellow" />
+            <strong>{leaderboard.length}</strong> players
+          </span>
+          <span className="lb2-pill">
+            <FiCalendar className="h-3.5 w-3.5 text-rnli-yellow" />
+            <strong>{maxWeekPlayed}</strong> gameweek{maxWeekPlayed !== 1 ? "s" : ""} played
+          </span>
         </div>
       </div>
 
+      {/* ── View toggle — gold-underline pill tabs ── */}
+      <div className="lb2-tabs">
+        {[
+          { key: VIEWS.OVERALL, label: "Overall" },
+          { key: VIEWS.GAMEWEEK, label: "By Gameweek" },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setView(key)}
+            className={`lb2-tab ${view === key ? "is-active" : ""}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* ── Scoring legend ── */}
-      <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-600 dark:text-gray-300">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3.5 w-3.5 rounded-full bg-green-500" />
-          <strong className="text-gray-800 dark:text-gray-100">5 pts</strong> — Exact score
+      <div className="lb2-legend">
+        <span className="lb2-legend-item">
+          <span className="lb2-legend-dot" style={{ background: "#22c55e" }} />
+          <strong>5 pts</strong> — Exact score
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3.5 w-3.5 rounded-full bg-blue-400" />
-          <strong className="text-gray-800 dark:text-gray-100">2 pts</strong> — Correct result
+        <span className="lb2-legend-item">
+          <span className="lb2-legend-dot" style={{ background: "#4f90e0" }} />
+          <strong>2 pts</strong> — Correct result
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-3.5 w-3.5 rounded-full bg-gray-300 dark:bg-gray-600" />
-          <strong className="text-gray-800 dark:text-gray-100">0 pts</strong> — Incorrect
+        <span className="lb2-legend-item">
+          <span className="lb2-legend-dot" style={{ background: "#cbd5e1" }} />
+          <strong>0 pts</strong> — Incorrect
         </span>
       </div>
 
       {leaderboard.length === 0 ? (
-        <Surface className="p-16 text-center text-gray-500 dark:text-gray-400">
+        <div className="lb2-empty">
           <FiTarget className="mx-auto mb-3 h-10 w-10 opacity-40" />
-          <p className="font-medium">No data yet</p>
+          <p className="font-bold">No data yet</p>
           <p className="text-sm">Start predicting to see scores appear here!</p>
-        </Surface>
+        </div>
       ) : view === VIEWS.OVERALL ? (
         <OverallView
           top3={top3}
@@ -356,20 +305,19 @@ export default function Leaderboard() {
 ═══════════════════════════════════════════ */
 const CHART_COLORS = ["#003087","#FFB81C","#ef4444","#22c55e","#8b5cf6","#f97316","#06b6d4","#ec4899","#84cc16","#f59e0b"];
 
-function StatCard({ icon, label, value, sub, accent }) {
+// One cell of the dark scoreboard panel
+function ScoreCell({ icon, num, label, sub, accent }) {
   return (
-    <Surface className="flex items-center gap-3 p-4">
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accent}`}
-      >
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-base font-bold text-gray-900 dark:text-white">{value}</p>
-        <p className="truncate text-xs text-gray-500 dark:text-gray-400">{label}</p>
-        {sub && <p className="truncate text-[11px] text-gray-400 dark:text-gray-500">{sub}</p>}
+    <div className="lb2-score-cell">
+      <div className={`lb2-score-num ${accent}`} title={typeof num === "string" ? num : undefined}>
+        {num}
       </div>
-    </Surface>
+      <div className="lb2-score-label flex items-center justify-center gap-1.5">
+        {icon}
+        <span>{label}</span>
+      </div>
+      {sub && <div className="lb2-score-sub">{sub}</div>}
+    </div>
   );
 }
 
@@ -423,200 +371,172 @@ function OverallView({ top3, leaderboard, maxWeekPlayed, rankDeltas, currentUser
 
   // Podium order: 2nd, 1st, 3rd
   const podium = [top3[1], top3[0], top3[2]].filter(Boolean);
+  // Meta aligned to the 2nd / 1st / 3rd ordering used by `podium`.
   const podiumMeta = [
-    { place: "2nd", height: "h-24", grad: "from-gray-300 to-gray-400 dark:from-gray-500 dark:to-gray-600", medal: "🥈", delay: "0.1s" },
-    { place: "1st", height: "h-36", grad: "from-rnli-yellow to-amber-400 dark:from-amber-500 dark:to-amber-600", medal: "🥇", delay: "0s" },
-    { place: "3rd", height: "h-20", grad: "from-orange-300 to-orange-400 dark:from-orange-600 dark:to-orange-700", medal: "🥉", delay: "0.2s" },
+    { place: 2, block: "is-2", medal: "🥈", delay: "0.1s" },
+    { place: 1, block: "is-1", medal: "🥇", delay: "0s" },
+    { place: 3, block: "is-3", medal: "🥉", delay: "0.2s" },
   ];
-  // Re-map podiumMeta to the 2nd/1st/3rd ordering used by `podium`.
-  const orderedMeta = [podiumMeta[0], podiumMeta[1], podiumMeta[2]];
 
   return (
     <div className="space-y-6">
-      {/* ── Summary stat cards ── */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          icon={<FiAward className="h-5 w-5" />}
-          label="Current Leader"
-          value={summary.leader?.player ?? "—"}
-          sub={summary.leader ? `${summary.leader.total} pts` : undefined}
-          accent="bg-rnli-yellow/20 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
-        />
-        <StatCard
-          icon={<FiTarget className="h-5 w-5" />}
-          label="Exact Scores"
-          value={summary.mostExact.player}
-          sub={summary.mostExact.count > 0 ? `${summary.mostExact.count} × 5pt` : "None yet"}
-          accent="bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400"
-        />
-        <StatCard
-          icon={<FiZap className="h-5 w-5" />}
-          label="Top GW Scorer"
-          value={summary.mostImproved.player}
-          sub={summary.mostImproved.gain > 0 ? `${summary.mostImproved.gain} pts in GW${maxWeekPlayed}` : "—"}
-          accent="bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"
-        />
-        <StatCard
-          icon={<FiCalendar className="h-5 w-5" />}
-          label="GW Played"
-          value={maxWeekPlayed}
-          sub={`of 38`}
-          accent="bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400"
-        />
+      {/* ── Summary scoreboard panel ── */}
+      <div>
+        <span className="lb2-eyebrow">Season Stats</span>
+        <div className="lb2-scoreboard cols-4 mt-3">
+          <ScoreCell
+            icon={<FiAward className="h-3.5 w-3.5 text-rnli-yellow" />}
+            num={summary.leader?.player ?? "—"}
+            label="Current Leader"
+            sub={summary.leader ? `${summary.leader.total} pts` : undefined}
+            accent="is-gold"
+          />
+          <ScoreCell
+            icon={<FiTarget className="h-3.5 w-3.5" style={{ color: "#4ade80" }} />}
+            num={summary.mostExact.player}
+            label="Exact Scores"
+            sub={summary.mostExact.count > 0 ? `${summary.mostExact.count} × 5pt` : "None yet"}
+            accent="is-blue"
+          />
+          <ScoreCell
+            icon={<FiZap className="h-3.5 w-3.5" style={{ color: "#c4b5fd" }} />}
+            num={summary.mostImproved.player}
+            label="Top GW Scorer"
+            sub={summary.mostImproved.gain > 0 ? `${summary.mostImproved.gain} pts in GW${maxWeekPlayed}` : "—"}
+            accent="is-blue"
+          />
+          <ScoreCell
+            icon={<FiCalendar className="h-3.5 w-3.5" style={{ color: "#7db0ff" }} />}
+            num={maxWeekPlayed}
+            label="GW Played"
+            sub="of 38"
+            accent="is-mute"
+          />
+        </div>
       </div>
 
       {/* ── Top 3 Podium ── */}
-      {top3.length >= 1 && (
-        <Surface className="overflow-hidden">
-          <div className="bg-gradient-to-br from-rnli-blue via-rnli-blue-light to-rnli-blue p-6 dark:from-gray-900 dark:via-rnli-blue-dark dark:to-gray-900">
-            <h2 className="mb-6 text-center text-lg font-bold text-white">🏆 Top 3</h2>
-            <div className="flex items-end justify-center gap-3 sm:gap-5">
-              {podium.map((player, idx) => {
-                const meta = orderedMeta[idx];
-                const isWinner = meta.place === "1st";
-                const isYou = currentUser?.username === player.player;
-                return (
-                  <div key={player.player} className="flex w-24 flex-col items-center gap-2 sm:w-28">
-                    <span
-                      className={`${isWinner ? "animate-bounce text-5xl" : "text-4xl"}`}
-                      style={{ animationDuration: "2.2s" }}
-                    >
-                      {meta.medal}
-                    </span>
-                    <Avatar name={player.player} size={isWinner ? "lg" : "md"} />
-                    <p
-                      className={`w-full truncate text-center text-sm font-bold ${
-                        isYou ? "text-rnli-yellow" : "text-white"
-                      }`}
-                      title={player.player}
-                    >
-                      {player.player}
-                    </p>
-                    {isYou && (
-                      <span className="-mt-1 text-[10px] font-semibold uppercase tracking-wide text-rnli-yellow">
-                        You
-                      </span>
-                    )}
-                    <p className="text-lg font-black text-white">
-                      {player.total}
-                      <span className="ml-1 text-xs font-normal text-white/70">pts</span>
-                    </p>
-                    <div
-                      className={`lb-step flex w-full items-center justify-center rounded-t-xl bg-gradient-to-b ${meta.grad} ${meta.height} shadow-inner`}
-                      style={{ animationDelay: meta.delay }}
-                    >
-                      <span className="text-2xl font-black text-white/90 drop-shadow">{meta.place}</span>
-                    </div>
+      {top3.length >= 2 && (
+        <div className="lb2-podium">
+          <h2 className="lb2-podium-head">🏆 The Top 3</h2>
+          <div className="lb2-podium-row">
+            {podium.map((player, idx) => {
+              const meta = podiumMeta[idx];
+              const isWinner = meta.place === 1;
+              const isYou = currentUser?.username === player.player;
+              return (
+                <div key={player.player} className="lb2-podium-col">
+                  <span className={`lb2-medal ${isWinner ? "animate-bounce text-5xl" : "text-4xl"}`} style={{ animationDuration: "2.2s" }}>
+                    {meta.medal}
+                  </span>
+                  <Avatar name={player.player} size={isWinner ? "lg" : "md"} />
+                  <p className={`lb2-podium-name ${isYou ? "is-you" : ""}`} title={player.player}>
+                    {player.player}
+                  </p>
+                  {isYou && <span className="lb2-you-tag">You</span>}
+                  <p className="lb2-podium-total">
+                    {player.total}<span>pts</span>
+                  </p>
+                  <div
+                    className={`lb2-block lb2-step ${meta.block}`}
+                    style={{ animationDelay: meta.delay }}
+                  >
+                    <span className="lb2-block-num">{meta.place}</span>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        </Surface>
+        </div>
       )}
 
-      {/* ── Full Rankings Table ── */}
-      <Surface className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="bg-rnli-blue text-left text-xs uppercase tracking-wide text-white/90">
-                <th className="w-14 px-4 py-3">Rank</th>
-                <th className="px-4 py-3">Player</th>
-                <th className="hidden px-4 py-3 text-center sm:table-cell">Move</th>
-                <th className="hidden px-4 py-3 text-center sm:table-cell">Recent Form</th>
-                <th className="hidden px-4 py-3 text-center md:table-cell">Best Week</th>
-                <th className="hidden px-4 py-3 text-center md:table-cell">Played</th>
-                <th className="w-20 bg-rnli-blue-dark px-4 py-3 text-center">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {leaderboard.map((row, idx) => {
-                const isCurrentUser = currentUser?.username === row.player;
-                const weekScores = Array.from({ length: 38 }, (_, i) => row[`week_${i + 1}`] || 0);
-                const bestWeek = Math.max(...weekScores);
-                const weeksPlayed = weekScores.filter((s) => s > 0).length;
-                const delta = rankDeltas[row.player];
+      {/* ── Full Rankings — editorial rows with giant outline rank numbers ── */}
+      <div>
+        <span className="lb2-eyebrow">Full Table</span>
+        <div className="lb2-card mt-3">
+          {/* Column header strip (desktop) */}
+          <div className="hidden items-center gap-3 border-b border-gray-100 px-4 py-2.5 pl-[0.5rem] dark:border-gray-800 sm:flex">
+            <span className="lb2-col-label w-[3.1rem] text-center">Rank</span>
+            <span className="lb2-col-label flex-1">Player</span>
+            <span className="lb2-col-label hidden w-16 text-center sm:flex justify-center">Move</span>
+            <span className="lb2-col-label hidden w-32 text-center sm:flex justify-center">Form</span>
+            <span className="lb2-col-label hidden w-16 text-center md:block">Best</span>
+            <span className="lb2-col-label hidden w-14 text-center md:block">Played</span>
+            <span className="lb2-col-label min-w-[3rem] text-right">Total</span>
+          </div>
 
-                return (
-                  <tr
-                    key={row.player}
-                    className={`lb-row group transition-all hover:-translate-y-px hover:shadow-md ${
-                      isCurrentUser
-                        ? "border-l-4 border-rnli-yellow bg-amber-50/60 dark:bg-amber-500/10"
-                        : "border-l-4 border-transparent bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
-                    }`}
-                    style={{ animationDelay: `${Math.min(idx * 0.04, 0.6)}s` }}
-                  >
-                    <td className="px-4 py-3 text-center">
-                      {row.rank <= 3 ? (
-                        <span className="text-lg">{["🥇", "🥈", "🥉"][row.rank - 1]}</span>
-                      ) : (
-                        <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">
-                          {row.rank}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={row.player} size="sm" />
-                        <div className="min-w-0">
-                          <span className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                            <span className="truncate">{row.player}</span>
-                            {isCurrentUser && (
-                              <span className="rounded bg-rnli-yellow/30 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-rnli-yellow/20 dark:text-rnli-yellow">
-                                You
-                              </span>
-                            )}
-                          </span>
-                          {/* Mobile-only: form dots inline under the name */}
-                          <div className="mt-1 sm:hidden">
-                            <RecentForm playerRow={row} maxWeek={maxWeekPlayed} />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="hidden px-4 py-3 text-center sm:table-cell">
-                      <RankDelta delta={delta} />
-                    </td>
-                    <td className="hidden px-4 py-3 sm:table-cell">
-                      <div className="flex justify-center">
-                        <RecentForm playerRow={row} maxWeek={maxWeekPlayed} />
-                      </div>
-                    </td>
-                    <td className="hidden px-4 py-3 text-center md:table-cell">
-                      {bestWeek > 0 ? (
-                        <span className="text-sm font-bold text-green-600 dark:text-green-400">
-                          {bestWeek} pts
-                        </span>
-                      ) : (
-                        <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
-                      )}
-                    </td>
-                    <td className="hidden px-4 py-3 text-center text-sm text-gray-500 dark:text-gray-400 md:table-cell">
-                      {weeksPlayed}
-                    </td>
-                    <td className="bg-gray-50 px-4 py-3 text-center text-base font-extrabold text-rnli-blue dark:bg-gray-700/40 dark:text-white">
-                      {row.total}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="lb2-rank-list">
+            {leaderboard.map((row, idx) => {
+              const isCurrentUser = currentUser?.username === row.player;
+              const weekScores = Array.from({ length: 38 }, (_, i) => row[`week_${i + 1}`] || 0);
+              const bestWeek = Math.max(...weekScores);
+              const weeksPlayed = weekScores.filter((s) => s > 0).length;
+              const delta = rankDeltas[row.player];
+
+              return (
+                <div
+                  key={row.player}
+                  className={`lb2-rank-row lb2-row ${isCurrentUser ? "is-you" : ""}`}
+                  style={{ animationDelay: `${Math.min(idx * 0.04, 0.6)}s` }}
+                >
+                  {/* Rank: medal for top 3, otherwise giant outline numeral */}
+                  {row.rank <= 3 ? (
+                    <span className="lb2-medal-cell">{["🥇", "🥈", "🥉"][row.rank - 1]}</span>
+                  ) : (
+                    <span className="lb2-ranknum">{row.rank}</span>
+                  )}
+
+                  <Avatar name={row.player} size="sm" />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="lb2-name">{row.player}</span>
+                      {isCurrentUser && <span className="lb2-tag-you">You</span>}
+                    </div>
+                    {/* Mobile-only: form dots inline under the name */}
+                    <div className="mt-1 sm:hidden">
+                      <RecentForm playerRow={row} maxWeek={maxWeekPlayed} />
+                    </div>
+                  </div>
+
+                  <div className="hidden w-16 justify-center sm:flex">
+                    <RankDelta delta={delta} />
+                  </div>
+                  <div className="hidden w-32 justify-center sm:flex">
+                    <RecentForm playerRow={row} maxWeek={maxWeekPlayed} />
+                  </div>
+                  <div className="hidden w-16 text-center md:block">
+                    {bestWeek > 0 ? (
+                      <span className="text-sm font-bold text-green-600 dark:text-green-400">{bestWeek}</span>
+                    ) : (
+                      <span className="text-sm text-gray-400 dark:text-gray-500">—</span>
+                    )}
+                  </div>
+                  <div className="hidden w-14 text-center text-sm text-gray-500 dark:text-gray-400 md:block">
+                    {weeksPlayed}
+                  </div>
+
+                  <div className="lb2-total">
+                    {row.total}<span>pts</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </Surface>
+      </div>
 
       {/* ── Points Progression Chart ── */}
       {maxWeekPlayed > 1 && chartData.length > 0 && (
-        <Surface className="p-6">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-lg font-bold text-rnli-blue dark:text-white">Points Progression</h2>
+              <span className="lb2-eyebrow">The Run-In</span>
+              <h2 className="lb2-title mt-2">Points Progression</h2>
               <p className="text-xs text-gray-400 dark:text-gray-500">Cumulative points by gameweek</p>
             </div>
             {/* Show top-N toggle to avoid chart spaghetti */}
-            <div className="inline-flex self-start rounded-lg border border-gray-200 bg-gray-100 p-0.5 dark:border-gray-700 dark:bg-gray-900 sm:self-auto">
+            <div className="lb2-tabs self-start sm:self-auto">
               {[
                 { key: "all", label: "All" },
                 { key: 5, label: "Top 5" },
@@ -625,72 +545,70 @@ function OverallView({ top3, leaderboard, maxWeekPlayed, rankDeltas, currentUser
                 <button
                   key={label}
                   onClick={() => setChartTopN(key)}
-                  className={`rounded-md px-3 py-1 text-xs font-semibold transition-all ${
-                    chartTopN === key
-                      ? "bg-rnli-blue text-white shadow-sm"
-                      : "text-gray-500 hover:text-rnli-blue dark:text-gray-400 dark:hover:text-white"
-                  }`}
+                  className={`lb2-tab !py-1.5 !text-sm ${chartTopN === key ? "is-active" : ""}`}
                 >
                   {label}
                 </button>
               ))}
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-              <defs>
+          <div className="lb2-card-dark p-4 sm:p-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                <defs>
+                  {chartPlayers.map((row, i) => {
+                    const color = CHART_COLORS[leaderboard.indexOf(row) % CHART_COLORS.length];
+                    return (
+                      <linearGradient key={row.player} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={color} stopOpacity={0.28} />
+                        <stop offset="100%" stopColor={color} stopOpacity={0} />
+                      </linearGradient>
+                    );
+                  })}
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis
+                  dataKey="week"
+                  tickFormatter={(v) => `GW${v}`}
+                  tick={{ fontSize: 10, fill: "#8b9bba" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis tick={{ fontSize: 10, fill: "#8b9bba" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  formatter={(value, name) => [`${value} pts`, name]}
+                  labelFormatter={(l) => `Gameweek ${l}`}
+                  contentStyle={{
+                    borderRadius: "10px",
+                    fontSize: "12px",
+                    border: "1px solid rgba(148,163,184,0.3)",
+                    background: "rgba(4,18,46,0.95)",
+                    color: "#fff",
+                  }}
+                  itemStyle={{ color: "#fff" }}
+                  labelStyle={{ color: "#cbd5e1", fontWeight: 600 }}
+                />
+                <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px", color: "#cbd5e1" }} />
                 {chartPlayers.map((row, i) => {
                   const color = CHART_COLORS[leaderboard.indexOf(row) % CHART_COLORS.length];
+                  const isYou = currentUser?.username === row.player;
                   return (
-                    <linearGradient key={row.player} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={color} stopOpacity={0.28} />
-                      <stop offset="100%" stopColor={color} stopOpacity={0} />
-                    </linearGradient>
+                    <Area
+                      key={row.player}
+                      type="monotone"
+                      dataKey={row.player}
+                      stroke={color}
+                      strokeWidth={isYou ? 3 : 1.8}
+                      fill={`url(#grad-${i})`}
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                    />
                   );
                 })}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-gray-200 dark:text-gray-700" />
-              <XAxis
-                dataKey="week"
-                tickFormatter={(v) => `GW${v}`}
-                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                formatter={(value, name) => [`${value} pts`, name]}
-                labelFormatter={(l) => `Gameweek ${l}`}
-                contentStyle={{
-                  borderRadius: "10px",
-                  fontSize: "12px",
-                  border: "1px solid rgba(148,163,184,0.3)",
-                  background: "rgba(17,24,39,0.92)",
-                  color: "#fff",
-                }}
-                itemStyle={{ color: "#fff" }}
-                labelStyle={{ color: "#cbd5e1", fontWeight: 600 }}
-              />
-              <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} />
-              {chartPlayers.map((row, i) => {
-                const color = CHART_COLORS[leaderboard.indexOf(row) % CHART_COLORS.length];
-                const isYou = currentUser?.username === row.player;
-                return (
-                  <Area
-                    key={row.player}
-                    type="monotone"
-                    dataKey={row.player}
-                    stroke={color}
-                    strokeWidth={isYou ? 3 : 1.8}
-                    fill={`url(#grad-${i})`}
-                    dot={false}
-                    activeDot={{ r: 5 }}
-                  />
-                );
-              })}
-            </AreaChart>
-          </ResponsiveContainer>
-        </Surface>
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -715,14 +633,12 @@ function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, m
   );
 
   return (
-    <div className="space-y-5">
-      {/* Gameweek selector */}
-      <Surface className="p-5">
+    <div className="space-y-6">
+      {/* ── Gameweek selector — tactile match-card grid ── */}
+      <div className="lb2-card p-5">
         <div className="mb-4 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Select Gameweek</span>
-          <span className="rounded-full bg-rnli-blue px-3 py-1 text-sm font-bold text-white">
-            GW{selectedGameweek}
-          </span>
+          <span className="lb2-eyebrow">Match Cards</span>
+          <span className="lb2-gw-badge">GW{selectedGameweek}</span>
         </div>
 
         {/* Slider for fast scrubbing across played weeks */}
@@ -733,13 +649,13 @@ function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, m
             max={maxWeekPlayed}
             value={Math.min(selectedGameweek, maxWeekPlayed)}
             onChange={(e) => setSelectedGameweek(Number(e.target.value))}
-            className="mb-4 h-2 w-full cursor-pointer appearance-none rounded-full bg-gray-200 accent-rnli-blue dark:bg-gray-700"
+            className="lb2-range mb-4"
             aria-label="Select gameweek"
           />
         )}
 
         {/* Grid — played weeks are vivid, future weeks are dimmed & disabled */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="lb2-gw-grid">
           {Array.from({ length: 38 }, (_, i) => i + 1).map((gw) => {
             const played = gw <= maxWeekPlayed;
             const active = selectedGameweek === gw;
@@ -748,148 +664,116 @@ function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, m
                 key={gw}
                 onClick={() => setSelectedGameweek(gw)}
                 disabled={!played}
-                className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${
-                  active
-                    ? "scale-110 bg-rnli-blue text-white shadow-md ring-2 ring-rnli-yellow"
-                    : played
-                    ? "bg-gray-100 text-gray-700 hover:bg-rnli-blue/10 hover:text-rnli-blue dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-                    : "cursor-not-allowed bg-gray-50 text-gray-300 dark:bg-gray-800 dark:text-gray-600"
-                }`}
+                className={`lb2-gw-btn ${active ? "is-active" : ""}`}
               >
                 {gw}
               </button>
             );
           })}
         </div>
-      </Surface>
+      </div>
 
       {isFuture ? (
-        <Surface className="p-12 text-center text-gray-500 dark:text-gray-400">
+        <div className="lb2-empty">
           <FiCalendar className="mx-auto mb-3 h-9 w-9 opacity-40" />
-          <p className="font-medium">Gameweek {selectedGameweek} hasn't been played yet.</p>
-        </Surface>
+          <p className="font-bold">Gameweek {selectedGameweek} hasn't been played yet.</p>
+        </div>
       ) : (
         <>
-          {/* Gameweek stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <StatCard
-              icon={<FiAward className="h-5 w-5" />}
+          {/* ── Gameweek stats scoreboard ── */}
+          <div className="lb2-scoreboard cols-3">
+            <ScoreCell
+              icon={<FiAward className="h-3.5 w-3.5 text-rnli-yellow" />}
+              num={gameweekRanked[0]?.player ?? "—"}
               label={`GW${selectedGameweek} Winner`}
-              value={gameweekRanked[0]?.player ?? "—"}
-              accent="bg-rnli-yellow/20 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+              accent="is-gold"
             />
-            <StatCard
-              icon={<FiTarget className="h-5 w-5" />}
+            <ScoreCell
+              icon={<FiTarget className="h-3.5 w-3.5" style={{ color: "#4ade80" }} />}
+              num={topScore}
               label="Highest Score"
-              value={`${topScore} pts`}
-              accent="bg-green-100 text-green-600 dark:bg-green-500/15 dark:text-green-400"
+              sub="points"
+              accent="is-blue"
             />
-            <StatCard
-              icon={<FiZap className="h-5 w-5" />}
+            <ScoreCell
+              icon={<FiZap className="h-3.5 w-3.5" style={{ color: "#7db0ff" }} />}
+              num={totalPoints}
               label="Total Points Scored"
-              value={totalPoints}
-              accent="bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400"
+              accent="is-mute"
             />
           </div>
 
-          {/* Bar chart of GW scores — CSS bars avoid Recharts Cell/layout quirks */}
+          {/* ── Bar chart of GW scores — dramatic CSS bars ── */}
           {barData.length > 0 && (
-            <Surface className="p-6">
-              <h2 className="mb-4 text-lg font-bold text-rnli-blue dark:text-white">
-                Gameweek {selectedGameweek} Scores
-              </h2>
-              <div className="space-y-2.5">
-                {barData.map((entry) => {
-                  // Scale relative to the highest score present so wildcard-
-                  // doubled totals (which can exceed the normal single-fixture
-                  // range) never overflow 100%. topScore is the GW max.
-                  const pct = topScore > 0 ? (entry.score / topScore) * 100 : 0;
-                  const barColor = entry.you
-                    ? "bg-rnli-yellow"
-                    : entry.score >= 5
-                    ? "bg-green-500"
-                    : entry.score >= 2
-                    ? "bg-blue-400"
-                    : "bg-gray-400";
-                  return (
-                    <div key={entry.player} className="flex items-center gap-3">
-                      <span className="w-24 shrink-0 truncate text-right text-xs text-gray-500 dark:text-gray-400">
-                        {entry.player}
-                      </span>
-                      <div className="flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-                        <div
-                          className={`flex h-6 items-center justify-end rounded-full pr-2 transition-all duration-700 ${barColor}`}
-                          style={{ width: `${Math.max(pct, 8)}%` }}
-                        >
-                          <span className="text-xs font-bold text-white drop-shadow">{entry.score}</span>
+            <div>
+              <span className="lb2-eyebrow">The Breakdown</span>
+              <h2 className="lb2-title mt-2 mb-4">Gameweek {selectedGameweek} Scores</h2>
+              <div className="lb2-card p-5 sm:p-6">
+                <div className="space-y-2.5">
+                  {barData.map((entry) => {
+                    // Scale relative to the highest score present so wildcard-
+                    // doubled totals (which can exceed the normal single-fixture
+                    // range) never overflow 100%. topScore is the GW max.
+                    const pct = topScore > 0 ? (entry.score / topScore) * 100 : 0;
+                    const barClass = entry.you
+                      ? "you"
+                      : entry.score >= 5
+                      ? "hi"
+                      : entry.score >= 2
+                      ? "mid"
+                      : "lo";
+                    return (
+                      <div key={entry.player} className="flex items-center gap-3">
+                        <span className="lb2-bar-name">{entry.player}</span>
+                        <div className="lb2-bar-track">
+                          <div className={`lb2-bar ${barClass}`} style={{ width: `${Math.max(pct, 12)}%` }}>
+                            {entry.score}
+                          </div>
                         </div>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Gameweek rankings — same editorial rows ── */}
+          <div>
+            <span className="lb2-eyebrow">Standings</span>
+            <h2 className="lb2-title mt-2 mb-3">Gameweek {selectedGameweek} Rankings</h2>
+            <div className="lb2-card">
+              <div className="lb2-rank-list">
+                {gameweekRanked.map((row, idx) => {
+                  const isCurrentUser = currentUser?.username === row.player;
+                  return (
+                    <div
+                      key={row.player}
+                      className={`lb2-rank-row lb2-row ${isCurrentUser ? "is-you" : ""}`}
+                      style={{ animationDelay: `${Math.min(idx * 0.04, 0.6)}s` }}
+                    >
+                      {row.gwRank <= 3 ? (
+                        <span className="lb2-medal-cell">{["🥇", "🥈", "🥉"][row.gwRank - 1]}</span>
+                      ) : (
+                        <span className="lb2-ranknum">{row.gwRank}</span>
+                      )}
+
+                      <Avatar name={row.player} size="sm" />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="lb2-name">{row.player}</span>
+                          {isCurrentUser && <span className="lb2-tag-you">You</span>}
+                        </div>
+                      </div>
+
+                      <ScoreBadge score={row.gwScore} />
                     </div>
                   );
                 })}
               </div>
-            </Surface>
-          )}
-
-          {/* Gameweek rankings */}
-          <Surface className="overflow-hidden">
-            <div className="bg-rnli-blue px-4 py-3">
-              <h2 className="text-sm font-bold text-white">Gameweek {selectedGameweek} Rankings</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
-                    <th className="w-16 px-4 py-3">GW Rank</th>
-                    <th className="px-4 py-3">Player</th>
-                    <th className="w-32 px-4 py-3 text-center">GW{selectedGameweek} Points</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {gameweekRanked.map((row, idx) => {
-                    const isCurrentUser = currentUser?.username === row.player;
-                    return (
-                      <tr
-                        key={row.player}
-                        className={`lb-row transition-all hover:-translate-y-px hover:shadow-md ${
-                          isCurrentUser
-                            ? "border-l-4 border-rnli-yellow bg-amber-50/60 dark:bg-amber-500/10"
-                            : "border-l-4 border-transparent bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
-                        }`}
-                        style={{ animationDelay: `${Math.min(idx * 0.04, 0.6)}s` }}
-                      >
-                        <td className="px-4 py-3 text-center">
-                          {row.gwRank <= 3 ? (
-                            <span className="text-lg">{["🥇", "🥈", "🥉"][row.gwRank - 1]}</span>
-                          ) : (
-                            <span className="text-sm font-semibold text-gray-400 dark:text-gray-500">
-                              {row.gwRank}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <Avatar name={row.player} size="sm" />
-                            <span className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
-                              <span className="truncate">{row.player}</span>
-                              {isCurrentUser && (
-                                <span className="rounded bg-rnli-yellow/30 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-rnli-yellow/20 dark:text-rnli-yellow">
-                                  You
-                                </span>
-                              )}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <ScoreBadge score={row.gwScore} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Surface>
+          </div>
         </>
       )}
     </div>
