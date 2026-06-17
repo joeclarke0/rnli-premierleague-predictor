@@ -203,23 +203,23 @@ export default function Fixtures() {
       </div>
 
       {/* ── Search + filter bar ── */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="fx-controls">
+        <div className="fx-search-wrap">
+          <FiSearch className="fx-search-icon" />
           <input
             type="text"
             placeholder="Search teams or venue…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-field pl-9 text-sm"
+            className="fx-search-input"
           />
         </div>
-        <div className="relative">
-          <FiFilter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        <div className="fx-filter-wrap">
+          <FiFilter className="fx-filter-icon" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="input-field pl-9 pr-4 text-sm w-full sm:w-auto"
+            className="fx-filter-select"
           >
             <option value="all">All Status</option>
             <option value="upcoming">Upcoming</option>
@@ -228,6 +228,7 @@ export default function Fixtures() {
             <option value="past">Awaiting Result</option>
             <option value="completed">Completed</option>
           </select>
+          <FiChevronDown className="fx-filter-chevron" />
         </div>
       </div>
 

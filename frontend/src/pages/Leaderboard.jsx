@@ -114,34 +114,25 @@ function LeaderboardSkeleton() {
   return (
     <div className="space-y-6">
       {/* Banner skeleton */}
-      <div className="lb2-skel h-32 w-full rounded-[1.1rem]" />
+      <div className="lb2-skel h-36 w-full rounded-[1.1rem]" />
+
+      {/* Tabs skeleton */}
+      <div className="lb2-skel h-10 w-48 rounded-lg" />
 
       {/* Scoreboard skeleton */}
       <div className="lb2-skel h-28 w-full rounded-2xl" />
 
-      {/* Podium skeleton */}
-      <div className="lb2-card-dark p-6">
-        <div className="flex items-end justify-center gap-4">
-          {["h-24", "h-36", "h-20"].map((h, i) => (
-            <div key={i} className="flex w-24 flex-col items-center gap-3">
-              <div className="lb2-skel h-12 w-12 rounded-full" />
-              <div className="lb2-skel h-4 w-16" />
-              <div className={`lb2-skel w-full rounded-t-xl ${h}`} />
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Rankings skeleton */}
       <div className="lb2-card">
-        <div className="lb2-skel h-12 w-full" />
+        <div className="lb2-skel h-10 w-full" />
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-              <div className="lb2-skel h-9 w-9 rounded" />
-              <div className="lb2-skel h-9 w-9 rounded-full" />
+              <div className="lb2-skel h-9 w-12 rounded" />
+              <div className="lb2-skel h-8 w-8 rounded-full" />
               <div className="lb2-skel h-4 flex-1" />
-              <div className="lb2-skel h-6 w-12" />
+              <div className="lb2-skel h-6 w-16 rounded" />
+              <div className="lb2-skel h-7 w-12 rounded-full" />
             </div>
           ))}
         </div>

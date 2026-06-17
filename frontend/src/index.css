@@ -1401,6 +1401,105 @@
   .fx-card { transition: none !important; }
 }
 
+/* ── Search / filter controls bar ── */
+.fx-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+@media (min-width: 640px) { .fx-controls { flex-direction: row; } }
+
+.fx-search-wrap { position: relative; flex: 1; }
+.fx-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+.fx-search-input {
+  width: 100%;
+  padding: 0.6rem 0.9rem 0.6rem 2.2rem;
+  background: #fff;
+  border: 1px solid #dde2ec;
+  color: #111827;
+  border-radius: 0.65rem;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.fx-search-input::placeholder { color: #9ca3af; }
+.fx-search-input:focus {
+  border-color: #003087;
+  box-shadow: 0 0 0 3px rgba(0,48,135,0.12);
+}
+.dark .fx-search-input {
+  background: #0d1928;
+  border-color: #1d2a40;
+  color: #e8edf7;
+}
+.dark .fx-search-input::placeholder { color: #4a5a78; }
+.dark .fx-search-input:focus {
+  border-color: #2d4a8a;
+  box-shadow: 0 0 0 3px rgba(0,48,135,0.28);
+}
+
+.fx-filter-wrap { position: relative; }
+.fx-filter-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 1;
+}
+.fx-filter-chevron {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+.fx-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.6rem 2.1rem 0.6rem 2.2rem;
+  background: #fff;
+  border: 1px solid #dde2ec;
+  color: #111827;
+  border-radius: 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+@media (min-width: 640px) { .fx-filter-select { width: auto; } }
+.fx-filter-select:focus {
+  border-color: #003087;
+  box-shadow: 0 0 0 3px rgba(0,48,135,0.12);
+}
+.dark .fx-filter-select {
+  background: #0d1928;
+  border-color: #1d2a40;
+  color: #e8edf7;
+}
+.dark .fx-filter-select option { background: #0d1928; }
+.dark .fx-filter-select:focus {
+  border-color: #2d4a8a;
+  box-shadow: 0 0 0 3px rgba(0,48,135,0.28);
+}
+
 /* ═══════════════════════════════════════════════════════
    PREDICTIONS PAGE  (pd-* namespace)
    Append-only — never modify classes above this line
