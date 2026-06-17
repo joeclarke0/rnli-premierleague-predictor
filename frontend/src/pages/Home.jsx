@@ -78,11 +78,11 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Link to="/register" className="btn-secondary text-base px-8 py-3 shadow-lg">
-                  Get Started — It's Free
+                <Link to="/login" className="btn-secondary text-base px-8 py-3 shadow-lg">
+                  Login to Play
                 </Link>
-                <Link to="/login" className="bg-white text-rnli-blue hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg transition-colors duration-200 text-base shadow">
-                  Login
+                <Link to="/leaderboard" className="bg-white text-rnli-blue hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg transition-colors duration-200 text-base shadow">
+                  View Leaderboard
                 </Link>
               </>
             )}
@@ -167,8 +167,8 @@ export default function Home() {
             Join your RNLI colleagues, submit your first predictions, and start climbing the leaderboard.
           </p>
           <div className="flex justify-center gap-4 flex-wrap">
-            <Link to="/register" className="btn-secondary text-base px-8 py-3">
-              Create Free Account
+            <Link to="/login" className="btn-secondary text-base px-8 py-3">
+              Login to Play
             </Link>
             <Link to="/leaderboard" className="bg-white text-rnli-blue hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg transition-colors text-base">
               View Leaderboard

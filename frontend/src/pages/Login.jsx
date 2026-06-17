@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { FiEye, FiEyeOff, FiLogIn } from 'react-icons/fi';
@@ -120,15 +120,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-gray-500 text-sm">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-rnli-blue font-semibold hover:underline">
-              Sign up here
-            </Link>
-          </p>
-        </div>
 
         {import.meta.env.DEV && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">

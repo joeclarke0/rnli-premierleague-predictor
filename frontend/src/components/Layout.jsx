@@ -104,14 +104,9 @@ export default function Layout({ children }) {
                   </button>
                 </>
               ) : (
-                <>
-                  <Link to="/login" className="text-white hover:text-rnli-yellow text-sm font-medium transition-colors">
-                    Login
-                  </Link>
-                  <Link to="/register" className="bg-rnli-yellow hover:bg-rnli-yellow-dark text-gray-900 px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors">
-                    Sign Up
-                  </Link>
-                </>
+                <Link to="/login" className="text-white hover:text-rnli-yellow text-sm font-medium transition-colors">
+                  Login
+                </Link>
               )}
             </div>
 
@@ -167,13 +162,6 @@ export default function Layout({ children }) {
                       onClick={() => setMobileOpen(false)}
                     >
                       Login
-                    </Link>
-                    <Link
-                      to="/register"
-                      className="text-sm bg-rnli-yellow text-gray-900 px-3 py-1 rounded-lg font-semibold"
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      Sign Up
                     </Link>
                   </div>
                 )}
