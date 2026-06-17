@@ -185,3 +185,360 @@
   border-color: #242424;
   color: #ebebeb;
 }
+
+/* ─────────────────────────────────────────────
+   HOME PAGE — editorial RNLI × Premier League
+   Self-contained classes. Accent colours are set
+   explicitly so the global dark-mode greyscale
+   overrides on .text-rnli-* never wash them out.
+───────────────────────────────────────────── */
+
+:root {
+  --rnli-blue: #003087;
+  --rnli-blue-light: #1a4a9f;
+  --rnli-blue-dark: #001a5c;
+  --rnli-yellow: #FFB81C;
+  --rnli-yellow-light: #ffd166;
+  --rnli-yellow-dark: #e6a300;
+}
+
+/* ── Hero shell ── */
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(120% 140% at 85% -10%, rgba(255, 184, 28, 0.18) 0%, rgba(255, 184, 28, 0) 45%),
+    linear-gradient(135deg, #001a5c 0%, #003087 45%, #1a4a9f 100%);
+  color: #ffffff;
+  isolation: isolate;
+}
+.dark .home-hero {
+  background:
+    radial-gradient(120% 140% at 85% -10%, rgba(255, 184, 28, 0.22) 0%, rgba(255, 184, 28, 0) 42%),
+    linear-gradient(135deg, #000d2e 0%, #001a5c 50%, #062a6e 100%);
+}
+
+/* Pitch grid texture overlay */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 75%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 75%);
+  pointer-events: none;
+}
+
+/* Big gold vertical accent stripe, bottom-left */
+.home-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  top: 0;
+  width: 8px;
+  background: linear-gradient(to bottom, var(--rnli-yellow), var(--rnli-yellow-dark));
+  z-index: 1;
+}
+
+/* Animated waves at the foot of the hero */
+.home-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  width: 200%;
+  height: 90px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+}
+.home-wave svg { width: 100%; height: 100%; display: block; }
+.home-wave--back {
+  animation: home-wave-drift 18s linear infinite;
+  opacity: 0.28;
+}
+.home-wave--front {
+  animation: home-wave-drift 11s linear infinite reverse;
+  opacity: 0.5;
+}
+@keyframes home-wave-drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── Season banner pill ── */
+.home-season-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 184, 28, 0.12);
+  border: 1px solid rgba(255, 184, 28, 0.45);
+  color: var(--rnli-yellow);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.home-season-pill .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--rnli-yellow);
+  box-shadow: 0 0 0 0 rgba(255, 184, 28, 0.7);
+  animation: home-pulse 2.2s infinite;
+}
+
+/* ── Hook headline ── */
+.home-hook {
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.home-hook .gold {
+  color: var(--rnli-yellow);
+  position: relative;
+}
+.home-hook .outline {
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.55);
+}
+
+/* ── Primary CTA: pulsing gold ── */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--rnli-yellow-light), var(--rnli-yellow) 55%, var(--rnli-yellow-dark));
+  color: #001a5c;
+  font-weight: 800;
+  border-radius: 0.6rem;
+  border: none;
+  box-shadow: 0 8px 22px -8px rgba(255, 184, 28, 0.7);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -8px rgba(255, 184, 28, 0.85);
+}
+.btn-gold--pulse { animation: home-cta-pulse 2.4s ease-in-out infinite; }
+@keyframes home-cta-pulse {
+  0%, 100% { box-shadow: 0 8px 22px -8px rgba(255, 184, 28, 0.7); }
+  50%      { box-shadow: 0 8px 30px -4px rgba(255, 184, 28, 0.95); }
+}
+
+/* Ghost CTA on dark hero */
+.btn-ghost-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.6rem;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.btn-ghost-light:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes home-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 184, 28, 0.6); }
+  70%  { box-shadow: 0 0 0 7px rgba(255, 184, 28, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 184, 28, 0); }
+}
+
+/* ── Scoreboard stat block ── */
+.home-scoreboard {
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #04122e, #020b1e);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.home-score-cell {
+  position: relative;
+  padding: 1.75rem 1.25rem;
+  text-align: center;
+}
+.home-score-cell + .home-score-cell {
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+}
+.home-score-num {
+  font-weight: 900;
+  font-size: clamp(2.6rem, 6vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.home-score-num.is-gold  { color: var(--rnli-yellow); }
+.home-score-num.is-blue  { color: #5ea0ff; }
+.home-score-num.is-mute  { color: #4a5a78; }
+.home-score-label {
+  margin-top: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: #e8edf7;
+}
+.home-score-sub {
+  margin-top: 0.2rem;
+  font-size: 0.74rem;
+  color: #8b9bba;
+}
+
+/* ── Section eyebrow / kicker ── */
+.home-kicker {
+  display: inline-block;
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rnli-yellow-dark);
+  padding-bottom: 0.35rem;
+  border-bottom: 3px solid var(--rnli-yellow);
+}
+.dark .home-kicker { color: var(--rnli-yellow); }
+
+.home-section-title {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--rnli-blue);
+}
+.dark .home-section-title { color: #f4f6fb; }
+
+/* ── How it works — match programme rows ── */
+.home-step {
+  position: relative;
+  border-radius: 0.9rem;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+.dark .home-step { background: #131313; border-color: #242424; }
+.home-step:hover { transform: translateY(-3px); border-color: var(--rnli-yellow); }
+.home-step-num {
+  font-weight: 900;
+  font-size: 3.4rem;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--rnli-blue-light);
+  opacity: 0.85;
+}
+.dark .home-step-num { -webkit-text-stroke: 2px #2f4f8f; }
+.home-step:hover .home-step-num {
+  -webkit-text-stroke: 2px var(--rnli-yellow);
+  color: rgba(255, 184, 28, 0.08);
+}
+.home-step-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 4px; width: 100%;
+  background: linear-gradient(to right, var(--rnli-blue), var(--rnli-blue-light));
+}
+.home-step:hover .home-step-bar {
+  background: linear-gradient(to right, var(--rnli-yellow-dark), var(--rnli-yellow));
+}
+
+/* ── Feature tiles ── */
+.home-feature {
+  border-radius: 0.85rem;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 1.25rem;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  transition: transform 0.16s ease, border-color 0.16s ease;
+}
+.dark .home-feature { background: #131313; border-color: #242424; }
+.home-feature:hover { transform: translateY(-2px); border-color: var(--rnli-yellow); }
+.home-feature-ic {
+  flex-shrink: 0;
+  width: 2.6rem; height: 2.6rem;
+  display: grid; place-items: center;
+  border-radius: 0.65rem;
+  background: rgba(0, 48, 135, 0.08);
+  color: var(--rnli-blue);
+  font-size: 1.25rem;
+}
+.dark .home-feature-ic { background: rgba(94, 160, 255, 0.12); color: #7db0ff; }
+
+/* ── Bottom CTA band — diagonal gold ── */
+.home-cta-band {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, #001a5c, #003087 60%, #1a4a9f);
+  isolation: isolate;
+}
+.home-cta-band::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: -40%;
+  right: -10%;
+  width: 55%;
+  height: 200%;
+  background: linear-gradient(135deg, var(--rnli-yellow), var(--rnli-yellow-dark));
+  transform: skewX(-14deg);
+  opacity: 0.95;
+}
+/* Shimmer sweep across the gold wedge */
+.home-cta-band::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: -40%;
+  right: -10%;
+  width: 55%;
+  height: 200%;
+  transform: skewX(-14deg);
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
+  background-size: 220% 100%;
+  animation: home-shimmer 4.5s ease-in-out infinite;
+  mix-blend-mode: overlay;
+}
+@keyframes home-shimmer {
+  0%   { background-position: 130% 0; }
+  60%, 100% { background-position: -60% 0; }
+}
+
+@media (max-width: 640px) {
+  .home-cta-band::before,
+  .home-cta-band::after {
+    width: 100%;
+    right: 0;
+    top: auto;
+    bottom: -55%;
+    height: 90%;
+    transform: skewY(-8deg);
+  }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .home-wave--back,
+  .home-wave--front,
+  .btn-gold--pulse,
+  .home-season-pill .dot,
+  .home-cta-band::after {
+    animation: none !important;
+  }
+}

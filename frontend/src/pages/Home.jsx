@@ -1,183 +1,298 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { FiTarget, FiAward, FiTrendingUp, FiUsers, FiCheckCircle, FiStar } from 'react-icons/fi';
+import {
+  FiTarget,
+  FiAward,
+  FiTrendingUp,
+  FiUsers,
+  FiCheckCircle,
+  FiArrowRight,
+  FiZap,
+} from 'react-icons/fi';
 
 const HOW_IT_WORKS = [
   {
     step: '01',
-    title: 'Create an Account',
+    title: 'Get Invited',
     desc: 'Join via an invite link from an admin — then you\'re in and ready to play.',
-    icon: <FiUsers className="w-6 h-6" />,
+    icon: <FiUsers className="w-5 h-5" />,
   },
   {
     step: '02',
-    title: 'Submit Predictions',
-    desc: 'Predict the score of every Premier League fixture before kick-off.',
-    icon: <FiTarget className="w-6 h-6" />,
+    title: 'Call The Scores',
+    desc: 'Predict the scoreline of every Premier League fixture before kick-off.',
+    icon: <FiTarget className="w-5 h-5" />,
   },
   {
     step: '03',
-    title: 'Earn Points',
-    desc: '5 points for an exact score, 2 for the correct result. Every game counts.',
-    icon: <FiAward className="w-6 h-6" />,
+    title: 'Bank The Points',
+    desc: '5 for an exact score, 2 for the right result. Every match on the card counts.',
+    icon: <FiAward className="w-5 h-5" />,
   },
   {
     step: '04',
-    title: 'Top the Leaderboard',
-    desc: 'Track your rank week-by-week and claim bragging rights at the end of the season.',
-    icon: <FiTrendingUp className="w-6 h-6" />,
+    title: 'Top The Table',
+    desc: 'Track your rank week by week and claim the bragging rights come May.',
+    icon: <FiTrendingUp className="w-5 h-5" />,
   },
 ];
 
 const FEATURES = [
   { icon: '⚽', title: '380 Fixtures', desc: 'Every Premier League match across all 38 gameweeks.' },
   { icon: '📊', title: 'Live Leaderboard', desc: 'See where you stand overall and drill into any gameweek.' },
-  { icon: '🏆', title: 'Seasonal Competition', desc: 'Compete from August to May for the top spot.' },
-  { icon: '⚡', title: 'Instant Results', desc: 'Points update automatically the moment results are entered.' },
-  { icon: '📱', title: 'Any Device', desc: 'Works beautifully on mobile, tablet, and desktop.' },
-  { icon: '⚓', title: 'For the RNLI', desc: 'Built with pride by colleagues who support the RNLI mission.' },
+  { icon: '🏆', title: 'Season-Long', desc: 'Compete from the August kick-off to the final whistle in May.' },
+  { icon: '⚡', title: 'Instant Scoring', desc: 'Points update the moment results are entered. No waiting.' },
+  { icon: '📱', title: 'Any Device', desc: 'Plays beautifully on mobile, tablet and desktop.' },
+  { icon: '⚓', title: 'For the RNLI', desc: 'Built with pride by colleagues who back the RNLI mission.' },
 ];
+
+function HeroWaves() {
+  return (
+    <>
+      <div className="home-wave home-wave--back" aria-hidden="true">
+        <svg viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M0,40 C180,80 360,0 540,30 C720,60 900,10 1080,35 C1260,60 1380,30 1440,40 L1440,90 L0,90 Z"
+            fill="#FFB81C"
+          />
+        </svg>
+      </div>
+      <div className="home-wave home-wave--front" aria-hidden="true">
+        <svg viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M0,55 C200,20 380,75 560,50 C760,22 940,72 1140,48 C1300,28 1390,55 1440,50 L1440,90 L0,90 Z"
+            fill="#1a4a9f"
+          />
+        </svg>
+      </div>
+    </>
+  );
+}
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
   const { seasonName } = useSettings();
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-20">
       {/* ── Hero ── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-rnli-blue via-rnli-blue-light to-blue-700 text-white rounded-2xl shadow-2xl px-8 py-16 text-center">
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-white opacity-5 rounded-full" />
-        <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-rnli-yellow opacity-10 rounded-full" />
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 bg-white bg-opacity-15 text-rnli-yellow text-sm font-bold px-4 py-1.5 rounded-full mb-6 tracking-wide uppercase">
-            <FiStar className="w-3.5 h-3.5" />
-            Premier League {seasonName}
-          </div>
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <img src="/placeholder-logo.svg" alt="Logo" className="h-14 w-auto" />
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight">
-              Premier League Predictions
+      <section className="home-hero px-6 sm:px-10 lg:px-14 pt-12 sm:pt-16 pb-28 sm:pb-32">
+        <div className="relative z-10 grid lg:grid-cols-12 gap-10 items-center">
+          {/* Left: editorial copy */}
+          <div className="lg:col-span-7">
+            <div className="home-season-pill mb-6">
+              <span className="dot" />
+              Premier League · {seasonName}
+            </div>
+
+            <h1 className="home-hook text-5xl sm:text-6xl lg:text-7xl mb-6">
+              <span className="block">PREDICT.</span>
+              <span className="block gold">COMPETE.</span>
+              <span className="block outline">CONQUER.</span>
             </h1>
-          </div>
-          <p className="text-lg sm:text-xl text-blue-100 mb-2 max-w-xl mx-auto">
-            The Premier League prediction game for RNLI colleagues.
-          </p>
-          <p className="text-blue-200 text-sm mb-10 max-w-md mx-auto">
-            Predict scores, climb the leaderboard, and prove you know football.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            {isAuthenticated ? (
-              <>
-                <Link to="/predictions" className="btn-secondary text-base px-8 py-3 shadow-lg">
-                  Make Predictions
-                </Link>
-                <Link to="/dashboard" className="bg-white text-rnli-blue hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg transition-colors duration-200 text-base shadow">
-                  My Dashboard
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="btn-secondary text-base px-8 py-3 shadow-lg">
-                  Login to Play
-                </Link>
-                <Link to="/leaderboard" className="bg-white text-rnli-blue hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg transition-colors duration-200 text-base shadow">
-                  View Leaderboard
-                </Link>
-              </>
+
+            <p className="text-lg sm:text-xl text-blue-100 max-w-xl mb-2">
+              The Premier League prediction game built for RNLI colleagues.
+            </p>
+            <p className="text-blue-200/80 text-sm max-w-md mb-9">
+              Call every scoreline, climb the leaderboard, and prove — week after week — that
+              you really do know your football.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              {isAuthenticated ? (
+                <>
+                  <Link to="/predictions" className="btn-gold btn-gold--pulse text-base px-7 py-3.5">
+                    Make Predictions <FiArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link to="/dashboard" className="btn-ghost-light text-base px-7 py-3.5">
+                    My Dashboard
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className="btn-gold btn-gold--pulse text-base px-7 py-3.5">
+                    Login to Play <FiArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link to="/leaderboard" className="btn-ghost-light text-base px-7 py-3.5">
+                    View Leaderboard
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {isAuthenticated && (
+              <p className="mt-6 text-blue-200 text-sm">
+                Welcome back,{' '}
+                <span className="font-bold text-white">{user?.username}</span>. The card's
+                waiting — make your calls.
+              </p>
             )}
           </div>
-          {isAuthenticated && (
-            <p className="mt-6 text-blue-200 text-sm">
-              Welcome back, <span className="font-semibold text-white">{user?.username}</span>! Ready to predict?
-            </p>
-          )}
-        </div>
-      </div>
 
-      {/* ── Scoring System ── */}
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="card border-t-4 border-green-500 text-center">
-          <div className="text-4xl font-black text-green-600 mb-2">5 pts</div>
-          <div className="font-bold text-lg mb-1">Exact Score</div>
-          <p className="text-sm text-gray-500">Predict both scores perfectly</p>
+          {/* Right: bold logo lockup / matchday badge */}
+          <div className="lg:col-span-5">
+            <div className="relative mx-auto max-w-sm">
+              <div className="relative rounded-2xl bg-white/95 px-8 py-10 shadow-2xl">
+                <div
+                  className="absolute -top-3 left-6 px-3 py-1 rounded-md text-[0.65rem] font-extrabold tracking-widest uppercase text-rnli-blue-dark"
+                  style={{ background: '#FFB81C' }}
+                >
+                  Matchday
+                </div>
+                <img
+                  src="/placeholder-logo.svg"
+                  alt="Logo"
+                  className="h-20 w-auto mx-auto mb-6"
+                />
+                <div className="grid grid-cols-3 text-center divide-x divide-gray-200">
+                  <div className="px-2">
+                    <div className="text-2xl font-black text-rnli-blue leading-none">38</div>
+                    <div className="text-[0.62rem] font-bold uppercase tracking-wider text-gray-500 mt-1">
+                      Gameweeks
+                    </div>
+                  </div>
+                  <div className="px-2">
+                    <div className="text-2xl font-black text-rnli-blue leading-none">380</div>
+                    <div className="text-[0.62rem] font-bold uppercase tracking-wider text-gray-500 mt-1">
+                      Fixtures
+                    </div>
+                  </div>
+                  <div className="px-2">
+                    <div className="text-2xl font-black text-rnli-blue leading-none">£0</div>
+                    <div className="text-[0.62rem] font-bold uppercase tracking-wider text-gray-500 mt-1">
+                      To Play
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="card border-t-4 border-blue-400 text-center">
-          <div className="text-4xl font-black text-blue-600 mb-2">2 pts</div>
-          <div className="font-bold text-lg mb-1">Correct Result</div>
-          <p className="text-sm text-gray-500">Get the win, loss, or draw right</p>
-        </div>
-        <div className="card border-t-4 border-gray-300 text-center">
-          <div className="text-4xl font-black text-gray-400 mb-2">0 pts</div>
-          <div className="font-bold text-lg mb-1">Incorrect</div>
-          <p className="text-sm text-gray-500">Better luck next time!</p>
-        </div>
-      </div>
 
-      {/* ── How It Works ── */}
-      <div>
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-black text-rnli-blue mb-2">How It Works</h2>
-          <p className="text-gray-500 max-w-md mx-auto text-sm">
-            Get your invite, make your picks, and climb the table.
+        <HeroWaves />
+      </section>
+
+      {/* ── Scoring scoreboard ── */}
+      <section>
+        <div className="flex items-end justify-between gap-4 mb-6 flex-wrap">
+          <div>
+            <span className="home-kicker">The Scoring</span>
+            <h2 className="home-section-title text-3xl sm:text-4xl mt-3">
+              How points are won
+            </h2>
+          </div>
+          <p className="text-sm text-gray-500 max-w-xs">
+            Same rules for everyone. Nail the exact scoreline and you bank the lot.
           </p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <div className="home-scoreboard grid grid-cols-1 sm:grid-cols-3">
+          <div className="home-score-cell">
+            <div className="home-score-num is-gold">5</div>
+            <div className="home-score-label">Exact Score</div>
+            <div className="home-score-sub">Both scorelines spot on</div>
+          </div>
+          <div className="home-score-cell">
+            <div className="home-score-num is-blue">2</div>
+            <div className="home-score-label">Correct Result</div>
+            <div className="home-score-sub">Win, draw or loss called right</div>
+          </div>
+          <div className="home-score-cell">
+            <div className="home-score-num is-mute">0</div>
+            <div className="home-score-label">Missed It</div>
+            <div className="home-score-sub">There's always next week</div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works — match programme ── */}
+      <section>
+        <div className="text-center mb-10">
+          <span className="home-kicker">The Programme</span>
+          <h2 className="home-section-title text-3xl sm:text-4xl mt-3">
+            From kick-off to champion
+          </h2>
+          <p className="text-gray-500 max-w-md mx-auto text-sm mt-3">
+            Four moves between getting your invite and lifting the bragging rights.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {HOW_IT_WORKS.map((item) => (
-            <div key={item.step} className="card text-center group hover:shadow-lg transition-shadow">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-rnli-blue text-white mb-4 mx-auto group-hover:bg-rnli-yellow group-hover:text-gray-900 transition-colors">
-                {item.icon}
+            <div key={item.step} className="home-step">
+              <span className="home-step-bar" />
+              <div className="flex items-start justify-between mb-4">
+                <span className="home-step-num">{item.step}</span>
+                <span
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white"
+                  style={{ background: '#003087' }}
+                >
+                  {item.icon}
+                </span>
               </div>
-              <div className="text-xs font-bold text-rnli-yellow tracking-widest uppercase mb-2">
-                Step {item.step}
-              </div>
-              <h3 className="font-bold text-rnli-blue mb-2">{item.title}</h3>
+              <h3 className="font-extrabold text-lg mb-1.5 home-section-title">{item.title}</h3>
               <p className="text-sm text-gray-500">{item.desc}</p>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* ── Features Grid ── */}
-      <div>
+      {/* ── Features ── */}
+      <section>
         <div className="text-center mb-10">
-          <h2 className="text-3xl font-black text-rnli-blue mb-2">Everything You Need</h2>
-          <p className="text-gray-500 max-w-md mx-auto text-sm">
-            Built specifically for RNLI colleagues, with all the features to make the season memorable.
+          <span className="home-kicker">The Squad Sheet</span>
+          <h2 className="home-section-title text-3xl sm:text-4xl mt-3">
+            Everything you need
+          </h2>
+          <p className="text-gray-500 max-w-md mx-auto text-sm mt-3">
+            Built specifically for RNLI colleagues to make the season one to remember.
           </p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f) => (
-            <div key={f.title} className="card flex gap-4 items-start hover:shadow-lg transition-shadow">
-              <div className="text-3xl flex-shrink-0">{f.icon}</div>
+            <div key={f.title} className="home-feature">
+              <div className="home-feature-ic">{f.icon}</div>
               <div>
-                <h3 className="font-bold text-rnli-blue mb-1">{f.title}</h3>
+                <h3 className="font-extrabold mb-1 home-section-title">{f.title}</h3>
                 <p className="text-sm text-gray-500">{f.desc}</p>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* ── CTA ── */}
+      {/* ── Bottom CTA band ── */}
       {!isAuthenticated && (
-        <div className="card bg-gradient-to-r from-rnli-blue to-rnli-blue-light text-white text-center py-12">
-          <h2 className="text-3xl font-black mb-3">Ready to Play?</h2>
-          <p className="mb-8 text-blue-200 max-w-md mx-auto">
-            Join your RNLI colleagues, submit your first predictions, and start climbing the leaderboard.
-          </p>
-          <div className="flex justify-center gap-4 flex-wrap">
-            <Link to="/login" className="btn-secondary text-base px-8 py-3">
-              Login to Play
-            </Link>
-            <Link to="/leaderboard" className="bg-white text-rnli-blue hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg transition-colors text-base">
-              View Leaderboard
-            </Link>
+        <section className="home-cta-band px-8 sm:px-12 py-14">
+          <div className="relative z-10 max-w-xl">
+            <div className="inline-flex items-center gap-2 text-rnli-yellow font-extrabold text-xs uppercase tracking-widest mb-4">
+              <FiZap className="w-4 h-4" />
+              Invite only
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">
+              Got your invite?
+              <br className="hidden sm:block" /> Let's go.
+            </h2>
+            <p className="text-blue-100 max-w-md mb-8">
+              Log in to join your RNLI colleagues, submit your predictions, and start climbing
+              the leaderboard.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link to="/login" className="btn-gold btn-gold--pulse text-base px-7 py-3.5">
+                Login to Play <FiArrowRight className="w-4 h-4" />
+              </Link>
+              <Link to="/leaderboard" className="btn-ghost-light text-base px-7 py-3.5">
+                View Leaderboard
+              </Link>
+            </div>
+            <p className="mt-6 text-xs text-blue-200 flex items-center gap-1.5">
+              <FiCheckCircle className="w-3.5 h-3.5" /> Invite-only · No sign-up required
+            </p>
           </div>
-          <p className="mt-6 text-xs text-blue-300 flex items-center justify-center gap-1">
-            <FiCheckCircle className="w-3 h-3" /> Free to use · No credit card required
-          </p>
-        </div>
+        </section>
       )}
     </div>
   );
