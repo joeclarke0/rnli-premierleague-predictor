@@ -506,10 +506,10 @@ export default function Predictions() {
                 </div>
 
                 {/* ── Save / Locked button ── */}
-                <div className="mt-3">
+                <div className="mt-3 flex justify-end">
                   {closed ? (
                     <div className="pd-locked-btn">
-                      <ClosedIcon className="w-3.5 h-3.5" /> {closedLabel}
+                      <ClosedIcon className="w-3 h-3" /> {closedLabel}
                     </div>
                   ) : (
                     <button
@@ -518,11 +518,11 @@ export default function Predictions() {
                       className={hasPrediction ? 'pd-update-btn' : 'pd-save-btn'}
                     >
                       {isSaving ? (
-                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white/40 border-t-white" />
+                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-white/40 border-t-white" />
                       ) : hasPrediction ? (
-                        <><FiCheck className="w-3.5 h-3.5" /> Update</>
+                        <><FiCheck className="w-3 h-3" /> Update</>
                       ) : (
-                        <><FiSave className="w-3.5 h-3.5" /> Save</>
+                        <><FiSave className="w-3 h-3" /> Save</>
                       )}
                     </button>
                   )}

@@ -1817,42 +1817,40 @@
 
 /* ── Save / update buttons on each row ── */
 .pd-save-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.35rem;
-  width: 100%;
-  padding: 0.55rem;
-  font-size: 0.78rem;
+  padding: 0.38rem 0.85rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-radius: 0.5rem;
+  border-radius: 0.45rem;
   border: none;
   background: #003087;
   color: #fff;
   cursor: pointer;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 .pd-save-btn:hover { background: #1a4a9f; }
 
 .pd-update-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.35rem;
-  width: 100%;
-  padding: 0.55rem;
-  font-size: 0.78rem;
+  padding: 0.38rem 0.85rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-radius: 0.5rem;
+  border-radius: 0.45rem;
   border: 1.5px solid #16a34a;
   background: rgba(22,163,74,0.08);
   color: #16a34a;
   cursor: pointer;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 .pd-update-btn:hover { background: rgba(22,163,74,0.15); }
 .dark .pd-update-btn {
@@ -1863,20 +1861,19 @@
 .dark .pd-update-btn:hover { background: rgba(22,163,74,0.18); }
 
 .pd-locked-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.35rem;
-  width: 100%;
-  padding: 0.55rem;
-  font-size: 0.75rem;
+  padding: 0.38rem 0.85rem;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  border-radius: 0.5rem;
+  border-radius: 0.45rem;
   border: 1px solid #e5e7eb;
   background: #f9fafb;
   color: #9ca3af;
+  white-space: nowrap;
 }
 .dark .pd-locked-btn { background: #0f1a26; border-color: #1e293b; color: #475569; }
 

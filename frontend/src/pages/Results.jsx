@@ -245,16 +245,16 @@ export default function Results() {
                 </div>
 
                 {/* Save Button */}
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 flex justify-end">
                   {isPostponed ? (
-                    <div className="w-full text-sm py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1.5 bg-gray-200 text-gray-500 cursor-not-allowed">
+                    <div className="inline-flex items-center gap-1.5 text-sm py-1.5 px-3 rounded-lg font-semibold bg-gray-200 text-gray-500 cursor-not-allowed whitespace-nowrap">
                       <FiSlash className="w-3.5 h-3.5" /> Postponed
                     </div>
                   ) : (
                     <button
                       onClick={() => handleSubmit(fixture)}
                       disabled={isSaving}
-                      className={`w-full text-sm py-2 px-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 ${
+                      className={`inline-flex items-center gap-1.5 text-sm py-1.5 px-3 rounded-lg font-semibold transition-colors whitespace-nowrap ${
                         isSaved
                           ? 'bg-green-600 hover:bg-green-700 text-white'
                           : 'btn-primary'
