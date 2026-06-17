@@ -3030,3 +3030,25 @@
 
 /* Tone down the hover lift — keep background change, drop the bounce */
 .lb2-rank-row:hover { transform: none; box-shadow: none; }
+
+/* ── Rank number: quiet and muted — let the score be the hero ── */
+.lb2-rank-num {
+  font-weight: 500;
+  font-size: 0.78rem;
+  width: 2rem;
+}
+.lb2-rank-num--gold   { color: #b8970a; }
+.lb2-rank-num--silver { color: #8896aa; }
+.lb2-rank-num--bronze { color: #a0622a; }
+.lb2-rank-num--muted  { color: #b0bac8; }
+.dark .lb2-rank-num--gold   { color: #c49b1a; }
+.dark .lb2-rank-num--silver { color: #6b7a99; }
+.dark .lb2-rank-num--bronze { color: #9a6830; }
+.dark .lb2-rank-num--muted  { color: #3a4a62; }
+
+/* ── Points total: the hero number in each row ── */
+.lb2-total {
+  font-size: 1.45rem;
+  min-width: 3.5rem;
+}
+.lb2-total span { font-size: 0.65rem; }

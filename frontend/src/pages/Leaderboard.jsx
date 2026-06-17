@@ -401,7 +401,7 @@ function OverallView({ leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
         <div className="lb2-card mt-3">
           {/* Column header strip (desktop) */}
           <div className="hidden items-center gap-3 border-b border-gray-100 px-4 py-2.5 pl-[0.5rem] dark:border-gray-800 sm:flex">
-            <span className="lb2-col-label w-[2.5rem] text-center">Rank</span>
+            <span className="lb2-col-label w-[2rem] text-center">Rank</span>
             <span className="lb2-col-label flex-1">Player</span>
             <span className="lb2-col-label hidden w-16 text-center sm:flex justify-center">Move</span>
             <span className="lb2-col-label hidden w-32 text-center sm:flex justify-center">Form</span>
