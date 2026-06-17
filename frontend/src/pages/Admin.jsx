@@ -11,16 +11,16 @@ import {
 } from 'react-icons/fi';
 
 const TABS = [
-  { id: 'overview', label: 'Overview', icon: FiGrid },
-  { id: 'users', label: 'Users', icon: FiUsers },
-  { id: 'wildcards', label: 'Wildcards', icon: FiZap },
-  { id: 'predictions', label: 'Predictions', icon: FiBarChart2 },
-  { id: 'missing', label: 'Missing', icon: FiAlertCircle },
-  { id: 'fixtures', label: 'Fixtures', icon: FiUpload },
-  { id: 'invites', label: 'Invites', icon: FiMail },
+  { id: 'overview',     label: 'Overview',     icon: FiGrid       },
+  { id: 'users',        label: 'Users',        icon: FiUsers      },
+  { id: 'wildcards',    label: 'Wildcards',    icon: FiZap        },
+  { id: 'predictions',  label: 'Predictions',  icon: FiBarChart2  },
+  { id: 'missing',      label: 'Missing',      icon: FiAlertCircle },
+  { id: 'fixtures',     label: 'Fixtures',     icon: FiUpload     },
+  { id: 'invites',      label: 'Invites',      icon: FiMail       },
 ];
 
-// ── Overview Tab ─────────────────────────────────────────────────────────────
+// ── Overview Tab ──────────────────────────────────────────────────────────────
 function OverviewTab() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,44 +52,55 @@ function OverviewTab() {
     }
   };
 
-  if (loading) return <div className="animate-pulse space-y-4">{[1,2,3].map(i => <div key={i} className="card h-20 bg-gray-100" />)}</div>;
+  if (loading) return (
+    <div className="animate-pulse space-y-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <div key={i} className="adm-card h-24" />)}
+      </div>
+      <div className="adm-card h-24" />
+    </div>
+  );
   if (!data) return null;
 
-  const stats = [
-    { label: 'Registered Players', value: data.total_users, color: 'text-blue-600' },
-    { label: 'Total Predictions', value: data.total_predictions, color: 'text-green-600' },
-    { label: 'Results Entered', value: `${data.total_results} / ${data.total_fixtures}`, color: 'text-amber-700' },
-    { label: 'Season Progress', value: `${data.completion_pct}%`, color: 'text-rnli-blue' },
+  const tiles = [
+    { label: 'Registered Players', value: data.total_users,      accent: 'navy' },
+    { label: 'Total Predictions',  value: data.total_predictions, accent: 'green' },
+    { label: 'Results Entered',    value: `${data.total_results} / ${data.total_fixtures}`, accent: 'gold' },
+    { label: 'Season Progress',    value: `${data.completion_pct}%`, accent: 'navy' },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Stat tiles */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map(s => (
-          <div key={s.label} className="card">
-            <p className="text-xs text-gray-500 font-medium mb-1">{s.label}</p>
-            <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
+        {tiles.map(t => (
+          <div key={t.label} className="adm-card">
+            <p className="adm-tile-label">{t.label}</p>
+            <p className={`adm-tile-value adm-tile-value--${t.accent}`}>{t.value}</p>
           </div>
         ))}
       </div>
-      <div className="card">
-        <h3 className="font-bold text-gray-700 mb-3">Season Status</h3>
-        <div className="w-full bg-gray-100 rounded-full h-3 mb-2">
-          <div
-            className="bg-rnli-blue h-3 rounded-full transition-all duration-700"
-            style={{ width: `${data.completion_pct}%` }}
-          />
+
+      {/* Season progress */}
+      <div className="adm-card">
+        <div className="flex items-center justify-between mb-3">
+          <p className="adm-section-title">Season Progress</p>
+          {data.next_gameweek && (
+            <span className="adm-pill adm-pill--navy">Next: GW{data.next_gameweek}</span>
+          )}
         </div>
-        <p className="text-sm text-gray-500">
+        <div className="adm-progress-track mb-2">
+          <div className="adm-progress-bar" style={{ width: `${data.completion_pct}%` }} />
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {data.total_results} of {data.total_fixtures} fixtures have results entered.
-          {data.next_gameweek && <> Next up: <span className="font-semibold text-gray-700">Gameweek {data.next_gameweek}</span></>}
         </p>
       </div>
 
-      {/* Season label setting */}
-      <div className="card">
-        <h3 className="font-bold text-gray-700 mb-1">Season Label</h3>
-        <p className="text-xs text-gray-400 mb-3">Displayed in the navbar, footer, and homepage. Change this at the start of each new season.</p>
+      {/* Season label */}
+      <div className="adm-card">
+        <p className="adm-section-title mb-1">Season Label</p>
+        <p className="text-xs text-gray-400 mb-4">Displayed in the navbar, footer, and homepage.</p>
         {editingSeason ? (
           <div className="flex items-center gap-3">
             <input
@@ -97,33 +108,25 @@ function OverviewTab() {
               value={seasonInput}
               onChange={(e) => setSeasonInput(e.target.value)}
               placeholder="e.g. 2025/26"
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rnli-blue w-40"
+              className="input-field w-36 text-sm"
               onKeyDown={(e) => e.key === 'Enter' && handleSeasonSave()}
               autoFocus
             />
-            <button
-              onClick={handleSeasonSave}
-              disabled={savingSeason}
-              className="btn-primary text-sm px-4 py-2"
-            >
+            <button onClick={handleSeasonSave} disabled={savingSeason} className="adm-btn-primary text-sm px-4 py-2">
               {savingSeason ? 'Saving…' : 'Save'}
             </button>
-            <button
-              onClick={() => setEditingSeason(false)}
-              className="text-sm text-gray-500 hover:text-gray-700 px-2 py-2"
-            >
+            <button onClick={() => setEditingSeason(false)} className="text-sm text-gray-400 hover:text-gray-600 px-2 py-2">
               Cancel
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold text-rnli-blue">{seasonName}</span>
+            <span className="text-xl font-black text-[#FFB81C]">{seasonName}</span>
             <button
               onClick={() => { setSeasonInput(seasonName); setEditingSeason(true); }}
-              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-rnli-blue transition-colors border border-gray-200 rounded-lg px-3 py-1.5 hover:border-rnli-blue"
+              className="adm-action-btn"
             >
-              <FiEdit2 className="w-3.5 h-3.5" />
-              Change season
+              <FiEdit2 className="w-3.5 h-3.5" /> Change season
             </button>
           </div>
         )}
@@ -159,55 +162,44 @@ function ResetPasswordModal({ user, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="reset-pw-title"
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 id="reset-pw-title" className="font-bold text-gray-900 flex items-center gap-2">
-            <FiKey className="w-4 h-4 text-rnli-blue" /> Reset password
+      <div className="adm-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 id="reset-pw-title" className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <div className="adm-modal-icon"><FiKey className="w-4 h-4 text-[#FFB81C]" /></div>
+            Reset Password
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" aria-label="Close">
             <FiX className="w-5 h-5" />
           </button>
         </div>
-        <p className="text-sm text-gray-500 mb-4">
-          Set a new password for <span className="font-semibold text-gray-700">{user.username}</span>.
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Set a new password for <strong className="text-gray-700 dark:text-gray-200">{user.username}</strong>.
         </p>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label htmlFor="new-pw" className="block text-xs font-semibold text-gray-600 mb-1">New password</label>
-            <input
-              id="new-pw"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-              placeholder="At least 8 characters"
-              autoFocus
-            />
+            <label htmlFor="new-pw" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">New password</label>
+            <input id="new-pw" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              className="input-field" placeholder="At least 8 characters" autoFocus />
             {tooShort && <p className="text-xs text-orange-500 mt-1">Min 8 characters</p>}
           </div>
           <div>
-            <label htmlFor="confirm-pw" className="block text-xs font-semibold text-gray-600 mb-1">Confirm password</label>
-            <input
-              id="confirm-pw"
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className="input-field"
-              placeholder="Re-enter password"
-            />
+            <label htmlFor="confirm-pw" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Confirm password</label>
+            <input id="confirm-pw" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
+              className="input-field" placeholder="Re-enter password" />
             {mismatch && <p className="text-xs text-red-500 mt-1">Passwords do not match</p>}
           </div>
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 text-sm py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+            <button type="button" onClick={onClose}
+              className="flex-1 text-sm py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800">
               Cancel
             </button>
-            <button type="submit" disabled={!canSubmit} className="btn-primary flex-1 text-sm py-2 disabled:opacity-50">
+            <button type="submit" disabled={!canSubmit} className="adm-btn-primary flex-1 text-sm py-2 disabled:opacity-50">
               {saving ? 'Saving…' : 'Reset'}
             </button>
           </div>
@@ -257,94 +249,88 @@ function UsersTab() {
     }
   };
 
-  if (loading) return <div className="animate-pulse space-y-2">{[1,2,3,4].map(i => <div key={i} className="card h-16 bg-gray-100" />)}</div>;
+  if (loading) return (
+    <div className="animate-pulse space-y-2">
+      {[1,2,3,4].map(i => <div key={i} className="adm-card h-14" />)}
+    </div>
+  );
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center mb-2">
-        <p className="text-sm text-gray-500">{users.length} users registered</p>
-        <button onClick={load} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" aria-label="Refresh list">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          <strong className="text-gray-700 dark:text-gray-200">{users.length}</strong> users registered
+        </p>
+        <button onClick={load} className="adm-icon-btn" aria-label="Refresh list">
           <FiRefreshCw className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Table */}
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="adm-table-wrap">
+        <table className="adm-table">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">User</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Email</th>
-              <th className="text-center px-4 py-3 font-semibold text-gray-600">Predictions</th>
-              <th className="text-center px-4 py-3 font-semibold text-gray-600">Points</th>
-              <th className="text-center px-4 py-3 font-semibold text-gray-600">Role</th>
-              <th className="px-4 py-3"></th>
+            <tr className="adm-thead-row">
+              <th className="adm-th">User</th>
+              <th className="adm-th hidden sm:table-cell">Email</th>
+              <th className="adm-th text-center">Predictions</th>
+              <th className="adm-th text-center">Points</th>
+              <th className="adm-th text-center">Role</th>
+              <th className="adm-th" />
             </tr>
           </thead>
           <tbody>
-            {users.map((u, i) => (
-              <tr key={u.id} className={`border-b border-gray-200 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                <td className="px-4 py-3 font-medium text-gray-900">
+            {users.map((u) => (
+              <tr key={u.id} className="adm-tr">
+                <td className="adm-td font-semibold text-gray-900 dark:text-white">
                   {u.username}
-                  {u.id === currentUser?.id && <span className="ml-2 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">YOU</span>}
+                  {u.id === currentUser?.id && (
+                    <span className="ml-2 text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-bold">YOU</span>
+                  )}
                 </td>
-                <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{u.email}</td>
-                <td className="px-4 py-3 text-center text-gray-700">{u.prediction_count}</td>
-                <td className="px-4 py-3 text-center font-bold text-gray-900">
-                  <span className="inline-flex items-center gap-1.5 justify-center">
+                <td className="adm-td text-gray-500 dark:text-gray-400 hidden sm:table-cell">{u.email}</td>
+                <td className="adm-td text-center text-gray-600 dark:text-gray-300">{u.prediction_count}</td>
+                <td className="adm-td text-center">
+                  <span className="inline-flex items-center gap-1.5 justify-center font-bold text-gray-900 dark:text-white">
                     {u.total_points}
                     {u.has_wildcard && (
                       <span
-                        className="inline-flex items-center text-amber-500"
+                        className="text-amber-500"
                         title={`Wildcard active (Gameweek${u.wildcard_gameweeks?.length > 1 ? 's' : ''} ${(u.wildcard_gameweeks ?? []).join(', ')}) — total includes doubled points`}
-                        aria-label="Wildcard active — total includes doubled points"
                       >
                         <FiStar className="w-3.5 h-3.5 fill-current" />
                       </span>
                     )}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-center">
+                <td className="adm-td text-center">
                   {u.id === currentUser?.id ? (
-                    <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded-full font-semibold">
+                    <span className="adm-role-badge adm-role-badge--admin">
                       <FiShield className="w-3 h-3" /> admin
                     </span>
                   ) : (
-                    <button
-                      onClick={() => toggleRole(u)}
-                      className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-semibold border transition-colors ${
-                        u.role === 'admin'
-                          ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200'
-                          : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
-                      }`}
-                    >
+                    <button onClick={() => toggleRole(u)}
+                      className={`adm-role-badge adm-role-badge--clickable ${u.role === 'admin' ? 'adm-role-badge--admin' : 'adm-role-badge--user'}`}>
                       {u.role === 'admin' ? <FiShield className="w-3 h-3" /> : <FiUser className="w-3 h-3" />}
                       {u.role}
                     </button>
                   )}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="adm-td text-right">
                   {confirmDelete === u.id ? (
                     <div className="flex items-center gap-2 justify-end">
-                      <span className="text-xs text-red-600 font-medium">Delete?</span>
-                      <button onClick={() => deleteUser(u)} className="text-xs text-red-600 font-bold hover:underline">Yes</button>
+                      <span className="text-xs text-red-600 dark:text-red-400 font-medium">Delete?</span>
+                      <button onClick={() => deleteUser(u)} className="text-xs text-red-600 dark:text-red-400 font-bold hover:underline">Yes</button>
                       <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-500 hover:underline">No</button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1 justify-end">
-                      <button
-                        onClick={() => setResetUser(u)}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:text-rnli-blue hover:border-rnli-blue transition-colors"
-                        aria-label={`Reset password for ${u.username}`}
-                      >
-                        <FiKey className="w-3.5 h-3.5" /> Reset Password
+                      <button onClick={() => setResetUser(u)} className="adm-action-btn" aria-label={`Reset password for ${u.username}`}>
+                        <FiKey className="w-3.5 h-3.5" /> Reset
                       </button>
                       {u.id !== currentUser?.id && (
-                        <button
-                          onClick={() => setConfirmDelete(u.id)}
-                          className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                          aria-label={`Delete user ${u.username}`}
-                        >
+                        <button onClick={() => setConfirmDelete(u.id)}
+                          className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
+                          aria-label={`Delete user ${u.username}`}>
                           <FiTrash2 className="w-4 h-4" />
                         </button>
                       )}
@@ -357,9 +343,7 @@ function UsersTab() {
         </table>
       </div>
 
-      {resetUser && (
-        <ResetPasswordModal user={resetUser} onClose={() => setResetUser(null)} />
-      )}
+      {resetUser && <ResetPasswordModal user={resetUser} onClose={() => setResetUser(null)} />}
     </div>
   );
 }
@@ -382,25 +366,21 @@ function PredictionsTab() {
   useEffect(() => { load(gameweek); }, [gameweek]);
 
   const pointsColor = (pts) => {
-    // Wildcarded points are pre-doubled by the API: exact 5 -> 10, result 2 -> 4.
-    if (pts === 10) return 'bg-green-200 text-green-800';
-    if (pts === 5) return 'bg-green-100 text-green-700';
-    if (pts === 4) return 'bg-blue-200 text-blue-800';
-    if (pts === 2) return 'bg-blue-100 text-blue-700';
-    if (pts === 0) return 'bg-red-100 text-red-600';
-    return 'text-gray-400';
+    if (pts === 10) return 'adm-pts-badge adm-pts-badge--gold';
+    if (pts === 5)  return 'adm-pts-badge adm-pts-badge--green-hi';
+    if (pts === 4)  return 'adm-pts-badge adm-pts-badge--blue-hi';
+    if (pts === 2)  return 'adm-pts-badge adm-pts-badge--blue';
+    if (pts === 0)  return 'adm-pts-badge adm-pts-badge--red';
+    return 'adm-pts-badge';
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <label className="text-sm font-semibold text-gray-700">Gameweek:</label>
+        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gameweek</label>
         <div className="relative">
-          <select
-            value={gameweek}
-            onChange={e => setGameweek(Number(e.target.value))}
-            className="input-field w-36 pr-8 appearance-none"
-          >
+          <select value={gameweek} onChange={e => setGameweek(Number(e.target.value))}
+            className="input-field w-36 pr-8 appearance-none">
             {Array.from({ length: 38 }, (_, i) => i + 1).map(gw => (
               <option key={gw} value={gw}>Gameweek {gw}</option>
             ))}
@@ -409,36 +389,34 @@ function PredictionsTab() {
         </div>
       </div>
 
-      {loading && <div className="animate-pulse card h-40 bg-gray-100" />}
+      {loading && <div className="animate-pulse adm-card h-40" />}
 
       {data && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {data.fixtures.length === 0 && (
-            <div className="card text-center text-gray-500 py-10">No fixtures for this gameweek.</div>
+            <div className="adm-card text-center text-gray-500 dark:text-gray-400 py-10">No fixtures for this gameweek.</div>
           )}
           {data.fixtures.map(f => (
-            <div key={f.fixture_id} className="card p-0 overflow-hidden">
+            <div key={f.fixture_id} className="adm-table-wrap">
               {/* Fixture header */}
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <span className="font-bold text-gray-900 text-sm">{f.home_team} vs {f.away_team}</span>
+              <div className="flex items-center justify-between px-4 py-3 bg-[#003087] rounded-t-xl">
+                <span className="font-bold text-white text-sm">{f.home_team} vs {f.away_team}</span>
                 {f.result ? (
-                  <span className="text-sm font-black text-green-600">{f.result.home} – {f.result.away}</span>
+                  <span className="text-base font-black text-[#FFB81C]">{f.result.home} – {f.result.away}</span>
                 ) : (
-                  <span className="text-xs text-gray-400 italic">No result yet</span>
+                  <span className="text-xs text-white/50 italic">No result yet</span>
                 )}
               </div>
-              {/* Predictions grid */}
-              <div className="divide-y divide-gray-100">
+              {/* Predictions */}
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {f.predictions.map(p => (
-                  <div key={p.user_id} className="flex items-center justify-between px-4 py-2 text-sm">
-                    <span className="text-gray-700 font-medium w-28 truncate">{p.username}</span>
+                  <div key={p.user_id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                    <span className="text-gray-700 dark:text-gray-300 font-medium w-28 truncate">{p.username}</span>
                     {p.predicted_home !== null ? (
                       <div className="flex items-center gap-3">
-                        <span className="font-bold text-gray-900">{p.predicted_home} – {p.predicted_away}</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{p.predicted_home} – {p.predicted_away}</span>
                         {p.points !== null && (
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${pointsColor(p.points)}`}>
-                            {p.points} pts
-                          </span>
+                          <span className={pointsColor(p.points)}>{p.points} pts</span>
                         )}
                       </div>
                     ) : (
@@ -472,19 +450,16 @@ function MissingTab() {
 
   useEffect(() => { load(gameweek); }, [gameweek]);
 
-  const missing = data?.summary.filter(u => !u.complete) ?? [];
+  const missing  = data?.summary.filter(u => !u.complete) ?? [];
   const complete = data?.summary.filter(u => u.complete) ?? [];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <label className="text-sm font-semibold text-gray-700">Gameweek:</label>
+        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gameweek</label>
         <div className="relative">
-          <select
-            value={gameweek}
-            onChange={e => setGameweek(Number(e.target.value))}
-            className="input-field w-36 pr-8 appearance-none"
-          >
+          <select value={gameweek} onChange={e => setGameweek(Number(e.target.value))}
+            className="input-field w-36 pr-8 appearance-none">
             {Array.from({ length: 38 }, (_, i) => i + 1).map(gw => (
               <option key={gw} value={gw}>Gameweek {gw}</option>
             ))}
@@ -493,28 +468,24 @@ function MissingTab() {
         </div>
       </div>
 
-      {loading && <div className="animate-pulse card h-40 bg-gray-100" />}
+      {loading && <div className="animate-pulse adm-card h-40" />}
 
       {data && (
         <div className="grid sm:grid-cols-2 gap-4">
           {/* Missing */}
-          <div className="card p-0 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border-b border-red-200">
-              <FiXCircle className="w-4 h-4 text-red-500" />
-              <span className="font-bold text-red-700 text-sm">
-                Missing Predictions ({missing.length})
-              </span>
+          <div className="adm-table-wrap">
+            <div className="flex items-center gap-2 px-4 py-3 bg-red-600 rounded-t-xl">
+              <FiXCircle className="w-4 h-4 text-white" />
+              <span className="font-bold text-white text-sm">Missing ({missing.length})</span>
             </div>
             {missing.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-500 text-center">Everyone has predicted! 🎉</p>
+              <p className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 text-center">Everyone has predicted! 🎉</p>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                 {missing.map(u => (
                   <li key={u.user_id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                    <span className="font-medium text-gray-900">{u.username}</span>
-                    <span className="text-red-600 font-semibold text-xs">
-                      {u.submitted}/{u.total} done
-                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">{u.username}</span>
+                    <span className="text-red-500 font-semibold text-xs">{u.submitted}/{u.total} done</span>
                   </li>
                 ))}
               </ul>
@@ -522,21 +493,19 @@ function MissingTab() {
           </div>
 
           {/* Complete */}
-          <div className="card p-0 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border-b border-green-200">
-              <FiCheckCircle className="w-4 h-4 text-green-600" />
-              <span className="font-bold text-green-700 text-sm">
-                All Done ({complete.length})
-              </span>
+          <div className="adm-table-wrap">
+            <div className="flex items-center gap-2 px-4 py-3 bg-green-600 rounded-t-xl">
+              <FiCheckCircle className="w-4 h-4 text-white" />
+              <span className="font-bold text-white text-sm">All Done ({complete.length})</span>
             </div>
             {complete.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-gray-500 text-center">No completed predictions yet.</p>
+              <p className="px-4 py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No completed predictions yet.</p>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                 {complete.map(u => (
                   <li key={u.user_id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                    <span className="font-medium text-gray-900">{u.username}</span>
-                    <span className="text-green-600 font-semibold text-xs">{u.total}/{u.total} ✓</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{u.username}</span>
+                    <span className="text-green-500 font-semibold text-xs">{u.total}/{u.total} ✓</span>
                   </li>
                 ))}
               </ul>
@@ -555,8 +524,6 @@ const TEMPLATE_ROWS = [
   '1,2025-08-16,15:00,Liverpool,Everton,Anfield',
 ];
 
-// Manage per-fixture status (scheduled / postponed). Lets an admin postpone a
-// fixture (excluding it from scoring + locking predictions) or reschedule it.
 function FixtureStatusManager() {
   const [gameweek, setGameweek] = useState(1);
   const [fixtures, setFixtures] = useState([]);
@@ -586,25 +553,22 @@ function FixtureStatusManager() {
     }
   };
 
-  const statusBadge = (status) => {
-    if (status === 'postponed') return 'bg-amber-100 text-amber-700';
-    if (status === 'completed') return 'bg-green-100 text-green-700';
-    return 'bg-gray-100 text-gray-600';
+  const statusCls = (status) => {
+    if (status === 'postponed') return 'adm-status-badge adm-status-badge--amber';
+    if (status === 'completed') return 'adm-status-badge adm-status-badge--green';
+    return 'adm-status-badge adm-status-badge--gray';
   };
 
   return (
-    <div className="card">
+    <div className="adm-card">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="font-bold text-gray-700">Fixture Status</h3>
-          <p className="text-xs text-gray-400">Postpone a fixture to exclude it from scoring, or reschedule it back.</p>
+          <p className="adm-section-title">Fixture Status</p>
+          <p className="text-xs text-gray-400 mt-0.5">Postpone to exclude from scoring, or reschedule.</p>
         </div>
         <div className="relative">
-          <select
-            value={gameweek}
-            onChange={(e) => setGameweek(Number(e.target.value))}
-            className="input-field w-36 pr-8 appearance-none"
-          >
+          <select value={gameweek} onChange={(e) => setGameweek(Number(e.target.value))}
+            className="input-field w-36 pr-8 appearance-none">
             {Array.from({ length: 38 }, (_, i) => i + 1).map((gw) => (
               <option key={gw} value={gw}>Gameweek {gw}</option>
             ))}
@@ -614,38 +578,30 @@ function FixtureStatusManager() {
       </div>
 
       {loading ? (
-        <div className="animate-pulse space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-gray-100 rounded" />)}</div>
+        <div className="animate-pulse space-y-2">{[1,2,3].map((i) => <div key={i} className="h-12 bg-gray-100 dark:bg-gray-800 rounded" />)}</div>
       ) : fixtures.length === 0 ? (
         <p className="text-sm text-gray-500 text-center py-6">No fixtures for this gameweek.</p>
       ) : (
-        <ul className="divide-y divide-gray-100">
+        <ul className="divide-y divide-gray-100 dark:divide-gray-800">
           {fixtures.map((f) => {
             const postponed = f.status === 'postponed';
             const busy = updatingId === f.id;
             return (
               <li key={f.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{f.home_team} vs {f.away_team}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{f.home_team} vs {f.away_team}</p>
                   <p className="text-xs text-gray-400">{f.date}{f.time ? ` · ${f.time}` : ''}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadge(f.status)}`}>
-                    {f.status || 'scheduled'}
-                  </span>
+                  <span className={statusCls(f.status)}>{f.status || 'scheduled'}</span>
                   {postponed ? (
-                    <button
-                      onClick={() => setStatus(f, 'scheduled')}
-                      disabled={busy}
-                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-gray-200 text-gray-600 hover:border-rnli-blue hover:text-rnli-blue transition-colors disabled:opacity-50"
-                    >
+                    <button onClick={() => setStatus(f, 'scheduled')} disabled={busy}
+                      className="adm-action-btn disabled:opacity-50">
                       <FiCalendar className="w-3.5 h-3.5" /> Reschedule
                     </button>
                   ) : (
-                    <button
-                      onClick={() => setStatus(f, 'postponed')}
-                      disabled={busy}
-                      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors disabled:opacity-50"
-                    >
+                    <button onClick={() => setStatus(f, 'postponed')} disabled={busy}
+                      className="adm-action-btn adm-action-btn--amber disabled:opacity-50">
                       <FiSlash className="w-3.5 h-3.5" /> Postpone
                     </button>
                   )}
@@ -667,20 +623,13 @@ function FixturesTab() {
   const [error, setError] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
 
-  const handleFile = (f) => {
-    setFile(f);
-    setResult(null);
-    setError(null);
-    setConfirmed(false);
-  };
+  const handleFile = (f) => { setFile(f); setResult(null); setError(null); setConfirmed(false); };
 
   const downloadTemplate = () => {
     const blob = new Blob([TEMPLATE_ROWS.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'fixtures_template.csv';
-    a.click();
+    a.href = url; a.download = 'fixtures_template.csv'; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -688,27 +637,20 @@ function FixturesTab() {
     if (!file || !confirmed) return;
     const formData = new FormData();
     formData.append('file', file);
-    setUploading(true);
-    setError(null);
+    setUploading(true); setError(null);
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/admin/fixtures/upload?replace=true`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-          body: formData,
-        }
+        { method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }, body: formData }
       );
       const data = await res.json();
       if (!res.ok) {
         const detail = data.detail;
-        const msg = typeof detail === 'object' ? detail.message : detail;
+        const msg  = typeof detail === 'object' ? detail.message : detail;
         const errs = typeof detail === 'object' ? detail.errors : [];
         setError({ message: msg, errors: errs });
       } else {
-        setResult(data);
-        setFile(null);
-        setConfirmed(false);
+        setResult(data); setFile(null); setConfirmed(false);
         toast.success(`${data.imported} fixtures imported across ${data.gameweeks.length} gameweeks!`);
       }
     } catch {
@@ -719,26 +661,21 @@ function FixturesTab() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      {/* Fixture status management */}
+    <div className="space-y-5 max-w-2xl">
       <FixtureStatusManager />
 
       {/* Instructions */}
-      <div className="card bg-blue-50 border border-blue-200">
-        <h3 className="font-bold text-rnli-blue mb-2">How to load or update fixtures</h3>
-        <ol className="text-sm text-gray-700 space-y-1.5 list-decimal list-inside">
-          <li>Download the <strong>CSV template</strong> below to see the required format.</li>
-          <li>Get the fixture list from <strong>football-data.co.uk</strong> (free, download the season CSV) or prepare your own using the template format.</li>
-          <li>Ensure your CSV has these columns: <code className="bg-white px-1 rounded text-xs">week, date, home, away</code> — plus optional <code className="bg-white px-1 rounded text-xs">time, venue</code>.</li>
-          <li>Dates must be in <code className="bg-white px-1 rounded text-xs">YYYY-MM-DD</code> format; times in <code className="bg-white px-1 rounded text-xs">HH:MM</code>.</li>
-          <li>Upload the file below — fixtures are <strong>matched on teams + gameweek and updated in place</strong>. New fixtures are added; existing predictions and results are preserved.</li>
+      <div className="adm-info-card adm-info-card--blue">
+        <p className="adm-section-title mb-2">How to load or update fixtures</p>
+        <ol className="text-sm text-gray-700 dark:text-gray-300 space-y-1.5 list-decimal list-inside">
+          <li>Download the <strong>CSV template</strong> below.</li>
+          <li>Get fixture data from <strong>football-data.co.uk</strong> or prepare your own.</li>
+          <li>Required columns: <code className="adm-code">week, date, home, away</code> — optional: <code className="adm-code">time, venue</code>.</li>
+          <li>Dates: <code className="adm-code">YYYY-MM-DD</code> · times: <code className="adm-code">HH:MM</code>.</li>
+          <li>Existing predictions and results are preserved on import.</li>
         </ol>
-        <button
-          onClick={downloadTemplate}
-          className="mt-3 flex items-center gap-2 text-xs font-semibold text-rnli-blue hover:underline"
-        >
-          <FiDownload className="w-3.5 h-3.5" />
-          Download CSV template
+        <button onClick={downloadTemplate} className="mt-3 flex items-center gap-2 text-xs font-semibold text-[#003087] dark:text-[#93c5fd] hover:underline">
+          <FiDownload className="w-3.5 h-3.5" /> Download CSV template
         </button>
       </div>
 
@@ -747,28 +684,21 @@ function FixturesTab() {
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-        className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer ${
-          dragOver ? 'border-rnli-blue bg-blue-50' : file ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-rnli-blue hover:bg-blue-50'
-        }`}
+        className={`adm-dropzone ${dragOver ? 'adm-dropzone--drag' : file ? 'adm-dropzone--ready' : ''}`}
         onClick={() => document.getElementById('fixture-csv-input').click()}
       >
-        <input
-          id="fixture-csv-input"
-          type="file"
-          accept=".csv"
-          className="hidden"
-          onChange={(e) => { if (e.target.files[0]) handleFile(e.target.files[0]); }}
-        />
+        <input id="fixture-csv-input" type="file" accept=".csv" className="hidden"
+          onChange={(e) => { if (e.target.files[0]) handleFile(e.target.files[0]); }} />
         {file ? (
           <div className="space-y-1">
             <FiCheckCircle className="w-8 h-8 text-green-500 mx-auto" />
-            <p className="font-semibold text-green-700">{file.name}</p>
-            <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB · click to change</p>
+            <p className="font-bold text-green-600 dark:text-green-400">{file.name}</p>
+            <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(1)} KB · click to change</p>
           </div>
         ) : (
           <div className="space-y-2">
-            <FiUpload className="w-8 h-8 text-gray-400 mx-auto" />
-            <p className="font-semibold text-gray-600">Drop your CSV here, or click to browse</p>
+            <FiUpload className="w-8 h-8 text-gray-300 mx-auto" />
+            <p className="font-semibold text-gray-500 dark:text-gray-400">Drop your CSV here, or click to browse</p>
             <p className="text-xs text-gray-400">Accepts .csv files only</p>
           </div>
         )}
@@ -776,27 +706,19 @@ function FixturesTab() {
 
       {/* Confirmation */}
       {file && (
-        <div className="card bg-blue-50 border border-blue-200">
-          <p className="text-sm font-semibold text-blue-800 mb-2">This import updates matching fixtures and adds new ones. Existing predictions and results are preserved.</p>
-          <label className="flex items-center gap-2 text-sm text-blue-900 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={confirmed}
-              onChange={(e) => setConfirmed(e.target.checked)}
-              className="w-4 h-4"
-            />
+        <div className="adm-info-card adm-info-card--blue">
+          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+            This import updates matching fixtures and adds new ones. Existing predictions and results are preserved.
+          </p>
+          <label className="flex items-center gap-2 text-sm text-blue-900 dark:text-blue-200 cursor-pointer">
+            <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="w-4 h-4" />
             I understand — import these fixtures
           </label>
         </div>
       )}
 
-      {/* Upload button */}
       {file && (
-        <button
-          onClick={handleUpload}
-          disabled={uploading || !confirmed}
-          className="btn-primary flex items-center gap-2 disabled:opacity-50"
-        >
+        <button onClick={handleUpload} disabled={uploading || !confirmed} className="adm-btn-primary flex items-center gap-2 disabled:opacity-50">
           {uploading ? (
             <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Uploading…</>
           ) : (
@@ -805,27 +727,23 @@ function FixturesTab() {
         </button>
       )}
 
-      {/* Error */}
       {error && (
-        <div className="card bg-red-50 border border-red-300">
-          <p className="font-semibold text-red-700 mb-2">{error.message}</p>
+        <div className="adm-info-card adm-info-card--red">
+          <p className="font-semibold text-red-700 dark:text-red-400 mb-2">{error.message}</p>
           {error.errors?.length > 0 && (
-            <ul className="text-xs text-red-600 space-y-1 list-disc list-inside">
+            <ul className="text-xs text-red-600 dark:text-red-400 space-y-1 list-disc list-inside">
               {error.errors.map((e, i) => <li key={i}>{e}</li>)}
             </ul>
           )}
         </div>
       )}
 
-      {/* Success */}
       {result && (
-        <div className="card bg-green-50 border border-green-300">
-          <p className="font-bold text-green-700 text-lg mb-1">Import successful!</p>
-          <p className="text-sm text-green-800">
-            {result.imported} fixtures processed across gameweeks {result.gameweeks[0]}–{result.gameweeks[result.gameweeks.length - 1]}
-            {typeof result.inserted === 'number' && (
-              <> ({result.inserted} added, {result.updated} updated).</>
-            )}
+        <div className="adm-info-card adm-info-card--green">
+          <p className="font-black text-green-700 dark:text-green-400 text-lg mb-1">Import successful!</p>
+          <p className="text-sm text-green-800 dark:text-green-300">
+            {result.imported} fixtures across GW{result.gameweeks[0]}–GW{result.gameweeks[result.gameweeks.length - 1]}
+            {typeof result.inserted === 'number' && <> ({result.inserted} added, {result.updated} updated).</>}
           </p>
         </div>
       )}
@@ -849,7 +767,6 @@ function InvitesTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Build an absolute URL for sharing from the relative invite_url the API returns.
   const fullUrl = (path) => `${window.location.origin}${path}`;
 
   const copyLink = async (path) => {
@@ -858,7 +775,6 @@ function InvitesTab() {
       await navigator.clipboard.writeText(url);
       toast.success('Invite link copied to clipboard');
     } catch {
-      // Clipboard API can fail on insecure contexts; show the URL as a fallback.
       toast.error('Could not copy automatically — copy manually');
       window.prompt('Copy this invite link:', url);
     }
@@ -887,10 +803,10 @@ function InvitesTab() {
     }
   };
 
-  const statusBadge = (status) => {
-    if (status === 'used') return 'bg-green-100 text-green-700';
-    if (status === 'expired') return 'bg-gray-100 text-gray-500';
-    return 'bg-blue-100 text-blue-700';
+  const inviteStatusCls = (status) => {
+    if (status === 'used')    return 'adm-status-badge adm-status-badge--green';
+    if (status === 'expired') return 'adm-status-badge adm-status-badge--gray';
+    return 'adm-status-badge adm-status-badge--blue';
   };
 
   const pending = invites.filter((i) => i.status === 'pending');
@@ -899,14 +815,13 @@ function InvitesTab() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <p className="text-sm text-gray-500">{pending.length} pending · {invites.length} total</p>
-          <p className="text-xs text-gray-400">Each invite link can be used once and expires after 7 days.</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            <strong>{pending.length}</strong> pending · <strong>{invites.length}</strong> total
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">Each link can be used once, expires after 7 days.</p>
         </div>
-        <button
-          onClick={generate}
-          disabled={generating}
-          className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50"
-        >
+        <button onClick={generate} disabled={generating}
+          className="adm-btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50">
           {generating ? (
             <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Generating…</>
           ) : (
@@ -916,53 +831,43 @@ function InvitesTab() {
       </div>
 
       {loading ? (
-        <div className="animate-pulse space-y-2">{[1, 2, 3].map((i) => <div key={i} className="card h-16 bg-gray-100" />)}</div>
+        <div className="animate-pulse space-y-2">{[1,2,3].map((i) => <div key={i} className="adm-card h-14" />)}</div>
       ) : invites.length === 0 ? (
-        <div className="card text-center py-10 text-gray-400">No invites yet. Generate one to invite a player.</div>
+        <div className="adm-card text-center py-10 text-gray-400">No invites yet. Generate one to invite a player.</div>
       ) : (
-        <div className="card p-0 overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="adm-table-wrap">
+          <table className="adm-table">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Used by</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Expires</th>
-                <th className="px-4 py-3"></th>
+              <tr className="adm-thead-row">
+                <th className="adm-th">Status</th>
+                <th className="adm-th hidden sm:table-cell">Used by</th>
+                <th className="adm-th hidden md:table-cell">Expires</th>
+                <th className="adm-th" />
               </tr>
             </thead>
             <tbody>
-              {invites.map((inv, i) => (
-                <tr key={inv.id} className={`border-b border-gray-200 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                  <td className="px-4 py-3">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadge(inv.status)}`}>
-                      {inv.status}
-                    </span>
+              {invites.map((inv) => (
+                <tr key={inv.id} className="adm-tr">
+                  <td className="adm-td">
+                    <span className={inviteStatusCls(inv.status)}>{inv.status}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{inv.used_by || '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell">
+                  <td className="adm-td text-gray-500 dark:text-gray-400 hidden sm:table-cell">{inv.used_by || '—'}</td>
+                  <td className="adm-td text-gray-500 dark:text-gray-400 hidden md:table-cell">
                     {inv.expires_at ? new Date(inv.expires_at).toLocaleDateString() : '—'}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center gap-1 justify-end">
-                      {inv.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => copyLink(inv.invite_url)}
-                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-gray-200 text-gray-500 hover:text-rnli-blue hover:border-rnli-blue transition-colors"
-                            aria-label="Copy invite link"
-                          >
-                            <FiCopy className="w-3.5 h-3.5" /> Copy
-                          </button>
-                          <button
-                            onClick={() => revoke(inv)}
-                            className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                            aria-label="Revoke invite"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                  <td className="adm-td text-right">
+                    {inv.status === 'pending' && (
+                      <div className="flex items-center gap-1 justify-end">
+                        <button onClick={() => copyLink(inv.invite_url)} className="adm-action-btn" aria-label="Copy invite link">
+                          <FiCopy className="w-3.5 h-3.5" /> Copy
+                        </button>
+                        <button onClick={() => revoke(inv)}
+                          className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-colors"
+                          aria-label="Revoke invite">
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -989,65 +894,61 @@ function WildcardsTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  const used = users.filter(u => u.has_wildcard);
+  const used      = users.filter(u => u.has_wildcard);
   const available = users.filter(u => !u.has_wildcard);
 
-  if (loading) {
-    return <div className="animate-pulse space-y-2">{[1,2,3,4].map(i => <div key={i} className="card h-16 bg-gray-100" />)}</div>;
-  }
+  if (loading) return (
+    <div className="animate-pulse space-y-2">{[1,2,3,4].map(i => <div key={i} className="adm-card h-14" />)}</div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Summary */}
+    <div className="space-y-5">
       <div className="grid sm:grid-cols-3 gap-4">
-        <div className="card text-center">
-          <p className="text-xs text-gray-500 font-medium mb-1">Total Players</p>
-          <p className="text-3xl font-black text-rnli-blue">{users.length}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-500 font-medium mb-1">Wildcard Used</p>
-          <p className="text-3xl font-black text-amber-500">{used.length}</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-xs text-gray-500 font-medium mb-1">Still Available</p>
-          <p className="text-3xl font-black text-green-600">{available.length}</p>
-        </div>
+        {[
+          { label: 'Total Players',    value: users.length,     accent: 'navy'  },
+          { label: 'Wildcard Used',    value: used.length,      accent: 'gold'  },
+          { label: 'Still Available',  value: available.length, accent: 'green' },
+        ].map(t => (
+          <div key={t.label} className="adm-card text-center">
+            <p className="adm-tile-label text-center">{t.label}</p>
+            <p className={`adm-tile-value adm-tile-value--${t.accent} text-center`}>{t.value}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="card p-0 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <h3 className="font-bold text-gray-700 text-sm">Wildcard Status — All Players</h3>
-          <button onClick={load} className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 transition-colors" aria-label="Refresh">
+      <div className="adm-table-wrap">
+        <div className="flex items-center justify-between px-4 py-3 bg-[#003087] rounded-t-xl">
+          <h3 className="font-bold text-white text-sm">Wildcard Status — All Players</h3>
+          <button onClick={load} className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors" aria-label="Refresh">
             <FiRefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
-        <table className="w-full text-sm">
+        <table className="adm-table">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">Player</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Email</th>
-              <th className="text-center px-4 py-3 font-semibold text-gray-600">Status</th>
-              <th className="text-center px-4 py-3 font-semibold text-gray-600">Gameweek Used</th>
+            <tr className="adm-thead-row">
+              <th className="adm-th">Player</th>
+              <th className="adm-th hidden sm:table-cell">Email</th>
+              <th className="adm-th text-center">Status</th>
+              <th className="adm-th text-center">Gameweek Used</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((u, i) => (
-              <tr key={u.id} className={`border-b border-gray-200 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                <td className="px-4 py-3 font-medium text-gray-900">{u.username}</td>
-                <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{u.email}</td>
-                <td className="px-4 py-3 text-center">
+            {users.map((u) => (
+              <tr key={u.id} className="adm-tr">
+                <td className="adm-td font-semibold text-gray-900 dark:text-white">{u.username}</td>
+                <td className="adm-td text-gray-500 dark:text-gray-400 hidden sm:table-cell">{u.email}</td>
+                <td className="adm-td text-center">
                   {u.has_wildcard ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+                    <span className="adm-status-badge adm-status-badge--amber inline-flex items-center gap-1">
                       <FiZap className="w-3 h-3" /> Used
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-green-100 text-green-700">
+                    <span className="adm-status-badge adm-status-badge--green inline-flex items-center gap-1">
                       <FiCheckCircle className="w-3 h-3" /> Available
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-center text-gray-700">
+                <td className="adm-td text-center text-gray-700 dark:text-gray-300">
                   {u.has_wildcard && u.wildcard_gameweeks?.length > 0
                     ? u.wildcard_gameweeks.map(gw => `GW${gw}`).join(', ')
                     : <span className="text-gray-400">—</span>}
@@ -1067,42 +968,43 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-rnli-blue">Admin Panel</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage users, view predictions and track missing entries</p>
+      {/* ── Header banner ── */}
+      <div className="adm-banner">
+        <span className="adm-goldbar" aria-hidden="true" />
+        <div className="relative z-10">
+          <span className="adm-kicker">Administration</span>
+          <h1 className="adm-title mt-2">Admin Panel</h1>
+          <p className="mt-1.5 text-sm text-white/60">Manage users, fixtures, wildcards and invites</p>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
+      {/* ── Tab bar ── */}
+      <div className="adm-tab-bar">
         {TABS.map(tab => {
           const Icon = tab.icon;
+          const active = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                activeTab === tab.id
-                  ? 'border-rnli-blue text-rnli-blue'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`adm-tab ${active ? 'adm-tab--active' : ''}`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5 shrink-0" />
               {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* Tab content */}
+      {/* ── Tab content ── */}
       <div>
-        {activeTab === 'overview' && <OverviewTab />}
-        {activeTab === 'users' && <UsersTab />}
-        {activeTab === 'wildcards' && <WildcardsTab />}
+        {activeTab === 'overview'    && <OverviewTab />}
+        {activeTab === 'users'       && <UsersTab />}
+        {activeTab === 'wildcards'   && <WildcardsTab />}
         {activeTab === 'predictions' && <PredictionsTab />}
-        {activeTab === 'missing' && <MissingTab />}
-        {activeTab === 'fixtures' && <FixturesTab />}
-        {activeTab === 'invites' && <InvitesTab />}
+        {activeTab === 'missing'     && <MissingTab />}
+        {activeTab === 'fixtures'    && <FixturesTab />}
+        {activeTab === 'invites'     && <InvitesTab />}
       </div>
     </div>
   );
