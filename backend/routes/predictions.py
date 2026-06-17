@@ -263,17 +263,19 @@ def activate_wildcard(
 @router.delete("/wildcard")
 def deactivate_wildcard(
     gameweek: int = Query(..., ge=1, le=38),
-    current_user: User = Depends(get_current_user),
+    user_id: str | None = Query(None, description="Target user ID (admin only)"),
+    current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """
-    Deactivate the current user's wildcard for a gameweek.
+    Deactivate a wildcard for a gameweek. Admin-only.
 
-    Blocked with 403 once any result exists for the gameweek (same gate as
-    activation). Idempotent: deactivating when none is active is a no-op success.
+    Admins pass user_id to target another user; omitting it targets themselves.
+    Blocked with 403 once any result exists for the gameweek. Idempotent.
     """
     try:
-        print(f"🃏 Wildcard deactivation from {current_user.username}: GW{gameweek}")
+        target_id = user_id if user_id else current_user.id
+        print(f"🃏 Wildcard deactivation by {current_user.username} for user {target_id}: GW{gameweek}")
 
         if _gameweek_has_results(db, gameweek):
             raise HTTPException(
@@ -284,7 +286,7 @@ def deactivate_wildcard(
         existing = (
             db.query(Wildcard)
             .filter(
-                Wildcard.user_id == current_user.id,
+                Wildcard.user_id == target_id,
                 Wildcard.gameweek == gameweek,
             )
             .first()

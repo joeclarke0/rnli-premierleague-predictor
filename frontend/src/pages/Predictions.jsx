@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fixturesAPI, predictionsAPI, resultsAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { FiSave, FiZap, FiLock, FiCheck, FiStar } from 'react-icons/fi';
 
@@ -56,6 +57,7 @@ function SkeletonRow() {
 }
 
 export default function Predictions() {
+  const { isAdmin } = useAuth();
   const [fixtures, setFixtures] = useState([]);
   const [predictions, setPredictions] = useState({});
   const [savedOnServer, setSavedOnServer] = useState(new Set());
@@ -422,30 +424,37 @@ export default function Predictions() {
                 {wildcardLocked
                   ? 'Results are in — the wildcard is locked for this gameweek.'
                   : wildcardActive
-                  ? `All your points for Gameweek ${selectedGameweek} will be doubled (x2).`
-                  : `Double all your points for Gameweek ${selectedGameweek}. You can change this any time before results are entered.`}
+                  ? `All your points for Gameweek ${selectedGameweek} will be doubled (×2). Only an admin can remove it.`
+                  : `Double all your points for Gameweek ${selectedGameweek}. You can activate this any time before results are entered.`}
               </p>
             </div>
           </div>
-          <button
-            onClick={toggleWildcard}
-            disabled={wildcardLocked || wildcardSaving}
-            className={`flex items-center justify-center gap-2 text-sm font-semibold py-2 px-4 rounded-lg whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-              wildcardActive
-                ? 'bg-white border border-amber-400 text-amber-700 hover:bg-amber-100'
-                : 'bg-amber-400 text-white hover:bg-amber-500'
-            }`}
-          >
-            {wildcardSaving ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
-            ) : wildcardLocked ? (
-              <><FiLock className="w-4 h-4" /> Locked</>
-            ) : wildcardActive ? (
-              'Remove Wildcard'
-            ) : (
-              <><FiStar className="w-4 h-4" /> Activate Wildcard</>
-            )}
-          </button>
+          {/* Active + non-admin: show a locked badge, no remove button */}
+          {wildcardActive && !isAdmin ? (
+            <div className="flex items-center gap-2 text-sm font-semibold py-2 px-4 rounded-lg bg-amber-400 text-white">
+              <FiStar className="w-4 h-4 fill-current" /> Active
+            </div>
+          ) : (
+            <button
+              onClick={toggleWildcard}
+              disabled={wildcardLocked || wildcardSaving}
+              className={`flex items-center justify-center gap-2 text-sm font-semibold py-2 px-4 rounded-lg whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                wildcardActive
+                  ? 'bg-white border border-amber-400 text-amber-700 hover:bg-amber-100'
+                  : 'bg-amber-400 text-white hover:bg-amber-500'
+              }`}
+            >
+              {wildcardSaving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+              ) : wildcardLocked ? (
+                <><FiLock className="w-4 h-4" /> Locked</>
+              ) : wildcardActive ? (
+                'Remove Wildcard'
+              ) : (
+                <><FiStar className="w-4 h-4" /> Activate Wildcard</>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
