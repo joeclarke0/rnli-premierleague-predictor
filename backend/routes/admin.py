@@ -8,9 +8,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import User, Fixture, Prediction, Result, Invite
+from models import User, Fixture, Prediction, Result, Invite, Wildcard
 from auth import get_current_admin, hash_password
-from scoring import calculate_points
+from scoring import calculate_points, compute_gameweek_points, wildcard_multiplier
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -60,27 +60,50 @@ def list_users(
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """List all users with prediction counts and total points."""
+    """List all users with prediction counts and total points (wildcard-doubled)."""
     users = db.query(User).order_by(User.created_at).all()
+    predictions = db.query(Prediction).all()
     results = db.query(Result).all()
     result_lookup = {r.fixture_id: r for r in results}
 
+    # Postponed fixtures must never contribute, matching the leaderboard.
+    postponed_fixture_ids = {
+        f.id for f in db.query(Fixture).filter(Fixture.status == "postponed").all()
+    }
+
+    # Active wildcards: (user_id, gameweek) drives x2, and the per-user list of
+    # wildcarded gameweeks is surfaced so the UI can show a badge.
+    wildcards = db.query(Wildcard).all()
+    wildcard_lookup = {(w.user_id, w.gameweek) for w in wildcards}
+    wildcard_gameweeks_by_user: dict[str, list[int]] = {}
+    for w in wildcards:
+        wildcard_gameweeks_by_user.setdefault(w.user_id, []).append(w.gameweek)
+
+    # Per-prediction count is independent of scoring, so count locally to avoid
+    # an N+1 query per user.
+    prediction_count_by_user: dict[str, int] = {}
+    for p in predictions:
+        prediction_count_by_user[p.user_id] = prediction_count_by_user.get(p.user_id, 0) + 1
+
+    # Shared scoring helper — identical doubled totals to the leaderboard.
+    scored = compute_gameweek_points(
+        predictions, result_lookup, postponed_fixture_ids, wildcard_lookup
+    )
+
     user_list = []
     for u in users:
-        preds = db.query(Prediction).filter(Prediction.user_id == u.id).all()
-        points = 0
-        for p in preds:
-            if p.fixture_id in result_lookup:
-                r = result_lookup[p.fixture_id]
-                points += calculate_points(p.predicted_home, p.predicted_away, r.actual_home, r.actual_away)
+        total_points = sum(scored.get(u.id, {}).values())
+        gameweeks = sorted(wildcard_gameweeks_by_user.get(u.id, []))
         user_list.append({
             "id": u.id,
             "username": u.username,
             "email": u.email,
             "role": u.role,
             "created_at": u.created_at.isoformat(),
-            "prediction_count": len(preds),
-            "total_points": points,
+            "prediction_count": prediction_count_by_user.get(u.id, 0),
+            "total_points": total_points,
+            "wildcard_gameweeks": gameweeks,
+            "has_wildcard": len(gameweeks) > 0,
         })
 
     return {"users": user_list}
@@ -165,6 +188,17 @@ def get_all_predictions(
     predictions = db.query(Prediction).filter(Prediction.gameweek == gameweek).all()
     pred_lookup = {(p.user_id, p.fixture_id): p for p in predictions}
 
+    # Postponed fixtures in this gameweek contribute 0, matching scoring.
+    postponed_fixture_ids = {f.id for f in fixtures if f.status == "postponed"}
+
+    # Users with an active wildcard for THIS gameweek get their per-fixture
+    # points doubled here too, so the admin viewer's cells stay consistent with
+    # the doubled totals shown elsewhere.
+    wildcard_user_ids = {
+        w.user_id
+        for w in db.query(Wildcard).filter(Wildcard.gameweek == gameweek).all()
+    }
+
     fixture_rows = []
     for f in fixtures:
         result = result_lookup.get(f.id)
@@ -173,9 +207,10 @@ def get_all_predictions(
             pred = pred_lookup.get((u.id, f.id))
             if pred:
                 pts = None
-                if result:
-                    pts = calculate_points(pred.predicted_home, pred.predicted_away,
-                                           result.actual_home, result.actual_away)
+                if result and f.id not in postponed_fixture_ids:
+                    base = calculate_points(pred.predicted_home, pred.predicted_away,
+                                            result.actual_home, result.actual_away)
+                    pts = base * wildcard_multiplier(u.id in wildcard_user_ids)
                 user_preds.append({
                     "user_id": u.id,
                     "username": u.username,

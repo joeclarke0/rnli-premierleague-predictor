@@ -72,23 +72,25 @@ function RankDelta({ delta }) {
   );
 }
 
-// Colour a score value based on points
+// Colour a gameweek total score by tier. Thresholds (not equality) so summed
+// totals above a single fixture's value, and wildcard-doubled scores (e.g. 10,
+// 4), still land in the right tier instead of the grey "0" fallback.
 function ScoreBadge({ score }) {
-  if (score === 5)
+  if (score >= 5)
     return (
       <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700 dark:bg-green-900/50 dark:text-green-400">
-        5
+        {score}
       </span>
     );
-  if (score === 2)
+  if (score >= 2)
     return (
       <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
-        2
+        {score}
       </span>
     );
   return (
     <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs text-gray-400 dark:bg-gray-700 dark:text-gray-500">
-      0
+      {score}
     </span>
   );
 }
@@ -108,10 +110,15 @@ function RecentForm({ playerRow, maxWeek }) {
         <span
           key={w}
           title={`GW${w}: ${s} pts`}
-          className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-            s === 5
+          // Threshold-based so wildcard-doubled weeks (e.g. 10, 4) map to the
+          // same tier as their base value (5, 2). >=5 = exact-score tier, 2–4 =
+          // correct-result tier, 0 = grey.
+          // min-w + px (instead of fixed w-5) so a two-digit doubled score like
+          // 10 doesn't clip inside the dot; single digits still render circular.
+          className={`flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+            s >= 5
               ? "bg-green-500 text-white"
-              : s === 2
+              : s >= 2
               ? "bg-blue-400 text-white"
               : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
           }`}
@@ -398,7 +405,9 @@ function OverallView({ top3, leaderboard, maxWeekPlayed, rankDeltas, currentUser
 
     leaderboard.forEach((row) => {
       let fives = 0;
-      for (let w = 1; w <= 38; w++) if (row[`week_${w}`] === 5) fives++;
+      // An exact score is worth 5 normally, or 10 when that week was wildcarded
+      // (doubled). Threshold >= 5 catches both; null/undefined weeks fail it.
+      for (let w = 1; w <= 38; w++) if (row[`week_${w}`] >= 5) fives++;
       if (fives > mostExact.count) mostExact = { player: row.player, count: fives };
 
       const gain = row[lastWeekKey] || 0;
@@ -791,12 +800,15 @@ function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, m
               </h2>
               <div className="space-y-2.5">
                 {barData.map((entry) => {
-                  const pct = (entry.score / 5) * 100;
+                  // Scale relative to the highest score present so wildcard-
+                  // doubled totals (which can exceed the normal single-fixture
+                  // range) never overflow 100%. topScore is the GW max.
+                  const pct = topScore > 0 ? (entry.score / topScore) * 100 : 0;
                   const barColor = entry.you
                     ? "bg-rnli-yellow"
-                    : entry.score === 5
+                    : entry.score >= 5
                     ? "bg-green-500"
-                    : entry.score === 2
+                    : entry.score >= 2
                     ? "bg-blue-400"
                     : "bg-gray-400";
                   return (

@@ -1,10 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from collections import defaultdict
 
 from database import get_db
-from models import Prediction, Result, User, Fixture
-from scoring import calculate_points
+from models import Prediction, Result, User, Fixture, Wildcard
+from scoring import compute_gameweek_points
 
 router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
 
@@ -41,27 +40,17 @@ def get_leaderboard(db: Session = Depends(get_db)):
         result_lookup = {r.fixture_id: r for r in results}
         user_lookup = {u.id: u.username for u in users}
 
-        # Initialize leaderboard: {user_id: {gameweek: points}}
-        leaderboard = defaultdict(lambda: defaultdict(int))
+        # (user_id, gameweek) pairs that have an active wildcard — drives x2.
+        wildcard_lookup = {
+            (w.user_id, w.gameweek) for w in db.query(Wildcard).all()
+        }
 
-        # Calculate points for each prediction
-        for pred in predictions:
-            fixture_id = pred.fixture_id
-            user_id = pred.user_id
-            gameweek = pred.gameweek
-
-            # Skip postponed fixtures entirely
-            if fixture_id in postponed_fixture_ids:
-                continue
-
-            # Only calculate points if result exists for this fixture
-            if fixture_id in result_lookup:
-                result = result_lookup[fixture_id]
-                score = calculate_points(
-                    pred.predicted_home, pred.predicted_away,
-                    result.actual_home, result.actual_away
-                )
-                leaderboard[user_id][gameweek] += score
+        # Shared scoring helper: returns {user_id: {gameweek: doubled_points}},
+        # already applying postponed exclusion and wildcard doubling so the
+        # leaderboard and admin totals can never diverge.
+        leaderboard = compute_gameweek_points(
+            predictions, result_lookup, postponed_fixture_ids, wildcard_lookup
+        )
 
         # Format leaderboard for response
         formatted = []

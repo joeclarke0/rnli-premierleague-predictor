@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from typing import Optional
 
 from database import get_db
-from models import User, Prediction, Fixture, Result
+from models import User, Prediction, Fixture, Result, Wildcard
 from auth import get_current_user, get_current_admin
 
 router = APIRouter(prefix="/predictions", tags=["Predictions"])
@@ -163,3 +163,145 @@ def get_predictions(
     except Exception as e:
         print("❌ Error fetching predictions:", str(e))
         raise HTTPException(status_code=500, detail="Could not fetch predictions")
+
+
+# ── Wildcard ──────────────────────────────────────────────────────────────────
+
+class WildcardRequest(BaseModel):
+    gameweek: int = Field(ge=1, le=38)
+
+
+def _gameweek_has_results(db: Session, gameweek: int) -> bool:
+    """
+    A gameweek is "locked" for wildcard purposes once ANY fixture in it has a
+    result. This is the single gate for both activation and deactivation, so a
+    player can never gain or remove a x2 after scoring has begun.
+    """
+    return (
+        db.query(Result).filter(Result.gameweek == gameweek).first() is not None
+    )
+
+
+@router.get("/wildcard")
+def get_wildcards(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return the current user's active wildcard gameweeks as a list of ints."""
+    try:
+        wildcards = (
+            db.query(Wildcard)
+            .filter(Wildcard.user_id == current_user.id)
+            .order_by(Wildcard.gameweek)
+            .all()
+        )
+        gameweeks = [w.gameweek for w in wildcards]
+        print(f"✅ Wildcards fetched for {current_user.username}: {gameweeks}")
+        return {"gameweeks": gameweeks}
+    except Exception as e:
+        print("❌ Error fetching wildcards:", str(e))
+        raise HTTPException(status_code=500, detail="Could not fetch wildcards")
+
+
+@router.post("/wildcard")
+def activate_wildcard(
+    body: WildcardRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Activate the current user's wildcard for a gameweek.
+
+    Activation is INDEPENDENT of saving predictions — the only gate is that no
+    result exists yet for that gameweek. Idempotent: re-activating an existing
+    wildcard is a no-op success.
+    """
+    try:
+        print(f"🃏 Wildcard activation from {current_user.username}: GW{body.gameweek}")
+
+        # Gate: once any result exists for this gameweek, activation is frozen.
+        if _gameweek_has_results(db, body.gameweek):
+            raise HTTPException(
+                status_code=403,
+                detail="Cannot change wildcard — results are already in for this gameweek",
+            )
+
+        existing = (
+            db.query(Wildcard)
+            .filter(
+                Wildcard.user_id == current_user.id,
+                Wildcard.gameweek == body.gameweek,
+            )
+            .first()
+        )
+        if existing:
+            # Idempotent — already active.
+            print(f"✅ Wildcard already active: GW{body.gameweek}")
+            return {"message": "Wildcard already active", "gameweek": body.gameweek, "active": True}
+
+        wildcard = Wildcard(user_id=current_user.id, gameweek=body.gameweek)
+        db.add(wildcard)
+        db.commit()
+        print(f"✅ Wildcard activated: GW{body.gameweek}")
+        return {"message": "Wildcard activated", "gameweek": body.gameweek, "active": True}
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except IntegrityError as e:
+        # Race on the unique constraint — another request activated it first.
+        # The desired end state (active) holds, so treat as idempotent success.
+        db.rollback()
+        print("⚠️  Wildcard activation race resolved as idempotent:", str(e))
+        return {"message": "Wildcard already active", "gameweek": body.gameweek, "active": True}
+    except Exception as e:
+        db.rollback()
+        print("❌ Error activating wildcard:", str(e))
+        raise HTTPException(status_code=500, detail="Failed to activate wildcard")
+
+
+@router.delete("/wildcard")
+def deactivate_wildcard(
+    gameweek: int = Query(..., ge=1, le=38),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Deactivate the current user's wildcard for a gameweek.
+
+    Blocked with 403 once any result exists for the gameweek (same gate as
+    activation). Idempotent: deactivating when none is active is a no-op success.
+    """
+    try:
+        print(f"🃏 Wildcard deactivation from {current_user.username}: GW{gameweek}")
+
+        if _gameweek_has_results(db, gameweek):
+            raise HTTPException(
+                status_code=403,
+                detail="Cannot change wildcard — results are already in for this gameweek",
+            )
+
+        existing = (
+            db.query(Wildcard)
+            .filter(
+                Wildcard.user_id == current_user.id,
+                Wildcard.gameweek == gameweek,
+            )
+            .first()
+        )
+        if not existing:
+            print(f"✅ Wildcard already inactive: GW{gameweek}")
+            return {"message": "Wildcard already inactive", "gameweek": gameweek, "active": False}
+
+        db.delete(existing)
+        db.commit()
+        print(f"✅ Wildcard deactivated: GW{gameweek}")
+        return {"message": "Wildcard deactivated", "gameweek": gameweek, "active": False}
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        print("❌ Error deactivating wildcard:", str(e))
+        raise HTTPException(status_code=500, detail="Failed to deactivate wildcard")

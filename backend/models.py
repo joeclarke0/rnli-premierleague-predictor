@@ -26,6 +26,7 @@ class User(Base):
 
     # Relationships
     predictions = relationship("Prediction", back_populates="user", cascade="all, delete-orphan")
+    wildcards = relationship("Wildcard", back_populates="user", cascade="all, delete-orphan")
 
 
 class Fixture(Base):
@@ -87,6 +88,34 @@ class Result(Base):
 
     # Relationships
     fixture = relationship("Fixture", back_populates="result")
+
+
+class Wildcard(Base):
+    """
+    A player's "wildcard" activation for a single gameweek.
+
+    When a wildcard exists for (user_id, gameweek), every point that user earns
+    in that gameweek is doubled (x2) in their total. One wildcard per user per
+    gameweek is enforced by the unique constraint, so activation is naturally
+    idempotent at the data layer.
+
+    This is a NEW table, so SQLAlchemy's create_all (via create_tables) creates
+    it automatically — no migrate.py change is required.
+    """
+    __tablename__ = "wildcards"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    gameweek = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    user = relationship("User", back_populates="wildcards")
+
+    # One wildcard per user per gameweek.
+    __table_args__ = (
+        UniqueConstraint("user_id", "gameweek", name="uix_user_gameweek_wildcard"),
+    )
 
 
 class SiteSetting(Base):

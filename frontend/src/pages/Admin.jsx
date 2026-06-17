@@ -7,7 +7,7 @@ import {
   FiUsers, FiBarChart2, FiAlertCircle, FiGrid,
   FiTrash2, FiShield, FiUser, FiChevronDown, FiRefreshCw,
   FiCheckCircle, FiXCircle, FiEdit2, FiUpload, FiDownload,
-  FiKey, FiX, FiMail, FiCopy, FiPlus, FiSlash, FiCalendar,
+  FiKey, FiX, FiMail, FiCopy, FiPlus, FiSlash, FiCalendar, FiStar,
 } from 'react-icons/fi';
 
 const TABS = [
@@ -289,7 +289,20 @@ function UsersTab() {
                 </td>
                 <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{u.email}</td>
                 <td className="px-4 py-3 text-center text-gray-700">{u.prediction_count}</td>
-                <td className="px-4 py-3 text-center font-bold text-gray-900">{u.total_points}</td>
+                <td className="px-4 py-3 text-center font-bold text-gray-900">
+                  <span className="inline-flex items-center gap-1.5 justify-center">
+                    {u.total_points}
+                    {u.has_wildcard && (
+                      <span
+                        className="inline-flex items-center text-amber-500"
+                        title={`Wildcard active (Gameweek${u.wildcard_gameweeks?.length > 1 ? 's' : ''} ${(u.wildcard_gameweeks ?? []).join(', ')}) — total includes doubled points`}
+                        aria-label="Wildcard active — total includes doubled points"
+                      >
+                        <FiStar className="w-3.5 h-3.5 fill-current" />
+                      </span>
+                    )}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-center">
                   {u.id === currentUser?.id ? (
                     <span className="inline-flex items-center gap-1 text-xs bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded-full font-semibold">
@@ -368,7 +381,10 @@ function PredictionsTab() {
   useEffect(() => { load(gameweek); }, [gameweek]);
 
   const pointsColor = (pts) => {
+    // Wildcarded points are pre-doubled by the API: exact 5 -> 10, result 2 -> 4.
+    if (pts === 10) return 'bg-green-200 text-green-800';
     if (pts === 5) return 'bg-green-100 text-green-700';
+    if (pts === 4) return 'bg-blue-200 text-blue-800';
     if (pts === 2) return 'bg-blue-100 text-blue-700';
     if (pts === 0) return 'bg-red-100 text-red-600';
     return 'text-gray-400';

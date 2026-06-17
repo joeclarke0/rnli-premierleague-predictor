@@ -67,6 +67,11 @@ export const predictionsAPI = {
   submit: (data) => api.post('/predictions', data),
   get: (params) => api.get('/predictions', { params }),
   getByGameweek: (gameweek) => api.get('/predictions', { params: { gameweek } }),
+  // Wildcard (double points for a chosen gameweek).
+  // getWildcards returns { gameweeks: number[] } of the current user's active wildcards.
+  getWildcards: () => api.get('/predictions/wildcard'),
+  activateWildcard: (gameweek) => api.post('/predictions/wildcard', { gameweek }),
+  deactivateWildcard: (gameweek) => api.delete('/predictions/wildcard', { params: { gameweek } }),
 };
 
 // ============================================================================

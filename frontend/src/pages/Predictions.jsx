@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fixturesAPI, predictionsAPI, resultsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { FiSave, FiZap, FiLock, FiCheck } from 'react-icons/fi';
+import { FiSave, FiZap, FiLock, FiCheck, FiStar } from 'react-icons/fi';
 
 // A fixture is locked for predictions if kickoff has passed (and a kickoff time
 // is known) or if it has been postponed. Null kickoff_time = never locked.
@@ -69,6 +69,9 @@ export default function Predictions() {
   // Gameweek numbers where EVERY fixture has a result — used to grey/mark
   // options in the dropdown. Populated lazily on mount; never blocks render.
   const [completedGameweeks, setCompletedGameweeks] = useState(new Set());
+  // Gameweek numbers the current user has activated a wildcard for (x2 points).
+  const [wildcardGameweeks, setWildcardGameweeks] = useState(new Set());
+  const [wildcardSaving, setWildcardSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -142,6 +145,61 @@ export default function Predictions() {
       cancelled = true;
     };
   }, []);
+
+  // Load the user's active wildcard gameweeks once on mount. Non-blocking: a
+  // failure just means the toggle starts from an unknown-empty state.
+  useEffect(() => {
+    let cancelled = false;
+    predictionsAPI
+      .getWildcards()
+      .then((res) => {
+        if (cancelled) return;
+        setWildcardGameweeks(new Set(res.data?.gameweeks ?? []));
+      })
+      .catch((error) => {
+        console.error('Error loading wildcards:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Whether the selected gameweek is locked for wildcard changes. The backend
+  // gate is "any result exists for the gameweek"; resultIds holds exactly the
+  // selected gameweek's resulted fixtures, and completedGameweeks is a fallback
+  // for fully-resulted gameweeks. Either being set means results are in.
+  const wildcardActive = wildcardGameweeks.has(selectedGameweek);
+  const wildcardLocked = resultIds.size > 0 || completedGameweeks.has(selectedGameweek);
+
+  const toggleWildcard = async () => {
+    if (wildcardLocked) return;
+    setWildcardSaving(true);
+    const activating = !wildcardActive;
+    try {
+      if (activating) {
+        await predictionsAPI.activateWildcard(selectedGameweek);
+        setWildcardGameweeks((prev) => new Set([...prev, selectedGameweek]));
+        toast.success(`Wildcard activated for Gameweek ${selectedGameweek} — points doubled!`);
+      } else {
+        await predictionsAPI.deactivateWildcard(selectedGameweek);
+        setWildcardGameweeks((prev) => {
+          const next = new Set(prev);
+          next.delete(selectedGameweek);
+          return next;
+        });
+        toast.success(`Wildcard removed for Gameweek ${selectedGameweek}`);
+      }
+    } catch (error) {
+      if (error.response?.status === 403) {
+        // Results came in between load and click — reflect the locked state.
+        toast.error('Results are in for this gameweek — wildcard is locked');
+      } else {
+        toast.error('Failed to update wildcard');
+      }
+    } finally {
+      setWildcardSaving(false);
+    }
+  };
 
   const handleChange = (fixtureId, type, value) => {
     setPredictions((prev) => ({
@@ -319,6 +377,63 @@ export default function Predictions() {
               <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Saving…</>
             ) : (
               <><FiSave className="w-4 h-4" />Save All ({openCount})</>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Wildcard control */}
+      <div
+        className={`card border py-4 transition-colors ${
+          wildcardActive
+            ? 'bg-amber-50 border-amber-300'
+            : 'bg-white border-gray-200'
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div
+              className={`mt-0.5 flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
+                wildcardActive ? 'bg-amber-400 text-white' : 'bg-gray-100 text-gray-400'
+              }`}
+            >
+              <FiStar className={`w-5 h-5 ${wildcardActive ? 'fill-current' : ''}`} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-gray-800">Wildcard</h2>
+                {wildcardActive && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-white uppercase tracking-wide">
+                    Active
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {wildcardLocked
+                  ? 'Results are in — the wildcard is locked for this gameweek.'
+                  : wildcardActive
+                  ? `All your points for Gameweek ${selectedGameweek} will be doubled (x2).`
+                  : `Double all your points for Gameweek ${selectedGameweek}. You can change this any time before results are entered.`}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={toggleWildcard}
+            disabled={wildcardLocked || wildcardSaving}
+            className={`flex items-center justify-center gap-2 text-sm font-semibold py-2 px-4 rounded-lg whitespace-nowrap transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              wildcardActive
+                ? 'bg-white border border-amber-400 text-amber-700 hover:bg-amber-100'
+                : 'bg-amber-400 text-white hover:bg-amber-500'
+            }`}
+          >
+            {wildcardSaving ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+            ) : wildcardLocked ? (
+              <><FiLock className="w-4 h-4" /> Locked</>
+            ) : wildcardActive ? (
+              'Remove Wildcard'
+            ) : (
+              <><FiStar className="w-4 h-4" /> Activate Wildcard</>
             )}
           </button>
         </div>
