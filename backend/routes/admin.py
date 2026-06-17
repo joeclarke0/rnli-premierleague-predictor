@@ -670,10 +670,10 @@ def simulate(
     for f in all_fixtures:
         db.refresh(f)
 
-    # 3. Get non-admin users
-    users = db.query(User).filter(User.role == "user").all()
+    # 3. Get all users (admins included — simulation covers everyone)
+    users = db.query(User).all()
     if not users:
-        return {"error": "No non-admin users found — create players first"}
+        return {"error": "No users found"}
 
     # 4. Predictions
     for user in users:
