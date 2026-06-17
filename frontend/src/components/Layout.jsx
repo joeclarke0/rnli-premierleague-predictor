@@ -173,13 +173,13 @@ export default function Layout({ children }) {
 
       {/* Main Content */}
       <main className="flex-grow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
           {children}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="bg-rnli-blue text-white py-8 mt-auto">
+      <footer className="bg-rnli-blue text-white py-6 sm:py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">

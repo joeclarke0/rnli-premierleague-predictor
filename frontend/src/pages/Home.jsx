@@ -75,9 +75,9 @@ export default function Home() {
   const { seasonName } = useSettings();
 
   return (
-    <div className="space-y-20">
+    <div className="space-y-12 sm:space-y-20">
       {/* ── Hero ── */}
-      <section className="home-hero px-6 sm:px-10 lg:px-14 pt-12 sm:pt-16 pb-28 sm:pb-32">
+      <section className="home-hero px-6 sm:px-10 lg:px-14 pt-8 sm:pt-16 pb-24 sm:pb-32">
         <div className="relative z-10 grid lg:grid-cols-12 gap-10 items-center">
           {/* Left: editorial copy */}
           <div className="lg:col-span-7">
@@ -134,7 +134,7 @@ export default function Home() {
           {/* Right: stats card */}
           <div className="lg:col-span-5">
             <div className="relative mx-auto max-w-sm">
-              <div className="relative rounded-2xl bg-white/95 px-8 py-10 shadow-2xl">
+              <div className="relative rounded-2xl bg-white/95 px-6 py-8 sm:px-8 sm:py-10 shadow-2xl">
                 <div
                   className="absolute -top-3 left-6 px-3 py-1 rounded-md text-[0.65rem] font-extrabold tracking-widest uppercase text-rnli-blue-dark"
                   style={{ background: '#FFB81C' }}
@@ -261,13 +261,13 @@ export default function Home() {
 
       {/* ── Bottom CTA band ── */}
       {!isAuthenticated && (
-        <section className="home-cta-band px-8 sm:px-12 py-14">
+        <section className="home-cta-band px-6 sm:px-12 py-10 sm:py-14">
           <div className="relative z-10 max-w-xl">
             <div className="inline-flex items-center gap-2 text-rnli-yellow font-extrabold text-xs uppercase tracking-widest mb-4">
               <FiZap className="w-4 h-4" />
               Invite only
             </div>
-            <h2 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">
+            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight mb-4">
               Got your invite?
               <br className="hidden sm:block" /> Let's go.
             </h2>

@@ -54,7 +54,7 @@ function OverviewTab() {
 
   if (loading) return (
     <div className="animate-pulse space-y-4">
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[1,2,3,4].map(i => <div key={i} className="adm-card h-24" />)}
       </div>
       <div className="adm-card h-24" />
@@ -72,7 +72,7 @@ function OverviewTab() {
   return (
     <div className="space-y-5">
       {/* Stat tiles */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {tiles.map(t => (
           <div key={t.label} className="adm-card">
             <p className="adm-tile-label">{t.label}</p>
@@ -1043,7 +1043,7 @@ function WildcardsTab() {
 
   return (
     <div className="space-y-5">
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
           { label: 'Total Players',    value: users.length,     accent: 'navy'  },
           { label: 'Wildcard Used',    value: used.length,      accent: 'gold'  },

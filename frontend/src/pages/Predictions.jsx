@@ -457,7 +457,7 @@ export default function Predictions() {
                 <div className="flex items-center gap-3">
                   {/* Home team */}
                   <div className="flex-1 text-right">
-                    <p className={`font-extrabold text-sm sm:text-base leading-tight ${closed ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                    <p className={`font-extrabold text-sm sm:text-base leading-tight break-words ${closed ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
                       {fixture.home_team}
                     </p>
                   </div>
@@ -499,7 +499,7 @@ export default function Predictions() {
 
                   {/* Away team */}
                   <div className="flex-1 text-left">
-                    <p className={`font-extrabold text-sm sm:text-base leading-tight ${closed ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                    <p className={`font-extrabold text-sm sm:text-base leading-tight break-words ${closed ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
                       {fixture.away_team}
                     </p>
                   </div>

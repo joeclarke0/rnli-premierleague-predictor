@@ -108,7 +108,7 @@ export default function Results() {
   if (loading) {
     return (
       <div className="text-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rnli-blue mx-auto" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003087] dark:border-[#FFB81C] mx-auto" />
         <p className="mt-4 text-gray-500 text-sm">Loading…</p>
       </div>
     );
@@ -119,7 +119,7 @@ export default function Results() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-rnli-blue">Results Entry</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#003087] dark:text-white">Results Entry</h1>
           <p className="text-xs text-gray-500 mt-1 inline-flex items-center gap-1 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">
             🔒 Admin Only
           </p>
@@ -136,18 +136,18 @@ export default function Results() {
       </div>
 
       {/* Progress + Save All */}
-      <div className="card bg-amber-50 border border-amber-200 py-4">
+      <div className="card bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex-1">
             <div className="flex justify-between text-sm mb-2">
-              <span className="font-semibold text-gray-700">
+              <span className="font-semibold text-gray-700 dark:text-gray-200">
                 Gameweek {selectedGameweek} Progress
               </span>
               <span className="font-bold text-amber-700">
                 {savedCount}/{fixtures.length} saved ({progressPct}%)
               </span>
             </div>
-            <div className="w-full bg-amber-100 rounded-full h-2.5">
+            <div className="w-full bg-amber-100 dark:bg-amber-950/40 rounded-full h-2.5">
               <div
                 className="bg-amber-500 h-2.5 rounded-full transition-all duration-500"
                 style={{ width: `${progressPct}%` }}
@@ -188,33 +188,34 @@ export default function Results() {
               key={fixture.id}
               className={`card transition-all ${
                 isPostponed
-                  ? 'bg-gray-100 border border-gray-200 opacity-75'
+                  ? 'bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700 opacity-75'
                   : isSaved
-                  ? 'border-2 border-green-400 bg-green-50'
+                  ? 'border-2 border-green-400 bg-green-50 dark:bg-green-900/20 dark:border-green-700'
                   : 'hover:shadow-md'
               }`}
             >
-              <div className="grid md:grid-cols-12 gap-4 items-center">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 items-center">
                 {/* Date */}
                 <div className="md:col-span-2">
-                  <p className="text-xs text-gray-500">{fixture.day}</p>
-                  <p className="text-xs font-semibold text-gray-700">{fixture.date}</p>
-                  <p className="text-xs text-gray-500">{fixture.time}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <span className="font-semibold text-gray-700 dark:text-gray-300">{fixture.day} {fixture.date}</span>
+                    {fixture.time && <span className="ml-2 md:ml-0 md:block">{fixture.time}</span>}
+                  </p>
                 </div>
 
                 {/* Teams + Venue */}
                 <div className="md:col-span-5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-sm flex-1 text-right">{fixture.home_team}</span>
+                    <span className="font-bold text-sm flex-1 text-right break-words">{fixture.home_team}</span>
                     <span className="text-gray-400 text-sm">vs</span>
-                    <span className="font-bold text-sm flex-1 text-left">{fixture.away_team}</span>
+                    <span className="font-bold text-sm flex-1 text-left break-words">{fixture.away_team}</span>
                   </div>
                   {fixture.venue && (
                     <p className="text-xs text-gray-400 text-center mt-1">{fixture.venue}</p>
                   )}
                   {isPostponed && (
                     <div className="flex justify-center mt-1.5">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                         <FiSlash className="w-2.5 h-2.5" /> Postponed
                       </span>
                     </div>
@@ -230,7 +231,7 @@ export default function Results() {
                     value={result.home}
                     disabled={isPostponed}
                     onChange={(e) => handleResultChange(fixture.id, 'home', e.target.value)}
-                    className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-white disabled:dark:bg-gray-900 disabled:dark:text-gray-600"
                   />
                   <span className="font-bold text-gray-400">–</span>
                   <input
@@ -240,7 +241,7 @@ export default function Results() {
                     value={result.away}
                     disabled={isPostponed}
                     onChange={(e) => handleResultChange(fixture.id, 'away', e.target.value)}
-                    className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="w-14 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-rnli-blue disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-white disabled:dark:bg-gray-900 disabled:dark:text-gray-600"
                   />
                 </div>
 

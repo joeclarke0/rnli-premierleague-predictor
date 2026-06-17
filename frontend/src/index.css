@@ -3001,3 +3001,10 @@
 @media (min-width: 640px) {
   .inv-recipient-input { width: auto; }
 }
+
+/* ── Mobile leaderboard tuning: readable bar names, easier GW tap targets, smaller rank numerals ── */
+@media (max-width: 639px) {
+  .lb2-bar-name { width: 4.5rem; font-size: 0.72rem; }
+  .lb2-gw-btn { min-height: 2.5rem; }
+  .lb2-ranknum { font-size: 1.6rem; }
+}

@@ -49,7 +49,7 @@ function Skeleton() {
   return (
     <div className="space-y-6 animate-pulse">
       <div className="db-banner" style={{ minHeight: '7.5rem' }} />
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="db-tile" style={{ minHeight: '6.5rem' }} />
         ))}
@@ -110,7 +110,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Stat tiles ── */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatTile
           icon={<FiAward className="w-5 h-5" />}
           label="Total Points"
