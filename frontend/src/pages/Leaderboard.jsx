@@ -220,8 +220,6 @@ export default function Leaderboard() {
       </div>
     );
 
-  const top3 = leaderboard.slice(0, 3);
-
   return (
     <div className="space-y-6">
       {/* ── Editorial header banner ── */}
@@ -281,7 +279,6 @@ export default function Leaderboard() {
         </div>
       ) : view === VIEWS.OVERALL ? (
         <OverallView
-          top3={top3}
           leaderboard={leaderboard}
           maxWeekPlayed={maxWeekPlayed}
           rankDeltas={rankDeltas}
@@ -321,7 +318,7 @@ function ScoreCell({ icon, num, label, sub, accent }) {
   );
 }
 
-function OverallView({ top3, leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
+function OverallView({ leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
   const [chartTopN, setChartTopN] = useState("all"); // "all" | 5 | 3
 
   // Build chart data: one entry per week with each player's cumulative points
@@ -369,14 +366,6 @@ function OverallView({ top3, leaderboard, maxWeekPlayed, rankDeltas, currentUser
     };
   }, [leaderboard, maxWeekPlayed]);
 
-  // Podium order: 2nd, 1st, 3rd
-  const podium = [top3[1], top3[0], top3[2]].filter(Boolean);
-  // Meta aligned to the 2nd / 1st / 3rd ordering used by `podium`.
-  const podiumMeta = [
-    { place: 2, block: "is-2", medal: "🥈", delay: "0.1s" },
-    { place: 1, block: "is-1", medal: "🥇", delay: "0s" },
-    { place: 3, block: "is-3", medal: "🥉", delay: "0.2s" },
-  ];
 
   return (
     <div className="space-y-6">
@@ -414,41 +403,6 @@ function OverallView({ top3, leaderboard, maxWeekPlayed, rankDeltas, currentUser
           />
         </div>
       </div>
-
-      {/* ── Top 3 Podium ── */}
-      {top3.length >= 2 && (
-        <div className="lb2-podium">
-          <h2 className="lb2-podium-head">🏆 The Top 3</h2>
-          <div className="lb2-podium-row">
-            {podium.map((player, idx) => {
-              const meta = podiumMeta[idx];
-              const isWinner = meta.place === 1;
-              const isYou = currentUser?.username === player.player;
-              return (
-                <div key={player.player} className="lb2-podium-col">
-                  <span className={`lb2-medal ${isWinner ? "animate-bounce text-5xl" : "text-4xl"}`} style={{ animationDuration: "2.2s" }}>
-                    {meta.medal}
-                  </span>
-                  <Avatar name={player.player} size={isWinner ? "lg" : "md"} />
-                  <p className={`lb2-podium-name ${isYou ? "is-you" : ""}`} title={player.player}>
-                    {player.player}
-                  </p>
-                  {isYou && <span className="lb2-you-tag">You</span>}
-                  <p className="lb2-podium-total">
-                    {player.total}<span>pts</span>
-                  </p>
-                  <div
-                    className={`lb2-block lb2-step ${meta.block}`}
-                    style={{ animationDelay: meta.delay }}
-                  >
-                    <span className="lb2-block-num">{meta.place}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* ── Full Rankings — editorial rows with giant outline rank numbers ── */}
       <div>
