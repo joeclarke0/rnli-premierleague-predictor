@@ -2608,3 +2608,268 @@
 @media (prefers-reduced-motion: reduce) {
   .adm-tab, .adm-progress-bar { transition: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════
+   LOGIN PAGE  (lgn-* namespace)
+   Append-only — never modify classes above this line
+═══════════════════════════════════════════════════════ */
+
+/* ── Outer wrapper ── */
+.lgn-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem 4rem;
+}
+
+/* ── Card ── */
+.lgn-card {
+  width: 100%;
+  max-width: 22rem;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,48,135,0.18), 0 4px 16px rgba(0,0,0,0.08);
+  background: #fff;
+}
+.dark .lgn-card {
+  background: #101820;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+/* ── Navy header panel ── */
+.lgn-header {
+  position: relative;
+  overflow: hidden;
+  background: #003087;
+  padding: 2rem 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.lgn-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 20px,
+    rgba(255,184,28,0.05) 20px,
+    rgba(255,184,28,0.05) 21px
+  );
+  pointer-events: none;
+}
+/* Diagonal gold accent in top-right corner */
+.lgn-header::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: rgba(255,184,28,0.1);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.lgn-goldbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FFB81C 0%, rgba(255,184,28,0.3) 100%);
+}
+
+/* ── Badge / logo mark ── */
+.lgn-badge {
+  position: relative;
+  z-index: 1;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,184,28,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lgn-badge-inner {
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #FFB81C;
+}
+
+/* ── Header text ── */
+.lgn-kicker {
+  position: relative;
+  z-index: 1;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,184,28,0.85);
+}
+.lgn-title {
+  position: relative;
+  z-index: 1;
+  font-size: 1.7rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #fff;
+  line-height: 1.1;
+  margin-top: 0.4rem;
+}
+.lgn-sub {
+  position: relative;
+  z-index: 1;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.55);
+  margin-top: 0.35rem;
+}
+
+/* ── Form body ── */
+.lgn-body {
+  padding: 1.75rem;
+}
+
+/* ── Error ── */
+.lgn-error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(220,38,38,0.07);
+  border: 1px solid rgba(220,38,38,0.25);
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  color: #dc2626;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+.dark .lgn-error { background: rgba(220,38,38,0.1); border-color: rgba(220,38,38,0.3); color: #f87171; }
+
+/* ── Label ── */
+.lgn-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+.dark .lgn-label { color: #94a3b8; }
+
+/* ── Input ── */
+.lgn-input {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  border-radius: 0.55rem;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.lgn-input::placeholder { color: #cbd5e1; }
+.lgn-input:focus {
+  border-color: #003087;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0,48,135,0.1);
+}
+.dark .lgn-input {
+  background: #1a2537;
+  border-color: #2d3f56;
+  color: #f1f5f9;
+}
+.dark .lgn-input::placeholder { color: #475569; }
+.dark .lgn-input:focus {
+  border-color: #3b7de8;
+  background: #1e2d42;
+  box-shadow: 0 0 0 3px rgba(59,125,232,0.15);
+}
+
+/* ── Submit button ── */
+.lgn-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 0.6rem;
+  border: none;
+  background: #FFB81C;
+  color: #003087;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(255,184,28,0.3);
+}
+.lgn-submit:hover:not(:disabled) {
+  background: #e6a519;
+  box-shadow: 0 4px 16px rgba(255,184,28,0.4);
+}
+.lgn-submit:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+
+/* ── Invite note ── */
+.lgn-invite-note {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.dark .lgn-invite-note { color: #64748b; }
+
+/* ── Dev panel ── */
+.lgn-dev-panel {
+  margin-top: 1.25rem;
+  padding: 0.85rem;
+  border-radius: 0.55rem;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+}
+.dark .lgn-dev-panel { background: #0a111d; border-color: #162032; }
+.lgn-dev-title {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #FFB81C;
+  margin-bottom: 0.5rem;
+}
+.lgn-dev-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-family: monospace;
+  margin-top: 0.25rem;
+}
+.lgn-dev-row code { color: #e2e8f0; }
+.lgn-dev-sep { color: #475569; }
+.lgn-dev-role {
+  font-family: sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  background: rgba(255,184,28,0.15);
+  color: #FFB81C;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lgn-input, .lgn-submit { transition: none !important; }
+}
