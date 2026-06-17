@@ -401,7 +401,7 @@ function OverallView({ leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
         <div className="lb2-card mt-3">
           {/* Column header strip (desktop) */}
           <div className="hidden items-center gap-3 border-b border-gray-100 px-4 py-2.5 pl-[0.5rem] dark:border-gray-800 sm:flex">
-            <span className="lb2-col-label w-[3.1rem] text-center">Rank</span>
+            <span className="lb2-col-label w-[2.5rem] text-center">Rank</span>
             <span className="lb2-col-label flex-1">Player</span>
             <span className="lb2-col-label hidden w-16 text-center sm:flex justify-center">Move</span>
             <span className="lb2-col-label hidden w-32 text-center sm:flex justify-center">Form</span>
@@ -424,12 +424,10 @@ function OverallView({ leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
                   className={`lb2-rank-row lb2-row ${isCurrentUser ? "is-you" : ""}`}
                   style={{ animationDelay: `${Math.min(idx * 0.04, 0.6)}s` }}
                 >
-                  {/* Rank: medal for top 3, otherwise giant outline numeral */}
-                  {row.rank <= 3 ? (
-                    <span className="lb2-medal-cell">{["🥇", "🥈", "🥉"][row.rank - 1]}</span>
-                  ) : (
-                    <span className="lb2-ranknum">{row.rank}</span>
-                  )}
+                  {/* Rank number — gold/silver/bronze for top 3, muted for rest */}
+                  <span className={`lb2-rank-num lb2-rank-num--${row.rank <= 3 ? ["gold","silver","bronze"][row.rank-1] : "muted"}`}>
+                    {row.rank}
+                  </span>
 
                   <Avatar name={row.player} size="sm" />
 
@@ -697,11 +695,9 @@ function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, m
                       className={`lb2-rank-row lb2-row ${isCurrentUser ? "is-you" : ""}`}
                       style={{ animationDelay: `${Math.min(idx * 0.04, 0.6)}s` }}
                     >
-                      {row.gwRank <= 3 ? (
-                        <span className="lb2-medal-cell">{["🥇", "🥈", "🥉"][row.gwRank - 1]}</span>
-                      ) : (
-                        <span className="lb2-ranknum">{row.gwRank}</span>
-                      )}
+                      <span className={`lb2-rank-num lb2-rank-num--${row.gwRank <= 3 ? ["gold","silver","bronze"][row.gwRank-1] : "muted"}`}>
+                        {row.gwRank}
+                      </span>
 
                       <Avatar name={row.player} size="sm" />
 

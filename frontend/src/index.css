@@ -3008,3 +3008,25 @@
   .lb2-gw-btn { min-height: 2.5rem; }
   .lb2-ranknum { font-size: 1.6rem; }
 }
+
+/* ── Clean rank number — replaces gimmicky outline numerals + emoji medals ── */
+.lb2-rank-num {
+  flex-shrink: 0;
+  width: 2.5rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.lb2-rank-num--gold   { color: #9a6f00; }
+.lb2-rank-num--silver { color: #64748b; }
+.lb2-rank-num--bronze { color: #92400e; }
+.lb2-rank-num--muted  { color: #9aa6ba; }
+.dark .lb2-rank-num--gold   { color: #FFB81C; }
+.dark .lb2-rank-num--silver { color: #a8b4c8; }
+.dark .lb2-rank-num--bronze { color: #d97706; }
+.dark .lb2-rank-num--muted  { color: #4a5a78; }
+
+/* Tone down the hover lift — keep background change, drop the bounce */
+.lb2-rank-row:hover { transform: none; box-shadow: none; }
