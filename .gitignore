@@ -1,9 +1,15 @@
 # Python
 venv/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
 .env
 service_account.json
+
+# Test / benchmark caches
+.pytest_cache/
+.benchmarks/
 
 # Database files
 backend/*.db
@@ -16,3 +22,6 @@ frontend/dist/
 
 # macOS
 .DS_Store
+
+# Vercel
+.vercel
