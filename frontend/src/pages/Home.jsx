@@ -7,7 +7,7 @@ const HOW_IT_WORKS = [
   {
     step: '01',
     title: 'Create an Account',
-    desc: 'Sign up in seconds. No fees, no fuss — just you vs your colleagues.',
+    desc: 'Join via an invite link from an admin — then you\'re in and ready to play.',
     icon: <FiUsers className="w-6 h-6" />,
   },
   {
@@ -119,7 +119,7 @@ export default function Home() {
         <div className="text-center mb-10">
           <h2 className="text-3xl font-black text-rnli-blue mb-2">How It Works</h2>
           <p className="text-gray-500 max-w-md mx-auto text-sm">
-            From sign-up to season champion in four simple steps.
+            Get your invite, make your picks, and climb the table.
           </p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
