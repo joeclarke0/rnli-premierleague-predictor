@@ -50,6 +50,9 @@ def run_migrations() -> None:
             "ALTER TABLE invites ADD COLUMN IF NOT EXISTS recipient_name VARCHAR"
         )
         statements.append(
+            "ALTER TABLE invites ADD COLUMN IF NOT EXISTS recipient_email VARCHAR"
+        )
+        statements.append(
             "ALTER TABLE invites ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMP"
         )
     else:
@@ -62,6 +65,8 @@ def run_migrations() -> None:
             )
         if not _column_exists(inspector, "invites", "recipient_name"):
             statements.append("ALTER TABLE invites ADD COLUMN recipient_name VARCHAR")
+        if not _column_exists(inspector, "invites", "recipient_email"):
+            statements.append("ALTER TABLE invites ADD COLUMN recipient_email VARCHAR")
         if not _column_exists(inspector, "invites", "revoked_at"):
             statements.append("ALTER TABLE invites ADD COLUMN revoked_at TIMESTAMP")
 

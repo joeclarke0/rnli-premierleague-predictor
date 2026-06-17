@@ -489,6 +489,7 @@ def _invite_status(invite: Invite) -> str:
 
 class CreateInviteRequest(BaseModel):
     recipient_name: Optional[str] = None
+    recipient_email: Optional[str] = None
 
 
 @router.post("/invites")
@@ -499,10 +500,19 @@ def create_invite(
 ):
     """Generate a single-use invite token."""
     recipient_name = None
-    if body is not None and body.recipient_name is not None:
-        stripped = body.recipient_name.strip()
-        recipient_name = stripped or None
-    invite = Invite(created_by=current_admin.id, recipient_name=recipient_name)
+    recipient_email = None
+    if body is not None:
+        if body.recipient_name is not None:
+            stripped = body.recipient_name.strip()
+            recipient_name = stripped or None
+        if body.recipient_email is not None:
+            stripped = body.recipient_email.strip().lower()
+            recipient_email = stripped or None
+    invite = Invite(
+        created_by=current_admin.id,
+        recipient_name=recipient_name,
+        recipient_email=recipient_email,
+    )
     db.add(invite)
     db.commit()
     db.refresh(invite)
@@ -510,6 +520,7 @@ def create_invite(
         "token": invite.token,
         "invite_url": f"/register?invite={invite.token}",
         "recipient_name": invite.recipient_name,
+        "recipient_email": invite.recipient_email,
     }
 
 
@@ -533,6 +544,7 @@ def list_invites(
                 "token": i.token,
                 "status": _invite_status(i),
                 "recipient_name": i.recipient_name,
+                "recipient_email": i.recipient_email,
                 "created_at": i.created_at.isoformat() if i.created_at else None,
                 "expires_at": i.expires_at.isoformat() if i.expires_at else None,
                 "used_at": i.used_at.isoformat() if i.used_at else None,

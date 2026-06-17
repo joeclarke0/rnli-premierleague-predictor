@@ -144,6 +144,7 @@ class Invite(Base):
     expires_at = Column(DateTime, default=default_invite_expiry, nullable=False)
     used_at = Column(DateTime, nullable=True)
     recipient_name = Column(String(120), nullable=True)
+    recipient_email = Column(String(254), nullable=True)
     revoked_at = Column(DateTime, nullable=True)
 
     # Relationships (explicit foreign_keys because there are two FKs to users)

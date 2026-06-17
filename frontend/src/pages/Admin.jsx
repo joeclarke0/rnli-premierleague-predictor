@@ -752,12 +752,104 @@ function FixturesTab() {
 }
 
 // ── Invites Tab ───────────────────────────────────────────────────────────────
+function GenerateInviteModal({ onClose, onGenerated }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await adminAPI.createInvite(name.trim() || null, email.trim() || null);
+      const url = `${window.location.origin}${res.data.invite_url}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success('Invite link generated and copied to clipboard');
+      } catch {
+        window.prompt('Copy this invite link:', url);
+      }
+      onGenerated();
+      onClose();
+    } catch {
+      toast.error('Failed to generate invite');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="gen-invite-title"
+    >
+      <div className="adm-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 id="gen-invite-title" className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <div className="adm-modal-icon"><FiMail className="w-4 h-4 text-[#FFB81C]" /></div>
+            Generate Invite Link
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" aria-label="Close">
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Single-use link, expires in 7 days. Both fields are optional.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label htmlFor="inv-name" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+              Recipient name <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <input
+              id="inv-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Sarah Jones"
+              className="input-field"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label htmlFor="inv-email" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+              Recipient email <span className="font-normal text-gray-400">(optional — pre-fills email button)</span>
+            </label>
+            <input
+              id="inv-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="e.g. sarah@rnli.org"
+              className="input-field"
+            />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 text-sm py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving} className="adm-btn-primary flex-1 text-sm py-2 flex items-center justify-center gap-2 disabled:opacity-50">
+              {saving
+                ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Generating…</>
+                : <><FiPlus className="w-4 h-4" />Generate & Copy</>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function InvitesTab() {
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [bulkGenerating, setBulkGenerating] = useState(false);
-  const [recipientName, setRecipientName] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -784,12 +876,15 @@ function InvitesTab() {
 
   const emailInvite = (inv) => {
     const url = fullUrl(inv.invite_url);
+    const to = inv.recipient_email ? encodeURIComponent(inv.recipient_email) : '';
     const subject = encodeURIComponent("You've been invited to the RNLI Premier League Predictor");
-    const body = encodeURIComponent(`You've been invited to join the RNLI Premier League Predictor.\n\nClick here to register: ${url}`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    const bodyText = inv.recipient_name
+      ? `Hi ${inv.recipient_name},\n\nYou've been invited to join the RNLI Premier League Predictor.\n\nClick here to register: ${url}`
+      : `You've been invited to join the RNLI Premier League Predictor.\n\nClick here to register: ${url}`;
+    const body = encodeURIComponent(bodyText);
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
   };
 
-  // Human-friendly relative expiry label, computed client-side from expires_at.
   const relativeExpiry = (iso) => {
     if (!iso) return '—';
     const diffMs = new Date(iso).getTime() - Date.now();
@@ -801,20 +896,6 @@ function InvitesTab() {
     if (hours >= 1) return `Expires in ${hours} hour${hours === 1 ? '' : 's'}`;
     if (minutes >= 1) return `Expires in ${minutes} minute${minutes === 1 ? '' : 's'}`;
     return 'Soon';
-  };
-
-  const generate = async () => {
-    setGenerating(true);
-    try {
-      const res = await adminAPI.createInvite(recipientName);
-      await copyLink(res.data.invite_url);
-      setRecipientName('');
-      load();
-    } catch {
-      toast.error('Failed to generate invite');
-    } finally {
-      setGenerating(false);
-    }
   };
 
   const generateBulk = async () => {
@@ -851,6 +932,10 @@ function InvitesTab() {
 
   return (
     <div className="space-y-4">
+      {showModal && (
+        <GenerateInviteModal onClose={() => setShowModal(false)} onGenerated={load} />
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -859,23 +944,11 @@ function InvitesTab() {
           <p className="text-xs text-gray-400 mt-0.5">Each link can be used once, expires after 7 days.</p>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <input
-            type="text"
-            value={recipientName}
-            onChange={(e) => setRecipientName(e.target.value)}
-            placeholder="For (optional)"
-            aria-label="Recipient name (optional)"
-            className="inv-recipient-input"
-          />
-          <button onClick={generate} disabled={generating || bulkGenerating}
+          <button onClick={() => setShowModal(true)} disabled={bulkGenerating}
             className="adm-btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50">
-            {generating ? (
-              <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Generating…</>
-            ) : (
-              <><FiPlus className="w-4 h-4" />Generate Invite</>
-            )}
+            <FiPlus className="w-4 h-4" />Generate Invite
           </button>
-          <button onClick={generateBulk} disabled={generating || bulkGenerating}
+          <button onClick={generateBulk} disabled={bulkGenerating}
             className="adm-btn-primary flex items-center gap-2 text-sm whitespace-nowrap disabled:opacity-50">
             {bulkGenerating ? (
               <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Generating…</>
@@ -897,6 +970,7 @@ function InvitesTab() {
               <tr className="adm-thead-row">
                 <th className="adm-th">Status</th>
                 <th className="adm-th hidden sm:table-cell">For</th>
+                <th className="adm-th hidden md:table-cell">Email</th>
                 <th className="adm-th hidden sm:table-cell">Used by</th>
                 <th className="adm-th hidden md:table-cell">Expires</th>
                 <th className="adm-th" />
@@ -909,6 +983,7 @@ function InvitesTab() {
                     <span className={inviteStatusCls(inv.status)}>{inv.status}</span>
                   </td>
                   <td className="adm-td text-gray-500 dark:text-gray-400 hidden sm:table-cell">{inv.recipient_name || '—'}</td>
+                  <td className="adm-td text-gray-500 dark:text-gray-400 hidden md:table-cell text-xs">{inv.recipient_email || '—'}</td>
                   <td className="adm-td text-gray-500 dark:text-gray-400 hidden sm:table-cell">{inv.used_by || '—'}</td>
                   <td className="adm-td text-gray-500 dark:text-gray-400 hidden md:table-cell">
                     {inv.status === 'pending'
