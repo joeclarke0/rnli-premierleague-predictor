@@ -7,12 +7,13 @@ import {
   FiUsers, FiBarChart2, FiAlertCircle, FiGrid,
   FiTrash2, FiShield, FiUser, FiChevronDown, FiRefreshCw,
   FiCheckCircle, FiXCircle, FiEdit2, FiUpload, FiDownload,
-  FiKey, FiX, FiMail, FiCopy, FiPlus, FiSlash, FiCalendar, FiStar,
+  FiKey, FiX, FiMail, FiCopy, FiPlus, FiSlash, FiCalendar, FiStar, FiZap,
 } from 'react-icons/fi';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: FiGrid },
   { id: 'users', label: 'Users', icon: FiUsers },
+  { id: 'wildcards', label: 'Wildcards', icon: FiZap },
   { id: 'predictions', label: 'Predictions', icon: FiBarChart2 },
   { id: 'missing', label: 'Missing', icon: FiAlertCircle },
   { id: 'fixtures', label: 'Fixtures', icon: FiUpload },
@@ -973,6 +974,93 @@ function InvitesTab() {
   );
 }
 
+// ── Wildcards Tab ─────────────────────────────────────────────────────────────
+function WildcardsTab() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    adminAPI.getUsers()
+      .then(r => setUsers(r.data.users))
+      .catch(() => toast.error('Failed to load wildcard data'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const used = users.filter(u => u.has_wildcard);
+  const available = users.filter(u => !u.has_wildcard);
+
+  if (loading) {
+    return <div className="animate-pulse space-y-2">{[1,2,3,4].map(i => <div key={i} className="card h-16 bg-gray-100" />)}</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="grid sm:grid-cols-3 gap-4">
+        <div className="card text-center">
+          <p className="text-xs text-gray-500 font-medium mb-1">Total Players</p>
+          <p className="text-3xl font-black text-rnli-blue">{users.length}</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-xs text-gray-500 font-medium mb-1">Wildcard Used</p>
+          <p className="text-3xl font-black text-amber-500">{used.length}</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-xs text-gray-500 font-medium mb-1">Still Available</p>
+          <p className="text-3xl font-black text-green-600">{available.length}</p>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card p-0 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+          <h3 className="font-bold text-gray-700 text-sm">Wildcard Status — All Players</h3>
+          <button onClick={load} className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 transition-colors" aria-label="Refresh">
+            <FiRefreshCw className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200">
+              <th className="text-left px-4 py-3 font-semibold text-gray-600">Player</th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Email</th>
+              <th className="text-center px-4 py-3 font-semibold text-gray-600">Status</th>
+              <th className="text-center px-4 py-3 font-semibold text-gray-600">Gameweek Used</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u, i) => (
+              <tr key={u.id} className={`border-b border-gray-200 last:border-0 ${i % 2 === 0 ? '' : 'bg-gray-50'}`}>
+                <td className="px-4 py-3 font-medium text-gray-900">{u.username}</td>
+                <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{u.email}</td>
+                <td className="px-4 py-3 text-center">
+                  {u.has_wildcard ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+                      <FiZap className="w-3 h-3" /> Used
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-green-100 text-green-700">
+                      <FiCheckCircle className="w-3 h-3" /> Available
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-center text-gray-700">
+                  {u.has_wildcard && u.wildcard_gameweeks?.length > 0
+                    ? u.wildcard_gameweeks.map(gw => `GW${gw}`).join(', ')
+                    : <span className="text-gray-400">—</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Admin Page ───────────────────────────────────────────────────────────
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -1010,6 +1098,7 @@ export default function Admin() {
       <div>
         {activeTab === 'overview' && <OverviewTab />}
         {activeTab === 'users' && <UsersTab />}
+        {activeTab === 'wildcards' && <WildcardsTab />}
         {activeTab === 'predictions' && <PredictionsTab />}
         {activeTab === 'missing' && <MissingTab />}
         {activeTab === 'fixtures' && <FixturesTab />}

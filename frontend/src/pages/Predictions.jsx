@@ -72,6 +72,7 @@ export default function Predictions() {
   // Gameweek numbers the current user has activated a wildcard for (x2 points).
   const [wildcardGameweeks, setWildcardGameweeks] = useState(new Set());
   const [wildcardSaving, setWildcardSaving] = useState(false);
+  const [wildcardConfirmOpen, setWildcardConfirmOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -173,8 +174,17 @@ export default function Predictions() {
 
   const toggleWildcard = async () => {
     if (wildcardLocked) return;
+    if (!wildcardActive) {
+      // Show confirmation before activating — don't fire immediately
+      setWildcardConfirmOpen(true);
+      return;
+    }
+    // Removing the wildcard needs no confirmation (reversible before results)
+    await doToggleWildcard(false);
+  };
+
+  const doToggleWildcard = async (activating) => {
     setWildcardSaving(true);
-    const activating = !wildcardActive;
     try {
       if (activating) {
         await predictionsAPI.activateWildcard(selectedGameweek);
@@ -438,6 +448,48 @@ export default function Predictions() {
           </button>
         </div>
       </div>
+
+      {/* Wildcard confirmation modal */}
+      {wildcardConfirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setWildcardConfirmOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <FiStar className="w-5 h-5 text-amber-500 fill-current" />
+              </div>
+              <h3 className="font-bold text-gray-900 text-lg">Activate Wildcard?</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-2">
+              Your points for <span className="font-semibold">Gameweek {selectedGameweek}</span> will be <span className="font-semibold text-amber-600">doubled (×2)</span>.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              You can remove the wildcard any time before results are entered. Each player gets one wildcard per season.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setWildcardConfirmOpen(false)}
+                className="flex-1 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setWildcardConfirmOpen(false);
+                  await doToggleWildcard(true);
+                }}
+                className="flex-1 py-2 rounded-lg bg-amber-400 hover:bg-amber-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <FiStar className="w-4 h-4" /> Activate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fixture rows */}
       <div className="space-y-3">
