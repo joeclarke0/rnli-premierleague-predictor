@@ -1,6 +1,7 @@
 import csv
 import io
-from datetime import datetime, timezone
+import random
+from datetime import datetime, timezone, date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -575,3 +576,133 @@ def revoke_invite(
     invite.revoked_at = datetime.now(timezone.utc)
     db.commit()
     return {"message": "Invite revoked"}
+
+
+# ── Simulate ──────────────────────────────────────────────────────────────────
+
+_SIM_TEAMS = [
+    "Arsenal", "Aston Villa", "Brentford", "Brighton",
+    "Chelsea", "Crystal Palace", "Everton", "Fulham",
+    "Ipswich", "Leicester", "Liverpool", "Man City",
+    "Man United", "Newcastle", "Nott'm Forest", "Southampton",
+    "Spurs", "West Ham", "Wolves", "Bournemouth",
+]
+
+_SIM_VENUES = {
+    "Arsenal": "Emirates Stadium", "Aston Villa": "Villa Park",
+    "Brentford": "Gtech Community Stadium", "Brighton": "Amex Stadium",
+    "Chelsea": "Stamford Bridge", "Crystal Palace": "Selhurst Park",
+    "Everton": "Goodison Park", "Fulham": "Craven Cottage",
+    "Ipswich": "Portman Road", "Leicester": "King Power Stadium",
+    "Liverpool": "Anfield", "Man City": "Etihad Stadium",
+    "Man United": "Old Trafford", "Newcastle": "St. James' Park",
+    "Nott'm Forest": "City Ground", "Southampton": "St. Mary's Stadium",
+    "Spurs": "Tottenham Hotspur Stadium", "West Ham": "London Stadium",
+    "Wolves": "Molineux", "Bournemouth": "Vitality Stadium",
+}
+
+_GOAL_WEIGHTS = [18, 30, 25, 15, 8, 4]  # prob for 0-5 goals, roughly realistic
+
+
+def _sim_goal() -> int:
+    return random.choices(range(6), weights=_GOAL_WEIGHTS)[0]
+
+
+def _round_robin_rounds(teams: list, num_rounds: int) -> list:
+    n = len(teams)
+    fixed = teams[0]
+    rotating = list(teams[1:])
+    rounds = []
+    for rnd in range(num_rounds):
+        circle = [fixed] + rotating
+        pairs = []
+        for i in range(n // 2):
+            if rnd % 2 == 0:
+                pairs.append((circle[i], circle[n - 1 - i]))
+            else:
+                pairs.append((circle[n - 1 - i], circle[i]))
+        rounds.append(pairs)
+        rotating = rotating[1:] + [rotating[0]]
+    return rounds
+
+
+@router.post("/simulate")
+def simulate(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Full reset + simulation.
+    Wipes all fixtures/predictions/results/wildcards then seeds:
+      - 10 gameweeks x 10 fixtures (round-robin from 20 PL teams)
+      - Random predictions for every non-admin user
+      - Random results for every fixture (all GWs scored)
+    """
+    # 1. Wipe existing data
+    db.query(Wildcard).delete()
+    db.query(Prediction).delete()
+    db.query(Result).delete()
+    db.query(Fixture).delete()
+    db.commit()
+
+    # 2. Generate fixtures
+    rounds = _round_robin_rounds(_SIM_TEAMS, 10)
+    start_date = date(2026, 8, 15)
+    all_fixtures: list[Fixture] = []
+    for gw_idx, pairs in enumerate(rounds):
+        gw_num = gw_idx + 1
+        gw_date = start_date + timedelta(weeks=gw_idx)
+        for home, away in pairs:
+            f = Fixture(
+                gameweek=gw_num,
+                date=gw_date,
+                day=gw_date.strftime("%a"),
+                time="15:00",
+                home_team=home,
+                away_team=away,
+                venue=_SIM_VENUES.get(home, ""),
+                kickoff_time=None,
+                status="scheduled",
+            )
+            db.add(f)
+            all_fixtures.append(f)
+    db.commit()
+    for f in all_fixtures:
+        db.refresh(f)
+
+    # 3. Get non-admin users
+    users = db.query(User).filter(User.role == "user").all()
+    if not users:
+        return {"error": "No non-admin users found — create players first"}
+
+    # 4. Predictions
+    for user in users:
+        for fixture in all_fixtures:
+            db.add(Prediction(
+                user_id=user.id,
+                fixture_id=fixture.id,
+                gameweek=fixture.gameweek,
+                predicted_home=_sim_goal(),
+                predicted_away=_sim_goal(),
+            ))
+    db.commit()
+
+    # 5. Results — score all 10 GWs
+    for fixture in all_fixtures:
+        db.add(Result(
+            fixture_id=fixture.id,
+            gameweek=fixture.gameweek,
+            actual_home=_sim_goal(),
+            actual_away=_sim_goal(),
+        ))
+        fixture.status = "completed"
+    db.commit()
+
+    return {
+        "message": "Simulation complete",
+        "gameweeks": 10,
+        "fixtures": len(all_fixtures),
+        "users_simulated": len(users),
+        "predictions": len(all_fixtures) * len(users),
+        "results": len(all_fixtures),
+    }
