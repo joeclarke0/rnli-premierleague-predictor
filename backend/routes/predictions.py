@@ -226,6 +226,18 @@ def activate_wildcard(
                 detail="Cannot change wildcard — results are already in for this gameweek",
             )
 
+        # Gate: wildcard is a one-per-season chip — check ALL gameweeks.
+        any_wildcard = (
+            db.query(Wildcard)
+            .filter(Wildcard.user_id == current_user.id)
+            .first()
+        )
+        if any_wildcard and any_wildcard.gameweek != body.gameweek:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Wildcard already used for Gameweek {any_wildcard.gameweek}",
+            )
+
         existing = (
             db.query(Wildcard)
             .filter(

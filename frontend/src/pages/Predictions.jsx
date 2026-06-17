@@ -131,7 +131,12 @@ export default function Predictions() {
   }, []);
 
   const wildcardActive = wildcardGameweeks.has(selectedGameweek);
-  const wildcardLocked = resultIds.size > 0 || completedGameweeks.has(selectedGameweek);
+  // Wildcard is a one-per-season chip — used on any other GW means it's spent.
+  const wildcardUsedGW = wildcardGameweeks.size > 0 && !wildcardActive
+    ? [...wildcardGameweeks][0]
+    : null;
+  const wildcardSpent = wildcardUsedGW !== null;
+  const wildcardLocked = resultIds.size > 0 || completedGameweeks.has(selectedGameweek) || wildcardSpent;
 
   const toggleWildcard = async () => {
     if (wildcardLocked) return;
@@ -321,6 +326,8 @@ export default function Predictions() {
           >
             {wildcardSaving ? (
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-current/40 border-t-current" />
+            ) : wildcardSpent ? (
+              <><FiLock className="w-4 h-4" />Wildcard Used (GW{wildcardUsedGW})</>
             ) : wildcardLocked ? (
               <><FiLock className="w-4 h-4" />Wildcard Locked</>
             ) : wildcardActive ? (
@@ -332,7 +339,15 @@ export default function Predictions() {
         )}
       </div>
 
-      {/* ── Wildcard info strip (when active) ── */}
+      {/* ── Wildcard info strip ── */}
+      {wildcardSpent && !wildcardActive && (
+        <div className="pd-wildcard-info">
+          <FiLock className="w-4 h-4 shrink-0 text-amber-400" />
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            Your wildcard has already been used for <strong>Gameweek {wildcardUsedGW}</strong> — it can only be activated once per season.
+          </p>
+        </div>
+      )}
       {wildcardActive && (
         <div className="pd-wildcard-info">
           <FiStar className="w-4 h-4 fill-current shrink-0 text-amber-400" />
