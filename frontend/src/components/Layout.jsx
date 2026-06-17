@@ -56,12 +56,12 @@ export default function Layout({ children }) {
       <nav className="bg-rnli-blue text-white shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
-              <img src="/placeholder-logo.svg" alt="Logo" className="h-8 w-auto" />
+            {/* Wordmark */}
+            <Link to="/" className="flex items-center flex-shrink-0 gap-2.5">
+              <span className="block w-[3px] h-8 rounded-full" style={{ background: 'linear-gradient(to bottom, #FFB81C, #e09c00)' }} aria-hidden="true" />
               <div>
-                <div className="text-lg font-bold leading-tight">RNLI Premier League</div>
-                <div className="text-[10px] text-rnli-yellow leading-tight">{seasonName}</div>
+                <div className="text-base font-extrabold leading-tight tracking-tight">RNLI Premier League</div>
+                <div className="text-[10px] font-semibold tracking-widest uppercase leading-tight" style={{ color: '#FFB81C' }}>{seasonName}</div>
               </div>
             </Link>
 
@@ -182,11 +182,11 @@ export default function Layout({ children }) {
       <footer className="bg-rnli-blue text-white py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <img src="/placeholder-logo.svg" alt="Logo" className="h-7 w-auto" />
+            <div className="flex items-center gap-2.5">
+              <span className="block w-[3px] h-7 rounded-full" style={{ background: 'linear-gradient(to bottom, #FFB81C, #e09c00)' }} aria-hidden="true" />
               <div>
-                <p className="font-bold text-sm">RNLI Premier League</p>
-                <p className="text-xs text-blue-300">{seasonName}</p>
+                <p className="font-extrabold text-sm tracking-tight">RNLI Premier League</p>
+                <p className="text-[10px] font-semibold tracking-widest uppercase" style={{ color: '#FFB81C' }}>{seasonName}</p>
               </div>
             </div>
             <div className="flex gap-6 text-xs text-blue-300">

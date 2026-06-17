@@ -40,14 +40,8 @@ export default function Login() {
         {/* ── Navy header ── */}
         <div className="lgn-header">
           <span className="lgn-goldbar" aria-hidden="true" />
-
-          {/* Badge */}
-          <div className="lgn-badge">
-            <span className="lgn-badge-inner">PL</span>
-          </div>
-
-          <span className="lgn-kicker mt-4">RNLI Predictor</span>
-          <h1 className="lgn-title">Welcome Back</h1>
+          <span className="lgn-kicker">RNLI Premier League</span>
+          <h1 className="lgn-title mt-2">Welcome Back</h1>
           <p className="lgn-sub">Sign in to make your predictions</p>
         </div>
 

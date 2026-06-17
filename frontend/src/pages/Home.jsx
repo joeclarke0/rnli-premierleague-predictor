@@ -131,7 +131,7 @@ export default function Home() {
             )}
           </div>
 
-          {/* Right: bold logo lockup / matchday badge */}
+          {/* Right: stats card */}
           <div className="lg:col-span-5">
             <div className="relative mx-auto max-w-sm">
               <div className="relative rounded-2xl bg-white/95 px-8 py-10 shadow-2xl">
@@ -139,13 +139,8 @@ export default function Home() {
                   className="absolute -top-3 left-6 px-3 py-1 rounded-md text-[0.65rem] font-extrabold tracking-widest uppercase text-rnli-blue-dark"
                   style={{ background: '#FFB81C' }}
                 >
-                  Matchday
+                  The Season
                 </div>
-                <img
-                  src="/placeholder-logo.svg"
-                  alt="Logo"
-                  className="h-20 w-auto mx-auto mb-6"
-                />
                 <div className="grid grid-cols-3 text-center divide-x divide-gray-200">
                   <div className="px-2">
                     <div className="text-2xl font-black text-rnli-blue leading-none">38</div>
