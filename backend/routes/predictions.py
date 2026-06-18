@@ -276,16 +276,19 @@ def activate_wildcard(
 def deactivate_wildcard(
     gameweek: int = Query(..., ge=1, le=38),
     user_id: str | None = Query(None, description="Target user ID (admin only)"),
-    current_user: User = Depends(get_current_admin),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Deactivate a wildcard for a gameweek. Admin-only.
+    Deactivate a wildcard for a gameweek.
 
-    Admins pass user_id to target another user; omitting it targets themselves.
+    Any authenticated user may deactivate their own wildcard (omit user_id).
+    Admins may pass user_id to target another user.
     Blocked with 403 once any result exists for the gameweek. Idempotent.
     """
     try:
+        if user_id and user_id != current_user.id and current_user.role != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required to deactivate another user's wildcard")
         target_id = user_id if user_id else current_user.id
         print(f"🃏 Wildcard deactivation by {current_user.username} for user {target_id}: GW{gameweek}")
 
