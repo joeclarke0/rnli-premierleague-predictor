@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Prediction, Result, User, Fixture, Wildcard
-from scoring import compute_gameweek_points
+from scoring import compute_gameweek_points, calculate_points
 
 router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
 
@@ -52,11 +52,26 @@ def get_leaderboard(db: Session = Depends(get_db)):
             predictions, result_lookup, postponed_fixture_ids, wildcard_lookup
         )
 
+        # Count exact score predictions per player (raw count, not points).
+        # Postponed fixtures are excluded — a stale result on a postponed fixture
+        # should never contribute.
+        exact_counts = {}
+        for pred in predictions:
+            if pred.fixture_id in postponed_fixture_ids:
+                continue
+            result = result_lookup.get(pred.fixture_id)
+            if result is None:
+                continue
+            if calculate_points(pred.predicted_home, pred.predicted_away,
+                                result.actual_home, result.actual_away) == 5:
+                exact_counts[pred.user_id] = exact_counts.get(pred.user_id, 0) + 1
+
         # Format leaderboard for response
         formatted = []
         for user_id, scores in leaderboard.items():
             row = {
                 "player": user_lookup.get(user_id, f"Unknown ({user_id[:8]})"),
+                "exact_scores": exact_counts.get(user_id, 0),
             }
 
             # Add scores for all 38 gameweeks

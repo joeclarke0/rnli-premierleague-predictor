@@ -340,10 +340,7 @@ function OverallView({ leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
     let mostImproved = { player: "—", gain: -1 };
 
     leaderboard.forEach((row) => {
-      let fives = 0;
-      // An exact score is worth 5 normally, or 10 when that week was wildcarded
-      // (doubled). Threshold >= 5 catches both; null/undefined weeks fail it.
-      for (let w = 1; w <= 38; w++) if (row[`week_${w}`] >= 5) fives++;
+      const fives = row.exact_scores ?? 0;
       if (fives > mostExact.count) mostExact = { player: row.player, count: fives };
 
       const gain = row[lastWeekKey] || 0;
@@ -374,8 +371,8 @@ function OverallView({ leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
           <ScoreCell
             icon={<FiTarget className="h-3.5 w-3.5" style={{ color: "#4ade80" }} />}
             num={summary.mostExact.player}
-            label="Exact Scores"
-            sub={summary.mostExact.count > 0 ? `${summary.mostExact.count} × 5pt` : "None yet"}
+            label="Exact Score King"
+            sub={summary.mostExact.count > 0 ? `${summary.mostExact.count} correct score${summary.mostExact.count !== 1 ? "s" : ""}` : "None yet"}
             accent="is-blue"
           />
           <ScoreCell
@@ -396,7 +393,7 @@ function OverallView({ leaderboard, maxWeekPlayed, rankDeltas, currentUser }) {
       </div>
 
       {/* ── Full Rankings — editorial rows with giant outline rank numbers ── */}
-      <div>
+      <div className="max-w-2xl mx-auto">
         <span className="lb2-eyebrow">Full Table</span>
         <div className="lb2-card mt-3">
           {/* Column header strip (desktop) */}
@@ -682,7 +679,7 @@ function GameweekView({ gameweekRanked, selectedGameweek, setSelectedGameweek, m
           )}
 
           {/* ── Gameweek rankings — same editorial rows ── */}
-          <div>
+          <div className="max-w-2xl mx-auto">
             <span className="lb2-eyebrow">Standings</span>
             <h2 className="lb2-title mt-2 mb-3">Gameweek {selectedGameweek} Rankings</h2>
             <div className="lb2-card">
