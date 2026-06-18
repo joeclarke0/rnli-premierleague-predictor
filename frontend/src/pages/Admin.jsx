@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { adminAPI, settingsAPI, fixturesAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -349,84 +349,157 @@ function UsersTab() {
 }
 
 // ── Predictions Tab ───────────────────────────────────────────────────────────
+// Compact team-name → 3-letter code map. Explicit entries disambiguate the
+// Man Utd / Man City collision; anything not listed falls back to the first
+// three letters uppercased.
+const TEAM_CODE = {
+  // Prod CSV names
+  'Arsenal': 'ARS', 'Aston Villa': 'AVL', 'Brentford': 'BRE',
+  'Brighton': 'BHA', 'Burnley': 'BUR', 'Chelsea': 'CHE',
+  'Crystal Palace': 'CRY', 'Everton': 'EVE', 'Fulham': 'FUL',
+  'Ipswich': 'IPS', 'Ipswich Town': 'IPS', 'Leicester': 'LEI', 'Leicester City': 'LEI',
+  'Liverpool': 'LIV', 'Luton': 'LUT',
+  'Manchester City': 'MCI', 'Manchester Utd': 'MUN', 'Manchester United': 'MUN',
+  'Newcastle': 'NEW', 'Newcastle Utd': 'NEW',
+  'Nottingham Forest': 'NFO', 'Sheffield United': 'SHU',
+  'Southampton': 'SOU', 'Tottenham': 'TOT', 'West Ham': 'WHU',
+  'Wolves': 'WOL', 'Wolverhampton': 'WOL', 'Bournemouth': 'BOU',
+  // Simulate short-names (simulate.py uses these)
+  'Man City': 'MCI', 'Man United': 'MUN', "Nott'm Forest": 'NFO', 'Spurs': 'TOT',
+};
+const teamCode = (name) => TEAM_CODE[name] ?? name.slice(0, 3).toUpperCase();
+
 function PredictionsTab() {
-  const [gameweek, setGameweek] = useState(1);
+  // gameweek starts null so the initial mount load hits the server-side default
+  // (most recent gameweek with predictions).
+  const [gameweek, setGameweek] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  // Tracks the gameweek of the currently-loaded data. On the initial (null)
+  // load the server resolves the latest gameweek and we sync the selector to
+  // it; that state change retriggers this effect, but the ref lets us skip the
+  // redundant clear-and-refetch (no skeleton flicker, no duplicate request).
+  const loadedGwRef = useRef(null);
 
-  const load = (gw) => {
+  useEffect(() => {
+    if (gameweek != null && loadedGwRef.current === gameweek) return;
+
+    let cancelled = false;
     setLoading(true);
     setData(null);
-    adminAPI.getPredictions(gw)
-      .then(r => setData(r.data))
-      .catch(() => toast.error('Failed to load predictions'))
-      .finally(() => setLoading(false));
-  };
+    adminAPI.getPredictions(gameweek)
+      .then(r => {
+        if (cancelled) return;
+        loadedGwRef.current = r.data.gameweek;
+        setData(r.data);
+        if (gameweek == null && r.data.gameweek != null) {
+          setGameweek(r.data.gameweek);
+        }
+      })
+      .catch(() => { if (!cancelled) toast.error('Failed to load predictions'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [gameweek]);
 
-  useEffect(() => { load(gameweek); }, [gameweek]);
+  // Build a per-fixture lookup of (user_id → "home–away") so the grid can be
+  // rendered player-major even though the endpoint returns fixture-major data.
+  // Map<fixture_id, Map<user_id, scoreString>>
+  const predByFixture = useMemo(() => {
+    const map = new Map();
+    if (!data) return map;
+    for (const f of data.fixtures) {
+      const cell = new Map();
+      for (const p of f.predictions) {
+        if (p.predicted_home !== null && p.predicted_away !== null) {
+          cell.set(p.user_id, `${p.predicted_home}–${p.predicted_away}`);
+        }
+      }
+      map.set(f.fixture_id, cell);
+    }
+    return map;
+  }, [data]);
 
-  const pointsColor = (pts) => {
-    if (pts === 10) return 'adm-pts-badge adm-pts-badge--gold';
-    if (pts === 5)  return 'adm-pts-badge adm-pts-badge--green-hi';
-    if (pts === 4)  return 'adm-pts-badge adm-pts-badge--blue-hi';
-    if (pts === 2)  return 'adm-pts-badge adm-pts-badge--blue';
-    if (pts === 0)  return 'adm-pts-badge adm-pts-badge--red';
-    return 'adm-pts-badge';
-  };
+  const availableGameweeks = data?.available_gameweeks ?? [];
+  const noPredictions = data && availableGameweeks.length === 0;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gameweek</label>
-        <div className="relative">
-          <select value={gameweek} onChange={e => setGameweek(Number(e.target.value))}
-            className="input-field w-36 pr-8 appearance-none">
-            {Array.from({ length: 38 }, (_, i) => i + 1).map(gw => (
-              <option key={gw} value={gw}>Gameweek {gw}</option>
-            ))}
-          </select>
-          <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      {/* Selector — only meaningful when at least one gameweek has predictions. */}
+      {availableGameweeks.length > 0 && (
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gameweek</label>
+          <div className="relative">
+            <select
+              value={gameweek ?? ''}
+              onChange={e => setGameweek(Number(e.target.value))}
+              className="input-field w-36 pr-8 appearance-none"
+            >
+              {availableGameweeks.map(gw => (
+                <option key={gw} value={gw}>Gameweek {gw}</option>
+              ))}
+            </select>
+            <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
         </div>
-      </div>
+      )}
 
       {loading && <div className="animate-pulse adm-card h-40" />}
 
-      {data && (
-        <div className="space-y-3">
-          {data.fixtures.length === 0 && (
-            <div className="adm-card text-center text-gray-500 dark:text-gray-400 py-10">No fixtures for this gameweek.</div>
-          )}
-          {data.fixtures.map(f => (
-            <div key={f.fixture_id} className="adm-table-wrap">
-              {/* Fixture header */}
-              <div className="flex items-center justify-between px-4 py-3 bg-[#003087] rounded-t-xl">
-                <span className="font-bold text-white text-sm">{f.home_team} vs {f.away_team}</span>
-                {f.result ? (
-                  <span className="text-base font-black text-[#FFB81C]">{f.result.home} – {f.result.away}</span>
-                ) : (
-                  <span className="text-xs text-white/50 italic">No result yet</span>
-                )}
-              </div>
-              {/* Predictions */}
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {f.predictions.map(p => (
-                  <div key={p.user_id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                    <span className="text-gray-700 dark:text-gray-300 font-medium w-28 truncate">{p.username}</span>
-                    {p.predicted_home !== null ? (
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-gray-900 dark:text-white">{p.predicted_home} – {p.predicted_away}</span>
-                        {p.points !== null && (
-                          <span className={pointsColor(p.points)}>{p.points} pts</span>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic text-xs">No prediction</span>
-                    )}
-                  </div>
+      {!loading && noPredictions && (
+        <div className="adm-card text-center text-gray-500 dark:text-gray-400 py-10">
+          No predictions have been submitted yet.
+        </div>
+      )}
+
+      {!loading && data && !noPredictions && data.users.length === 0 && (
+        <div className="adm-card text-center text-gray-500 dark:text-gray-400 py-10">
+          No players in the competition yet.
+        </div>
+      )}
+
+      {!loading && data && !noPredictions && data.users.length > 0 && data.fixtures.length === 0 && (
+        <div className="adm-card text-center text-gray-500 dark:text-gray-400 py-10">
+          No fixtures for Gameweek {data.gameweek}.
+        </div>
+      )}
+
+      {!loading && data && !noPredictions && data.users.length > 0 && data.fixtures.length > 0 && (
+        <div className="adm-matrix-wrap">
+          <table className="adm-matrix-table">
+            <thead>
+              <tr>
+                <th className="adm-matrix-th adm-matrix-th-corner">Player</th>
+                {data.fixtures.map(f => (
+                  <th
+                    key={f.fixture_id}
+                    className="adm-matrix-th adm-matrix-th-fixture"
+                    title={`${f.home_team} vs ${f.away_team}`}
+                  >
+                    {teamCode(f.home_team)}{'–'}{teamCode(f.away_team)}
+                  </th>
                 ))}
-              </div>
-            </div>
-          ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.users.map(u => (
+                <tr key={u.id}>
+                  <td className="adm-matrix-td-player" title={u.username}>{u.username}</td>
+                  {data.fixtures.map(f => {
+                    const score = predByFixture.get(f.fixture_id)?.get(u.id);
+                    return (
+                      <td key={f.fixture_id} className="adm-matrix-td">
+                        {score ? (
+                          <span className="adm-matrix-score">{score}</span>
+                        ) : (
+                          <span className="adm-matrix-empty" aria-label="No prediction">{'—'}</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

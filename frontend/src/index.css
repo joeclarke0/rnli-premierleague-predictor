@@ -3052,3 +3052,120 @@
   min-width: 3.5rem;
 }
 .lb2-total span { font-size: 0.65rem; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Admin → Predictions matrix grid (adm-matrix-*)
+   Player-major read-only grid: rows = players, columns = fixtures.
+   Sticky first column + sticky header row, both must work on mobile, so the
+   table uses border-collapse: separate (sticky cells keep their borders) with
+   border-spacing: 0 to compensate. Sticky cell backgrounds are OPAQUE so rows
+   scrolling underneath don't bleed through.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Scroll container — horizontal scroll on overflow. */
+.adm-matrix-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  -webkit-overflow-scrolling: touch;
+}
+.dark .adm-matrix-wrap {
+  border-color: #1f2937;
+  background: #111827;
+}
+
+.adm-matrix-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  min-width: max-content;
+  font-size: 0.8rem;
+}
+
+/* ── Header cells ── */
+.adm-matrix-th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #003087; /* rnli-blue */
+  color: #ffffff;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  padding: 0.5rem 0.625rem;
+  border-bottom: 2px solid #FFB81C; /* rnli-yellow accent */
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.adm-matrix-th-fixture {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Top-left corner: sticky on BOTH axes, highest z so nothing overlaps it. */
+.adm-matrix-th-corner {
+  left: 0;
+  top: 0;
+  z-index: 4;
+  text-align: left;
+  min-width: 9rem;
+  max-width: 9rem;
+}
+
+/* ── Sticky first column (player names) ── */
+.adm-matrix-td-player {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 9rem;
+  max-width: 9rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  border-right: 1px solid #e5e7eb;
+}
+.dark .adm-matrix-td-player {
+  background: #111827;
+  color: #f9fafb;
+  border-bottom-color: #1f2937;
+  border-right-color: #374151;
+}
+
+/* ── Data cells ── */
+.adm-matrix-td {
+  text-align: center;
+  white-space: nowrap;
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid #f3f4f6;
+  border-right: 1px solid #f3f4f6;
+}
+.dark .adm-matrix-td {
+  border-bottom-color: #1f2937;
+  border-right-color: #1f2937;
+}
+
+.adm-matrix-score {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+}
+.dark .adm-matrix-score {
+  color: #f9fafb;
+}
+
+/* Missing prediction: subtle, muted em-dash. */
+.adm-matrix-empty {
+  color: #9ca3af;
+  font-weight: 400;
+}
+.dark .adm-matrix-empty {
+  color: #4b5563;
+}

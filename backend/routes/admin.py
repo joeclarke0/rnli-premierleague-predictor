@@ -177,11 +177,25 @@ def reset_user_password(
 
 @router.get("/predictions")
 def get_all_predictions(
-    gameweek: int,
+    gameweek: int | None = None,
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """All predictions for a given gameweek, with scoring if results exist."""
+    """All predictions for a given gameweek, with scoring if results exist.
+
+    ``gameweek`` is optional. When omitted, the most recent gameweek that has
+    at least one prediction is used (or gameweek 1 if no predictions exist at
+    all). The response also surfaces ``available_gameweeks`` — the sorted list
+    of distinct gameweeks that have predictions — so the admin UI can populate
+    its selector without a second request.
+    """
+    # Distinct gameweeks that have at least one prediction, sorted ascending.
+    available_gameweeks = sorted(
+        r[0] for r in db.query(Prediction.gameweek).distinct().all()
+    )
+    if gameweek is None:
+        gameweek = available_gameweeks[-1] if available_gameweeks else 1
+
     fixtures = db.query(Fixture).filter(Fixture.gameweek == gameweek).order_by(Fixture.id).all()
     users = db.query(User).filter(User.role == "user").order_by(User.username).all()
     results = db.query(Result).filter(Result.gameweek == gameweek).all()
@@ -237,6 +251,7 @@ def get_all_predictions(
 
     return {
         "gameweek": gameweek,
+        "available_gameweeks": available_gameweeks,
         "users": [{"id": u.id, "username": u.username} for u in users],
         "fixtures": fixture_rows,
     }

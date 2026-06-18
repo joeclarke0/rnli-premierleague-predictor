@@ -613,3 +613,94 @@ def test_wildcard_endpoints_require_authentication(client):
         assert resp.status_code in (401, 403), (
             f"Expected 401/403 for unauthenticated request, got {resp.status_code}"
         )
+
+
+# ── Admin predictions viewer: optional gameweek + available_gameweeks ─────────
+#
+# The `client` fixture is module-scoped, so by the time these run the shared DB
+# already holds predictions/fixtures from earlier tests. Each test below wipes
+# Prediction → Result → Fixture (FK-safe order) and seeds only its own data so
+# the exact-equality assertions on `available_gameweeks` hold deterministically.
+
+def _wipe_match_data(db):
+    db.query(Prediction).delete()
+    db.query(Result).delete()
+    db.query(Fixture).delete()
+    db.commit()
+
+
+def test_predictions_no_param_returns_latest_gameweek(client):
+    """No gameweek param → resolves to the most recent GW with predictions, and
+    available_gameweeks lists every distinct GW that has predictions, sorted."""
+    db = SessionLocal()
+    try:
+        _wipe_match_data(db)
+        admin = _make_user(db, username="pred_latest_admin", email="pred_latest_admin@test.com", role="admin")
+        player = _make_user(db, username="pred_latest_player", email="pred_latest_player@test.com")
+        fid2 = _make_fixture(db, gameweek=2, home="Arsenal", away="Chelsea")
+        fid5 = _make_fixture(db, gameweek=5, home="Liverpool", away="Everton")
+        _add_prediction(db, user_id=player.id, fixture_id=fid2, gameweek=2, home=1, away=0)
+        _add_prediction(db, user_id=player.id, fixture_id=fid5, gameweek=5, home=2, away=2)
+        admin_header = _auth_header(admin)
+    finally:
+        db.close()
+
+    resp = client.get("/admin/predictions", headers=admin_header)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["gameweek"] == 5
+    assert body["available_gameweeks"] == [2, 5]
+    # Default resolved to GW5 → its single fixture is present.
+    assert len(body["fixtures"]) == 1
+    assert body["fixtures"][0]["home_team"] == "Liverpool"
+
+
+def test_predictions_explicit_gameweek_still_works(client):
+    """An explicit ?gameweek=2 returns that GW's fixtures and the unchanged
+    fixture-major structure, with available_gameweeks unaffected by the choice."""
+    db = SessionLocal()
+    try:
+        _wipe_match_data(db)
+        admin = _make_user(db, username="pred_explicit_admin", email="pred_explicit_admin@test.com", role="admin")
+        player = _make_user(db, username="pred_explicit_player", email="pred_explicit_player@test.com")
+        fid2 = _make_fixture(db, gameweek=2, home="Tottenham", away="West Ham")
+        fid5 = _make_fixture(db, gameweek=5, home="Brighton", away="Fulham")
+        _add_prediction(db, user_id=player.id, fixture_id=fid2, gameweek=2, home=3, away=1)
+        _add_prediction(db, user_id=player.id, fixture_id=fid5, gameweek=5, home=0, away=0)
+        admin_header = _auth_header(admin)
+        player_username = player.username
+    finally:
+        db.close()
+
+    resp = client.get("/admin/predictions", params={"gameweek": 2}, headers=admin_header)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["gameweek"] == 2
+    assert body["available_gameweeks"] == [2, 5]
+    assert len(body["fixtures"]) == 1
+    fixture = body["fixtures"][0]
+    assert fixture["home_team"] == "Tottenham"
+    assert fixture["away_team"] == "West Ham"
+    # Structure intact: per-fixture predictions list includes the player's score.
+    preds = {p["username"]: p for p in fixture["predictions"]}
+    assert preds[player_username]["predicted_home"] == 3
+    assert preds[player_username]["predicted_away"] == 1
+
+
+def test_predictions_no_predictions_empty_state(client):
+    """No predictions anywhere → available_gameweeks is empty and the endpoint
+    returns a valid 200 (default GW1), not a 500."""
+    db = SessionLocal()
+    try:
+        _wipe_match_data(db)
+        admin = _make_user(db, username="pred_empty_admin", email="pred_empty_admin@test.com", role="admin")
+        admin_header = _auth_header(admin)
+    finally:
+        db.close()
+
+    resp = client.get("/admin/predictions", headers=admin_header)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["available_gameweeks"] == []
+    assert body["gameweek"] == 1
+    assert body["fixtures"] == []

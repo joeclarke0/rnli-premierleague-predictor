@@ -123,7 +123,8 @@ export const adminAPI = {
   deleteUser: (userId) => api.delete(`/admin/users/${userId}`),
   resetUserPassword: (userId, newPassword) =>
     api.post(`/admin/users/${userId}/reset-password`, { new_password: newPassword }),
-  getPredictions: (gameweek) => api.get('/admin/predictions', { params: { gameweek } }),
+  getPredictions: (gameweek) =>
+    api.get('/admin/predictions', { params: gameweek != null ? { gameweek } : {} }),
   getMissingPredictions: (gameweek) => api.get('/admin/missing-predictions', { params: { gameweek } }),
   updateFixtureStatus: (fixtureId, status) =>
     api.patch(`/admin/fixtures/${fixtureId}/status`, { status }),
