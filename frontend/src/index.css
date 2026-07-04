@@ -3169,3 +3169,33 @@
 .dark .adm-matrix-empty {
   color: #4b5563;
 }
+
+/* Actual result shown in fixture column header when scored. */
+.adm-matrix-result {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #FFB81C;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  margin-top: 0.1rem;
+}
+
+/* Prediction cell colour-coding by outcome. */
+.adm-matrix-score--exact {
+  color: #16a34a; /* green-600 */
+}
+.dark .adm-matrix-score--exact {
+  color: #4ade80; /* green-400 */
+}
+.adm-matrix-score--result {
+  color: #d97706; /* amber-600 */
+}
+.dark .adm-matrix-score--result {
+  color: #fbbf24; /* amber-400 */
+}
+.adm-matrix-score--wrong {
+  color: #dc2626; /* red-600 */
+}
+.dark .adm-matrix-score--wrong {
+  color: #f87171; /* red-400 */
+}

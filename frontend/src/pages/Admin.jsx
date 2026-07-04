@@ -401,9 +401,10 @@ function PredictionsTab() {
     return () => { cancelled = true; };
   }, [gameweek]);
 
-  // Build a per-fixture lookup of (user_id → "home–away") so the grid can be
-  // rendered player-major even though the endpoint returns fixture-major data.
-  // Map<fixture_id, Map<user_id, scoreString>>
+  // Build a per-fixture lookup of (user_id → { score, points }) so the grid
+  // can be rendered player-major even though the endpoint returns
+  // fixture-major data. points is null until the fixture has a result.
+  // Map<fixture_id, Map<user_id, { score, points }>>
   const predByFixture = useMemo(() => {
     const map = new Map();
     if (!data) return map;
@@ -411,10 +412,24 @@ function PredictionsTab() {
       const cell = new Map();
       for (const p of f.predictions) {
         if (p.predicted_home !== null && p.predicted_away !== null) {
-          cell.set(p.user_id, `${p.predicted_home}–${p.predicted_away}`);
+          cell.set(p.user_id, {
+            score: `${p.predicted_home}–${p.predicted_away}`,
+            points: p.points ?? null,
+          });
         }
       }
       map.set(f.fixture_id, cell);
+    }
+    return map;
+  }, [data]);
+
+  // Actual results per fixture ({ home, away } or null when not yet scored),
+  // shown under the team codes in each column header.
+  const resultByFixture = useMemo(() => {
+    const map = new Map();
+    if (!data) return map;
+    for (const f of data.fixtures) {
+      map.set(f.fixture_id, f.result ?? null);
     }
     return map;
   }, [data]);
@@ -475,7 +490,12 @@ function PredictionsTab() {
                     className="adm-matrix-th adm-matrix-th-fixture"
                     title={`${f.home_team} vs ${f.away_team}`}
                   >
-                    {teamCode(f.home_team)}{'–'}{teamCode(f.away_team)}
+                    <div>{teamCode(f.home_team)}{'–'}{teamCode(f.away_team)}</div>
+                    {resultByFixture.get(f.fixture_id) && (
+                      <div className="adm-matrix-result">
+                        {resultByFixture.get(f.fixture_id).home}–{resultByFixture.get(f.fixture_id).away}
+                      </div>
+                    )}
                   </th>
                 ))}
               </tr>
@@ -485,11 +505,22 @@ function PredictionsTab() {
                 <tr key={u.id}>
                   <td className="adm-matrix-td-player" title={u.username}>{u.username}</td>
                   {data.fixtures.map(f => {
-                    const score = predByFixture.get(f.fixture_id)?.get(u.id);
+                    const cell = predByFixture.get(f.fixture_id)?.get(u.id);
+                    // Colour-code once the fixture is scored. Backend sends
+                    // wildcard-multiplied points, so values are {null, 0, 2,
+                    // 4, 5, 10}: >= 5 = exact (5 or 10), >= 2 = correct
+                    // result (2 or 4), 0 = wrong. points == null (no result
+                    // yet) keeps the neutral style.
+                    const scoreCls = !cell
+                      ? null
+                      : cell.points == null  ? 'adm-matrix-score'
+                      : cell.points >= 5     ? 'adm-matrix-score adm-matrix-score--exact'
+                      : cell.points >= 2     ? 'adm-matrix-score adm-matrix-score--result'
+                      :                        'adm-matrix-score adm-matrix-score--wrong';
                     return (
                       <td key={f.fixture_id} className="adm-matrix-td">
-                        {score ? (
-                          <span className="adm-matrix-score">{score}</span>
+                        {cell ? (
+                          <span className={scoreCls}>{cell.score}</span>
                         ) : (
                           <span className="adm-matrix-empty" aria-label="No prediction">{'—'}</span>
                         )}
