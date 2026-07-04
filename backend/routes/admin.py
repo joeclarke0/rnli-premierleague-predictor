@@ -261,13 +261,42 @@ def get_all_predictions(
 
 @router.get("/missing-predictions")
 def get_missing_predictions(
-    gameweek: int,
+    gameweek: int | None = None,
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Which users have NOT submitted all predictions for a gameweek."""
-    fixtures = db.query(Fixture).filter(Fixture.gameweek == gameweek).all()
-    users = db.query(User).filter(User.role == "user").order_by(User.username).all()
+    """Which users have NOT submitted all predictions for a gameweek.
+
+    ``gameweek`` is optional. When omitted, defaults to the first gameweek
+    that has fixtures but no results entered yet (the upcoming gameweek).
+    Falls back to the last gameweek with fixtures if all are scored.
+    The response includes ``available_gameweeks`` — distinct gameweeks that
+    have at least one fixture — so the UI can populate its selector without
+    a second request.
+    """
+    # Gameweeks that have at least one non-postponed fixture, sorted ascending.
+    available_gameweeks = sorted(
+        r[0] for r in db.query(Fixture.gameweek)
+        .filter(Fixture.status != "postponed")
+        .distinct()
+        .all()
+    )
+
+    # Gameweeks that have at least one result entered.
+    scored_gameweeks = {
+        r[0] for r in db.query(Result.gameweek).distinct().all()
+    }
+
+    if gameweek is None:
+        # Default: first fixture GW with no results (upcoming), else last fixture GW.
+        upcoming = [gw for gw in available_gameweeks if gw not in scored_gameweeks]
+        gameweek = upcoming[0] if upcoming else (available_gameweeks[-1] if available_gameweeks else 1)
+
+    fixtures = db.query(Fixture).filter(
+        Fixture.gameweek == gameweek,
+        Fixture.status != "postponed",
+    ).all()
+    users = db.query(User).order_by(User.username).all()
     predictions = db.query(Prediction).filter(Prediction.gameweek == gameweek).all()
 
     fixture_ids = {f.id for f in fixtures}
@@ -288,6 +317,7 @@ def get_missing_predictions(
 
     return {
         "gameweek": gameweek,
+        "available_gameweeks": available_gameweeks,
         "total_fixtures": len(fixture_ids),
         "summary": summary,
     }

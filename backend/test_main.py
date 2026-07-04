@@ -704,3 +704,87 @@ def test_predictions_no_predictions_empty_state(client):
     assert body["available_gameweeks"] == []
     assert body["gameweek"] == 1
     assert body["fixtures"] == []
+
+
+# ── Missing predictions ──────────────────────────────────────────────────────
+#
+# Uses a high gameweek namespace (GW 50+) to avoid colliding with fixtures
+# seeded by earlier tests. Each test that needs a fresh state wipes predictions
+# and fixtures for its own GWs only (finer-grained than _wipe_match_data which
+# wipes everything and breaks earlier tests).
+
+def test_missing_admin_user_appears_in_summary(client):
+    """Admin users must appear in the missing-predictions summary (regression
+    for the role-filter bug — previously filtered to role='user' only)."""
+    db = SessionLocal()
+    try:
+        admin = _make_user(db, username="miss_admin", email="miss_admin@test.com", role="admin")
+        player = _make_user(db, username="miss_player", email="miss_player@test.com")
+        fid = _make_fixture(db, gameweek=50, home="Hull", away="Preston")
+        admin_header = _auth_header(admin)
+    finally:
+        db.close()
+
+    resp = client.get("/admin/missing-predictions", params={"gameweek": 50}, headers=admin_header)
+    assert resp.status_code == 200
+    usernames = {u["username"] for u in resp.json()["summary"]}
+    assert "miss_admin" in usernames, "Admin user must appear in missing summary"
+    assert "miss_player" in usernames, "Player user must appear in missing summary"
+
+
+def test_missing_default_resolves_to_upcoming_gameweek(client):
+    """Omitting gameweek resolves to the first GW with fixtures but no results."""
+    db = SessionLocal()
+    try:
+        admin = _make_user(db, username="miss_def_admin", email="miss_def_admin@test.com", role="admin")
+        # Wipe GW50 fixtures left by the previous test so they don't pollute the
+        # default-GW resolution (the endpoint picks the *first* upcoming GW).
+        for fid in [f.id for f in db.query(Fixture).filter(Fixture.gameweek == 50).all()]:
+            db.query(Prediction).filter(Prediction.fixture_id == fid).delete()
+            db.query(Result).filter(Result.fixture_id == fid).delete()
+        db.query(Fixture).filter(Fixture.gameweek == 50).delete()
+        db.commit()
+        # GW51: has fixtures + a result (scored)
+        fid51 = _make_fixture(db, gameweek=51, home="Millwall", away="Cardiff")
+        _add_result(db, fixture_id=fid51, gameweek=51, home=1, away=0)
+        # GW52: has fixtures, no results (upcoming)
+        _make_fixture(db, gameweek=52, home="QPR", away="Swansea")
+        admin_header = _auth_header(admin)
+    finally:
+        db.close()
+
+    resp = client.get("/admin/missing-predictions", headers=admin_header)
+    assert resp.status_code == 200
+    body = resp.json()
+    # Should resolve to GW52 (upcoming), not GW51 (already scored).
+    assert body["gameweek"] == 52
+    assert 52 in body["available_gameweeks"]
+
+
+def test_missing_postponed_fixture_excluded_from_count(client):
+    """Postponed fixtures must not appear in the missing count — same exclusion
+    rule as scoring. A user who never predicted against a postponed fixture
+    must not show a non-zero missing count for it."""
+    db = SessionLocal()
+    try:
+        admin = _make_user(db, username="miss_ppt_admin", email="miss_ppt_admin@test.com", role="admin")
+        player = _make_user(db, username="miss_ppt_player", email="miss_ppt_player@test.com")
+        # GW53: one normal fixture (player predicts), one postponed (no prediction).
+        fid_normal = _make_fixture(db, gameweek=53, home="Barnsley", away="Wigan")
+        _make_fixture(db, gameweek=53, home="Rotherham", away="Blackburn", status="postponed")
+        _add_prediction(db, user_id=player.id, fixture_id=fid_normal, gameweek=53, home=1, away=0)
+        admin_header = _auth_header(admin)
+        player_username = player.username
+    finally:
+        db.close()
+
+    resp = client.get("/admin/missing-predictions", params={"gameweek": 53}, headers=admin_header)
+    assert resp.status_code == 200
+    body = resp.json()
+    summary = {u["username"]: u for u in body["summary"]}
+    # Player submitted for the only non-postponed fixture → complete.
+    assert summary[player_username]["complete"] is True, (
+        f"Player should be complete (postponed fixture excluded): {summary[player_username]}"
+    )
+    # Total fixture count must reflect only non-postponed fixtures (1, not 2).
+    assert body["total_fixtures"] == 1

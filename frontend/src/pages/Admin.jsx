@@ -517,42 +517,64 @@ function PredictionsTab() {
 
 // ── Missing Tab ───────────────────────────────────────────────────────────────
 function MissingTab() {
-  const [gameweek, setGameweek] = useState(1);
+  const [gameweek, setGameweek] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const loadedGwRef = useRef(null);
 
-  const load = (gw) => {
+  useEffect(() => {
+    if (gameweek != null && loadedGwRef.current === gameweek) return;
+
+    let cancelled = false;
     setLoading(true);
     setData(null);
-    adminAPI.getMissingPredictions(gw)
-      .then(r => setData(r.data))
-      .catch(() => toast.error('Failed to load data'))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(gameweek); }, [gameweek]);
+    adminAPI.getMissingPredictions(gameweek)
+      .then(r => {
+        if (cancelled) return;
+        loadedGwRef.current = r.data.gameweek;
+        setData(r.data);
+        if (gameweek == null && r.data.gameweek != null) {
+          setGameweek(r.data.gameweek);
+        }
+      })
+      .catch(() => { if (!cancelled) toast.error('Failed to load data'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [gameweek]);
 
   const missing  = data?.summary.filter(u => !u.complete) ?? [];
   const complete = data?.summary.filter(u => u.complete) ?? [];
+  const availableGameweeks = data?.available_gameweeks ?? [];
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gameweek</label>
-        <div className="relative">
-          <select value={gameweek} onChange={e => setGameweek(Number(e.target.value))}
-            className="input-field w-36 pr-8 appearance-none">
-            {Array.from({ length: 38 }, (_, i) => i + 1).map(gw => (
-              <option key={gw} value={gw}>Gameweek {gw}</option>
-            ))}
-          </select>
-          <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      {availableGameweeks.length > 0 && (
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">Gameweek</label>
+          <div className="relative">
+            <select
+              value={gameweek ?? ''}
+              onChange={e => setGameweek(Number(e.target.value))}
+              className="input-field w-36 pr-8 appearance-none"
+            >
+              {availableGameweeks.map(gw => (
+                <option key={gw} value={gw}>Gameweek {gw}</option>
+              ))}
+            </select>
+            <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
         </div>
-      </div>
+      )}
 
       {loading && <div className="animate-pulse adm-card h-40" />}
 
-      {data && (
+      {!loading && availableGameweeks.length === 0 && (
+        <div className="adm-card text-center text-gray-500 dark:text-gray-400 py-10">
+          No fixtures loaded yet.
+        </div>
+      )}
+
+      {!loading && data && availableGameweeks.length > 0 && (
         <div className="grid sm:grid-cols-2 gap-4">
           {/* Missing */}
           <div className="adm-table-wrap">

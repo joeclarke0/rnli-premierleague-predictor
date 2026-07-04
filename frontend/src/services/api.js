@@ -125,7 +125,8 @@ export const adminAPI = {
     api.post(`/admin/users/${userId}/reset-password`, { new_password: newPassword }),
   getPredictions: (gameweek) =>
     api.get('/admin/predictions', { params: gameweek != null ? { gameweek } : {} }),
-  getMissingPredictions: (gameweek) => api.get('/admin/missing-predictions', { params: { gameweek } }),
+  getMissingPredictions: (gameweek) =>
+    api.get('/admin/missing-predictions', { params: gameweek != null ? { gameweek } : {} }),
   updateFixtureStatus: (fixtureId, status) =>
     api.patch(`/admin/fixtures/${fixtureId}/status`, { status }),
   // Invites
