@@ -423,17 +423,6 @@ function PredictionsTab() {
     return map;
   }, [data]);
 
-  // Actual results per fixture ({ home, away } or null when not yet scored),
-  // shown under the team codes in each column header.
-  const resultByFixture = useMemo(() => {
-    const map = new Map();
-    if (!data) return map;
-    for (const f of data.fixtures) {
-      map.set(f.fixture_id, f.result ?? null);
-    }
-    return map;
-  }, [data]);
-
   const availableGameweeks = data?.available_gameweeks ?? [];
   const noPredictions = data && availableGameweeks.length === 0;
 
@@ -466,12 +455,6 @@ function PredictionsTab() {
         </div>
       )}
 
-      {!loading && data && !noPredictions && data.users.length === 0 && (
-        <div className="adm-card text-center text-gray-500 dark:text-gray-400 py-10">
-          No players in the competition yet.
-        </div>
-      )}
-
       {!loading && data && !noPredictions && data.users.length > 0 && data.fixtures.length === 0 && (
         <div className="adm-card text-center text-gray-500 dark:text-gray-400 py-10">
           No fixtures for Gameweek {data.gameweek}.
@@ -490,12 +473,7 @@ function PredictionsTab() {
                     className="adm-matrix-th adm-matrix-th-fixture"
                     title={`${f.home_team} vs ${f.away_team}`}
                   >
-                    <div>{teamCode(f.home_team)}{'–'}{teamCode(f.away_team)}</div>
-                    {resultByFixture.get(f.fixture_id) && (
-                      <div className="adm-matrix-result">
-                        {resultByFixture.get(f.fixture_id).home}–{resultByFixture.get(f.fixture_id).away}
-                      </div>
-                    )}
+                    {teamCode(f.home_team)}{'–'}{teamCode(f.away_team)}
                   </th>
                 ))}
               </tr>

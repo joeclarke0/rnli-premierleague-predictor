@@ -197,7 +197,7 @@ def get_all_predictions(
         gameweek = available_gameweeks[-1] if available_gameweeks else 1
 
     fixtures = db.query(Fixture).filter(Fixture.gameweek == gameweek).order_by(Fixture.id).all()
-    users = db.query(User).filter(User.role == "user").order_by(User.username).all()
+    users = db.query(User).order_by(User.username).all()
     results = db.query(Result).filter(Result.gameweek == gameweek).all()
     result_lookup = {r.fixture_id: r for r in results}
     predictions = db.query(Prediction).filter(Prediction.gameweek == gameweek).all()
