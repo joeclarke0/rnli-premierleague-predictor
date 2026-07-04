@@ -3,7 +3,7 @@ Full reset + simulation script.
 
 Clears all fixtures, predictions, results, and wildcards then seeds:
   - 10 gameweeks x 10 fixtures (real PL teams, round-robin schedule)
-  - Random predictions for every non-admin user (0-4 goals each side)
+  - Random predictions for every user (admins included, 0-4 goals each side)
   - Random results for every fixture
 
 Run from the backend/ directory:
@@ -120,9 +120,9 @@ def main() -> None:
         print(f"✅  {len(all_fixtures)} fixtures across 10 gameweeks.")
 
         # ── 3. Fetch users ──────────────────────────────────────────────────────
-        users = db.query(User).filter(User.role == "user").all()
+        users = db.query(User).all()
         if not users:
-            print("❌  No non-admin users found — create players first and re-run.")
+            print("❌  No users found in the database — create users first and re-run.")
             return
         print(f"👥  Simulating {len(users)} users: {', '.join(u.username for u in users)}")
 

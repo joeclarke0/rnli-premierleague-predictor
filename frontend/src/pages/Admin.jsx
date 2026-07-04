@@ -63,7 +63,7 @@ function OverviewTab() {
   if (!data) return null;
 
   const tiles = [
-    { label: 'Registered Players', value: data.total_users,      accent: 'navy' },
+    { label: 'Total Players', value: data.total_users,      accent: 'navy' },
     { label: 'Total Predictions',  value: data.total_predictions, accent: 'green' },
     { label: 'Results Entered',    value: `${data.total_results} / ${data.total_fixtures}`, accent: 'gold' },
     { label: 'Season Progress',    value: `${data.completion_pct}%`, accent: 'navy' },
@@ -629,20 +629,32 @@ const TEMPLATE_ROWS = [
 ];
 
 function FixtureStatusManager() {
-  const [gameweek, setGameweek] = useState(1);
+  const [gameweek, setGameweek] = useState(null);
+  const [availableGws, setAvailableGws] = useState([]);
   const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
 
-  const load = useCallback((gw) => {
-    setLoading(true);
-    fixturesAPI.getByGameweek(gw)
-      .then((r) => setFixtures(r.data.fixtures))
-      .catch(() => toast.error('Failed to load fixtures'))
-      .finally(() => setLoading(false));
+  useEffect(() => {
+    fixturesAPI.getAll({})
+      .then((r) => {
+        const gws = [...new Set(r.data.fixtures.map((f) => f.gameweek))].sort((a, b) => a - b);
+        setAvailableGws(gws);
+        if (gws.length > 0) setGameweek(gws[0]);
+      })
+      .catch(() => toast.error('Failed to load gameweeks'));
   }, []);
 
-  useEffect(() => { load(gameweek); }, [gameweek, load]);
+  useEffect(() => {
+    if (gameweek == null) return;
+    let cancelled = false;
+    setLoading(true);
+    fixturesAPI.getByGameweek(gameweek)
+      .then((r) => { if (!cancelled) setFixtures(r.data.fixtures); })
+      .catch(() => { if (!cancelled) toast.error('Failed to load fixtures'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [gameweek]);
 
   const setStatus = async (fixture, status) => {
     setUpdatingId(fixture.id);
@@ -670,18 +682,22 @@ function FixtureStatusManager() {
           <p className="adm-section-title">Fixture Status</p>
           <p className="text-xs text-gray-400 mt-0.5">Postpone to exclude from scoring, or reschedule.</p>
         </div>
-        <div className="relative">
-          <select value={gameweek} onChange={(e) => setGameweek(Number(e.target.value))}
-            className="input-field w-36 pr-8 appearance-none">
-            {Array.from({ length: 38 }, (_, i) => i + 1).map((gw) => (
-              <option key={gw} value={gw}>Gameweek {gw}</option>
-            ))}
-          </select>
-          <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-        </div>
+        {availableGws.length > 0 && (
+          <div className="relative">
+            <select value={gameweek ?? ''} onChange={(e) => setGameweek(Number(e.target.value))}
+              className="input-field w-36 pr-8 appearance-none">
+              {availableGws.map((gw) => (
+                <option key={gw} value={gw}>Gameweek {gw}</option>
+              ))}
+            </select>
+            <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+        )}
       </div>
 
-      {loading ? (
+      {availableGws.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-6">No fixtures loaded yet.</p>
+      ) : loading ? (
         <div className="animate-pulse space-y-2">{[1,2,3].map((i) => <div key={i} className="h-12 bg-gray-100 dark:bg-gray-800 rounded" />)}</div>
       ) : fixtures.length === 0 ? (
         <p className="text-sm text-gray-500 text-center py-6">No fixtures for this gameweek.</p>

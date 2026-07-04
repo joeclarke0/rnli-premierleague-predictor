@@ -26,7 +26,7 @@ def get_overview(
     db: Session = Depends(get_db)
 ):
     """High-level stats for the admin dashboard."""
-    total_users = db.query(User).filter(User.role == "user").count()
+    total_users = db.query(User).count()
     total_predictions = db.query(Prediction).count()
     total_results = db.query(Result).count()
     total_fixtures = db.query(Fixture).count()
@@ -680,7 +680,7 @@ def simulate(
     Full reset + simulation.
     Wipes all fixtures/predictions/results/wildcards then seeds:
       - 10 gameweeks x 10 fixtures (round-robin from 20 PL teams)
-      - Random predictions for every non-admin user
+      - Random predictions for every user (admins included)
       - Random results for every fixture (all GWs scored)
     """
     # 1. Wipe existing data
