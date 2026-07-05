@@ -134,6 +134,9 @@ export const adminAPI = {
   editFixture: (fixtureId, data) => api.patch(`/admin/fixtures/${fixtureId}`, data),
   moveFixture: (fixtureId, gameweek) => api.patch(`/admin/fixtures/${fixtureId}/gameweek`, { gameweek }),
   deleteFixture: (fixtureId, force = false) => api.delete(`/admin/fixtures/${fixtureId}`, { params: { force } }),
+  // Fixture sync (football-data.org preview + apply)
+  getFixtureSync: () => api.get('/admin/fixtures/sync/preview'),
+  applyFixtureSync: (data) => api.post('/admin/fixtures/sync/apply', data),
   // Invites
   getInvites: () => api.get('/admin/invites'),
   createInvite: (recipientName, recipientEmail) => api.post('/admin/invites', {

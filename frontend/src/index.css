@@ -3248,3 +3248,14 @@
 .adm-action-btn--red:hover { border-color: #dc2626; color: #dc2626; background: rgba(220,38,38,0.06); }
 .dark .adm-action-btn--red { border-color: rgba(248,113,113,0.35); color: #f87171; }
 .dark .adm-action-btn--red:hover { border-color: #f87171; color: #f87171; background: rgba(248,113,113,0.08); }
+
+/* ── Fixture sync badges (adm-sync-*) ──────────────────── */
+.adm-sync-badge { font-size: 0.65rem; font-weight: 700; padding: 1px 6px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em; }
+.adm-sync-badge--amber { background: #fef3c7; color: #92400e; }
+.dark .adm-sync-badge--amber { background: #451a03; color: #fde68a; }
+.adm-sync-badge--green { background: #d1fae5; color: #065f46; }
+.dark .adm-sync-badge--green { background: #022c22; color: #6ee7b7; }
+
+/* Amber variant of the existing info card (used by the sync "not configured" state) */
+.adm-info-card--amber { background: #fffbeb; border-color: #fde68a; }
+.dark .adm-info-card--amber { background: rgba(217,119,6,0.08); border-color: rgba(217,119,6,0.25); }

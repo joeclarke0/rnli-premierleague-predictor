@@ -1,9 +1,12 @@
 import csv
 import io
+import os
 import random
+import uuid
 from datetime import datetime, timezone, date, timedelta
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -12,6 +15,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Fixture, Prediction, Result, Invite, Wildcard
 from auth import get_current_admin, hash_password
+from team_mapping import map_team_name
 from scoring import calculate_points, compute_gameweek_points, wildcard_multiplier
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -800,6 +804,366 @@ def delete_fixture(
     db.delete(fixture)
     db.commit()
     return {"deleted": True, "predictions_deleted": predictions_count}
+
+
+# ── Fixture sync (football-data.org diff preview + apply) ────────────────────
+
+FOOTBALL_DATA_MATCHES_URL = "https://api.football-data.org/v4/competitions/PL/matches"
+
+
+def _parse_api_kickoff(utc_date: str) -> tuple[str, str, datetime]:
+    """Split a football-data.org utcDate into (YYYY-MM-DD, HH:MM UK-local, aware UTC datetime).
+
+    Date and time are converted to Europe/London so they compare correctly against
+    CSV-sourced DB values (which use UK local time: 12:30, 15:00, 17:30, 20:00 etc).
+    Without this, every BST-season fixture generates a spurious KICKOFF_CHANGED diff
+    because 15:00 BST = 14:00 UTC and the times would never match.
+    """
+    from zoneinfo import ZoneInfo
+    _LONDON = ZoneInfo("Europe/London")
+    dt_utc = datetime.fromisoformat(utc_date.replace("Z", "+00:00"))
+    dt_local = dt_utc.astimezone(_LONDON)
+    return dt_local.strftime("%Y-%m-%d"), dt_local.strftime("%H:%M"), dt_utc
+
+
+@router.get("/fixtures/sync/preview")
+def preview_fixture_sync(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Diff the football-data.org PL schedule against local fixtures.
+
+    Read-only: returns a list of proposed changes for the admin to review.
+    Nothing is applied here — the admin selects changes and posts them to
+    /admin/fixtures/sync/apply.
+    """
+    api_key = os.environ.get("FOOTBALL_DATA_API_KEY")
+    if not api_key:
+        # Graceful "not configured" state — the UI renders a setup hint.
+        return {"sync_available": False, "reason": "no_api_key", "changes": []}
+
+    try:
+        resp = httpx.get(
+            FOOTBALL_DATA_MATCHES_URL,
+            headers={"X-Auth-Token": api_key},
+            timeout=10.0,
+        )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Football-data.org request timed out")
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Football-data.org API error: {e.__class__.__name__}")
+    if resp.status_code != 200:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Football-data.org API error: {resp.status_code}",
+        )
+
+    matches = resp.json().get("matches", [])
+
+    # Local lookups — ALL fixtures, including postponed (a postponed match is
+    # exactly the one whose reschedule we want to catch).
+    fixtures = db.query(Fixture).all()
+    by_teams: dict[tuple[str, str], Fixture] = {}
+    by_teams_gw: dict[tuple[str, str, int], Fixture] = {}
+    for f in fixtures:
+        key = (f.home_team.lower(), f.away_team.lower())
+        by_teams[key] = f
+        by_teams_gw[(key[0], key[1], f.gameweek)] = f
+
+    changes = []
+    unmapped: list[str] = []
+
+    def _map_side(team_obj: dict) -> str | None:
+        # shortName is usually closest to our DB names; fall back to full name.
+        return (
+            map_team_name(team_obj.get("shortName") or "")
+            or map_team_name(team_obj.get("name") or "")
+        )
+
+    for m in matches:
+        home = _map_side(m.get("homeTeam") or {})
+        away = _map_side(m.get("awayTeam") or {})
+        if home is None or away is None:
+            for side, mapped in ((m.get("homeTeam") or {}, home), (m.get("awayTeam") or {}, away)):
+                if mapped is None:
+                    api_name = side.get("shortName") or side.get("name") or "unknown"
+                    if api_name not in unmapped:
+                        unmapped.append(api_name)
+            continue
+
+        gameweek = m.get("matchday")
+        utc_date = m.get("utcDate")
+        if gameweek is None or not utc_date:
+            continue
+        api_date, api_time, api_dt = _parse_api_kickoff(utc_date)
+
+        api_block = {
+            "home_team": home,
+            "away_team": away,
+            "gameweek": gameweek,
+            "date": api_date,
+            "time": api_time,
+            "kickoff_utc": api_dt.isoformat(),
+        }
+
+        # Prefer the exact (home, away, gameweek) match, fall back to team pair.
+        local = (
+            by_teams_gw.get((home.lower(), away.lower(), gameweek))
+            or by_teams.get((home.lower(), away.lower()))
+        )
+
+        if local is None:
+            changes.append({
+                "change_id": str(uuid.uuid4()),
+                "type": "NEW_FIXTURE",
+                "api": api_block,
+                "local": None,
+                "description": (
+                    f"New fixture: {home} vs {away} — GW{gameweek}, {api_date} {api_time}"
+                ),
+            })
+            continue
+
+        local_block = {
+            "fixture_id": local.id,
+            "home_team": local.home_team,
+            "away_team": local.away_team,
+            "gameweek": local.gameweek,
+            "date": local.date.isoformat(),
+            "time": local.time or "",
+        }
+
+        gw_differs = local.gameweek != gameweek
+        kickoff_differs = (
+            local.date.isoformat() != api_date or (local.time or "") != api_time
+        )
+
+        if gw_differs:
+            # Higher priority than a kickoff change: the admin moves the GW
+            # first (via the Phase A move endpoint), then the kickoff diff
+            # will surface on the next preview if still relevant.
+            changes.append({
+                "change_id": str(uuid.uuid4()),
+                "type": "GAMEWEEK_CHANGED",
+                "api": api_block,
+                "local": local_block,
+                "description": (
+                    f"{home} vs {away}: gameweek {local.gameweek} → {gameweek}"
+                ),
+            })
+        elif kickoff_differs:
+            changes.append({
+                "change_id": str(uuid.uuid4()),
+                "type": "KICKOFF_CHANGED",
+                "api": api_block,
+                "local": local_block,
+                "description": (
+                    f"{home} vs {away} (GW{gameweek}): kickoff "
+                    f"{local_block['date']} {local_block['time'] or '--:--'}"
+                    f" → {api_date} {api_time}"
+                ),
+            })
+        # else: no diff — skip.
+
+    if unmapped:
+        # Console breadcrumb for whoever maintains team_mapping.py.
+        print(f"[fixture-sync] unmapped teams from football-data.org: {unmapped}")
+
+    return {
+        "sync_available": True,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "api_match_count": len(matches),
+        "changes": changes,
+        "unmapped_teams": unmapped,
+    }
+
+
+class SyncChange(BaseModel):
+    change_id: str
+    type: str  # "KICKOFF_CHANGED" | "GAMEWEEK_CHANGED" | "NEW_FIXTURE"
+    # For KICKOFF_CHANGED / GAMEWEEK_CHANGED:
+    fixture_id: Optional[int] = None
+    new_date: Optional[str] = None   # YYYY-MM-DD
+    new_time: Optional[str] = None   # HH:MM
+    # For GAMEWEEK_CHANGED:
+    new_gameweek: Optional[int] = None
+    # For NEW_FIXTURE:
+    home_team: Optional[str] = None
+    away_team: Optional[str] = None
+    gameweek: Optional[int] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+
+
+class SyncApplyRequest(BaseModel):
+    changes: list[SyncChange]
+
+
+def _apply_kickoff_change(change: SyncChange, db: Session) -> tuple[str, str]:
+    """Update a fixture's date/time/kickoff_time. Returns (status, detail)."""
+    if change.fixture_id is None or not change.new_date or not change.new_time:
+        return "error", "fixture_id, new_date and new_time are required"
+    fixture = db.query(Fixture).filter(Fixture.id == change.fixture_id).first()
+    if not fixture:
+        return "error", f"Fixture {change.fixture_id} not found"
+    if fixture.result:
+        # A result may have landed between preview and apply — skip, don't fail.
+        return "skipped", f"{fixture.home_team} vs {fixture.away_team} already has a result"
+    try:
+        fixture.date = datetime.strptime(change.new_date, "%Y-%m-%d").date()
+    except ValueError:
+        return "error", "new_date must be YYYY-MM-DD"
+    fixture.day = fixture.date.strftime("%a")
+    fixture.time = change.new_time.strip()
+    fixture.kickoff_time = _parse_kickoff(fixture.date, fixture.time)
+    db.commit()
+    return "applied", (
+        f"{fixture.home_team} vs {fixture.away_team} kickoff → "
+        f"{change.new_date} {fixture.time}"
+    )
+
+
+def _apply_gameweek_change(change: SyncChange, db: Session) -> tuple[str, str]:
+    """Move a fixture to a new gameweek, cascading predictions. Returns (status, detail)."""
+    if change.fixture_id is None or change.new_gameweek is None:
+        return "error", "fixture_id and new_gameweek are required"
+    if not (1 <= change.new_gameweek <= 38):
+        return "error", "new_gameweek must be between 1 and 38"
+    fixture = db.query(Fixture).filter(Fixture.id == change.fixture_id).first()
+    if not fixture:
+        return "error", f"Fixture {change.fixture_id} not found"
+    if fixture.result:
+        return "skipped", f"{fixture.home_team} vs {fixture.away_team} already has a result"
+    if fixture.gameweek == change.new_gameweek:
+        return "skipped", "Fixture is already in this gameweek"
+
+    # Same natural key guard as move_fixture: (home, away, gameweek).
+    collision = (
+        db.query(Fixture)
+        .filter(
+            Fixture.home_team == fixture.home_team,
+            Fixture.away_team == fixture.away_team,
+            Fixture.gameweek == change.new_gameweek,
+            Fixture.id != fixture.id,
+        )
+        .first()
+    )
+    if collision:
+        return "error", (
+            f"{fixture.home_team} vs {fixture.away_team} already exists "
+            f"in gameweek {change.new_gameweek}"
+        )
+
+    old_gw = fixture.gameweek
+    # One transaction: fixture + its predictions' denormalized gameweek.
+    fixture.gameweek = change.new_gameweek
+    db.query(Prediction).filter(Prediction.fixture_id == fixture.id).update(
+        {"gameweek": change.new_gameweek}
+    )
+    # Also update date/time if provided (API moves typically imply a new kickoff).
+    if change.new_date:
+        try:
+            fixture.date = datetime.strptime(change.new_date, "%Y-%m-%d").date()
+            fixture.day = fixture.date.strftime("%a")
+        except ValueError:
+            pass
+    if change.new_time:
+        fixture.time = change.new_time.strip()
+    if change.new_date or change.new_time:
+        fixture.kickoff_time = _parse_kickoff(fixture.date, fixture.time)
+    db.commit()
+    return "applied", (
+        f"{fixture.home_team} vs {fixture.away_team} moved "
+        f"GW{old_gw} → GW{change.new_gameweek}"
+    )
+
+
+def _apply_new_fixture(change: SyncChange, db: Session) -> tuple[str, str]:
+    """Insert a new fixture (idempotent on the natural key). Returns (status, detail)."""
+    home = (change.home_team or "").strip()
+    away = (change.away_team or "").strip()
+    if not home or not away or change.gameweek is None or not change.date:
+        return "error", "home_team, away_team, gameweek and date are required"
+    if home == away:
+        return "error", "home_team and away_team cannot be the same"
+    if not (1 <= change.gameweek <= 38):
+        return "error", "gameweek must be between 1 and 38"
+    try:
+        fixture_date = datetime.strptime(change.date, "%Y-%m-%d").date()
+    except ValueError:
+        return "error", "date must be YYYY-MM-DD"
+
+    existing = (
+        db.query(Fixture)
+        .filter(
+            Fixture.home_team == home,
+            Fixture.away_team == away,
+            Fixture.gameweek == change.gameweek,
+        )
+        .first()
+    )
+    if existing:
+        # Idempotent: applying the same NEW_FIXTURE twice is a no-op skip.
+        return "skipped", f"{home} vs {away} already exists in gameweek {change.gameweek}"
+
+    time_str = (change.time or "").strip()
+    fixture = Fixture(
+        gameweek=change.gameweek,
+        date=fixture_date,
+        day=fixture_date.strftime("%a"),
+        time=time_str,
+        home_team=home,
+        away_team=away,
+        venue="",
+        kickoff_time=_parse_kickoff(fixture_date, time_str),
+        status="scheduled",
+    )
+    db.add(fixture)
+    db.commit()
+    return "applied", f"Added {home} vs {away} — GW{change.gameweek}, {change.date} {time_str}"
+
+
+@router.post("/fixtures/sync/apply")
+def apply_fixture_sync(
+    body: SyncApplyRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Apply an admin-selected subset of changes from the sync preview.
+
+    Each change is self-described, so no re-fetch of football-data.org is
+    needed. Changes are applied independently: one failing change is reported
+    as an error but does not block the others.
+    """
+    handlers = {
+        "KICKOFF_CHANGED": _apply_kickoff_change,
+        "GAMEWEEK_CHANGED": _apply_gameweek_change,
+        "NEW_FIXTURE": _apply_new_fixture,
+    }
+
+    results = []
+    for change in body.changes:
+        handler = handlers.get(change.type)
+        if handler is None:
+            results.append({
+                "change_id": change.change_id,
+                "status": "error",
+                "detail": f"Unknown change type: {change.type}",
+            })
+            continue
+        try:
+            status, detail = handler(change, db)
+        except Exception as e:  # keep one bad change from poisoning the batch
+            db.rollback()
+            status, detail = "error", f"Unexpected error: {e}"
+        results.append({"change_id": change.change_id, "status": status, "detail": detail})
+
+    return {
+        "applied": sum(1 for r in results if r["status"] == "applied"),
+        "skipped": sum(1 for r in results if r["status"] == "skipped"),
+        "errors": sum(1 for r in results if r["status"] == "error"),
+        "results": results,
+    }
 
 
 # ── Invites ───────────────────────────────────────────────────────────────────

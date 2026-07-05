@@ -1007,7 +1007,58 @@ function FixturesTab() {
   const [error, setError] = useState(null);
   const [confirmed, setConfirmed] = useState(false);
 
+  // Fixture sync (football-data.org preview + apply)
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);     // preview response
+  const [selectedChanges, setSelectedChanges] = useState(new Set()); // change_ids selected
+  const [applying, setApplying] = useState(false);
+  const [applyResult, setApplyResult] = useState(null);
+
   const handleFile = (f) => { setFile(f); setResult(null); setError(null); setConfirmed(false); };
+
+  const checkForUpdates = async () => {
+    setSyncLoading(true); setSyncResult(null); setApplyResult(null); setSelectedChanges(new Set());
+    try {
+      const res = await adminAPI.getFixtureSync();
+      setSyncResult(res.data);
+      if (res.data.sync_available && res.data.changes.length === 0) {
+        toast.success('All fixtures are up to date.');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to fetch fixture updates');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  const applyChanges = async () => {
+    const toApply = syncResult.changes
+      .filter(c => selectedChanges.has(c.change_id))
+      .map(c => ({
+        change_id: c.change_id,
+        type: c.type,
+        fixture_id: c.local?.fixture_id ?? null,
+        new_date: (c.type === 'KICKOFF_CHANGED' || c.type === 'GAMEWEEK_CHANGED') ? c.api.date : null,
+        new_time: (c.type === 'KICKOFF_CHANGED' || c.type === 'GAMEWEEK_CHANGED') ? c.api.time : null,
+        new_gameweek: c.type === 'GAMEWEEK_CHANGED' ? c.api.gameweek : null,
+        home_team: c.type === 'NEW_FIXTURE' ? c.api.home_team : null,
+        away_team: c.type === 'NEW_FIXTURE' ? c.api.away_team : null,
+        gameweek: c.type === 'NEW_FIXTURE' ? c.api.gameweek : null,
+        date: c.type === 'NEW_FIXTURE' ? c.api.date : null,
+        time: c.type === 'NEW_FIXTURE' ? c.api.time : null,
+      }));
+    setApplying(true);
+    try {
+      const res = await adminAPI.applyFixtureSync({ changes: toApply });
+      setApplyResult(res.data);
+      setSyncResult(null); setSelectedChanges(new Set());
+      toast.success(`${res.data.applied} change${res.data.applied !== 1 ? 's' : ''} applied.`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to apply changes');
+    } finally {
+      setApplying(false);
+    }
+  };
 
   const downloadTemplate = () => {
     const blob = new Blob([TEMPLATE_ROWS.join('\n')], { type: 'text/csv' });
@@ -1046,6 +1097,103 @@ function FixturesTab() {
 
   return (
     <div className="space-y-5 max-w-2xl">
+      {/* Sync card */}
+      <div className="adm-card">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="adm-section-title">Fixture Sync</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Check football-data.org for schedule changes. Nothing applies until you confirm.
+            </p>
+          </div>
+          <button onClick={checkForUpdates} disabled={syncLoading || applying}
+            className="adm-btn-primary flex items-center gap-2 disabled:opacity-50 text-sm py-2 px-3">
+            {syncLoading
+              ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" /> Checking…</>
+              : <><FiRefreshCw className="w-4 h-4" /> Check for updates</>}
+          </button>
+        </div>
+
+        {/* Not configured state */}
+        {syncResult && !syncResult.sync_available && (
+          <div className="adm-info-card adm-info-card--amber">
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              ⚙ API sync not configured. Add <code className="adm-code">FOOTBALL_DATA_API_KEY</code> to
+              your Render environment variables (free key at football-data.org — no credit card needed).
+            </p>
+          </div>
+        )}
+
+        {/* No changes */}
+        {syncResult?.sync_available && syncResult.changes.length === 0 && (
+          <p className="text-sm text-green-600 dark:text-green-400">
+            ✓ All {syncResult.api_match_count} fixtures are up to date.
+          </p>
+        )}
+
+        {/* Changes list */}
+        {syncResult?.sync_available && syncResult.changes.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {syncResult.changes.length} proposed change{syncResult.changes.length !== 1 ? 's' : ''}
+                {' · '}
+                <button onClick={() => setSelectedChanges(new Set(syncResult.changes.map(c => c.change_id)))}
+                  className="text-[#003087] dark:text-blue-400 hover:underline text-xs">select all</button>
+                {' / '}
+                <button onClick={() => setSelectedChanges(new Set())}
+                  className="text-[#003087] dark:text-blue-400 hover:underline text-xs">none</button>
+              </p>
+              <button onClick={applyChanges}
+                disabled={selectedChanges.size === 0 || applying}
+                className="adm-btn-primary flex items-center gap-1.5 text-sm py-1.5 px-3 disabled:opacity-50">
+                {applying
+                  ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /> Applying…</>
+                  : `Apply ${selectedChanges.size} selected`}
+              </button>
+            </div>
+
+            <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+              {syncResult.changes.map((c) => (
+                <li key={c.change_id} className="flex items-start gap-3 py-2.5">
+                  <input type="checkbox"
+                    checked={selectedChanges.has(c.change_id)}
+                    onChange={(e) => {
+                      setSelectedChanges(prev => {
+                        const next = new Set(prev);
+                        e.target.checked ? next.add(c.change_id) : next.delete(c.change_id);
+                        return next;
+                      });
+                    }}
+                    className="mt-0.5 w-4 h-4 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <span className={`adm-sync-badge adm-sync-badge--${c.type === 'NEW_FIXTURE' ? 'green' : 'amber'} mr-2`}>
+                      {c.type === 'KICKOFF_CHANGED' ? 'Kickoff' : c.type === 'GAMEWEEK_CHANGED' ? 'GW Move' : 'New'}
+                    </span>
+                    <span className="text-sm text-gray-800 dark:text-gray-200">{c.description}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {syncResult.unmapped_teams?.length > 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                ⚠ Unmapped teams (add to team_mapping.py): {syncResult.unmapped_teams.join(', ')}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Apply result */}
+        {applyResult && (
+          <div className="adm-info-card adm-info-card--green mt-3">
+            <p className="text-sm text-green-800 dark:text-green-300">
+              Applied {applyResult.applied} · Skipped {applyResult.skipped} · Errors {applyResult.errors}
+            </p>
+          </div>
+        )}
+      </div>
+
       <FixtureStatusManager />
 
       {/* Instructions */}
