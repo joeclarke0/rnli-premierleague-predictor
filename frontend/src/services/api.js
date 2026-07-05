@@ -129,6 +129,11 @@ export const adminAPI = {
     api.get('/admin/missing-predictions', { params: gameweek != null ? { gameweek } : {} }),
   updateFixtureStatus: (fixtureId, status) =>
     api.patch(`/admin/fixtures/${fixtureId}/status`, { status }),
+  // Manual fixture editor
+  addFixture: (data) => api.post('/admin/fixtures', data),
+  editFixture: (fixtureId, data) => api.patch(`/admin/fixtures/${fixtureId}`, data),
+  moveFixture: (fixtureId, gameweek) => api.patch(`/admin/fixtures/${fixtureId}/gameweek`, { gameweek }),
+  deleteFixture: (fixtureId, force = false) => api.delete(`/admin/fixtures/${fixtureId}`, { params: { force } }),
   // Invites
   getInvites: () => api.get('/admin/invites'),
   createInvite: (recipientName, recipientEmail) => api.post('/admin/invites', {

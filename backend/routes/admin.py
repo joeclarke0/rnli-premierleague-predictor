@@ -5,6 +5,7 @@ from datetime import datetime, timezone, date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -513,6 +514,292 @@ def update_fixture_status(
         "fixture_id": fixture.id,
         "status": fixture.status,
     }
+
+
+# ── Manual fixture editor (edit / move / add / delete) ───────────────────────
+
+def _fixture_dict(f: Fixture) -> dict:
+    """Serialise a fixture in the same shape as the public fixtures API."""
+    return {
+        "id": f.id,
+        "gameweek": f.gameweek,
+        "date": f.date.isoformat(),
+        "day": f.day,
+        "time": f.time,
+        "home_team": f.home_team,
+        "away_team": f.away_team,
+        "venue": f.venue,
+        "kickoff_time": f.kickoff_time.isoformat() if f.kickoff_time else None,
+        "status": f.status,
+    }
+
+
+class EditFixtureRequest(BaseModel):
+    date: Optional[str] = None   # YYYY-MM-DD
+    time: Optional[str] = None   # HH:MM
+    home_team: Optional[str] = None
+    away_team: Optional[str] = None
+    venue: Optional[str] = None
+
+
+@router.patch("/fixtures/{fixture_id}")
+def edit_fixture(
+    fixture_id: int,
+    body: EditFixtureRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Edit individual fields of a fixture. Scored fixtures are locked."""
+    fixture = db.query(Fixture).filter(Fixture.id == fixture_id).first()
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Fixture not found")
+    if fixture.result:
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot edit a fixture that already has a result",
+        )
+
+    time_changed = False
+    if body.date is not None:
+        try:
+            fixture.date = datetime.strptime(body.date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+        # Keep the derived day label consistent with the new date.
+        fixture.day = fixture.date.strftime("%a")
+        time_changed = True
+    if body.time is not None:
+        fixture.time = body.time.strip()
+        time_changed = True
+    if body.home_team is not None:
+        stripped = body.home_team.strip()
+        if not stripped:
+            raise HTTPException(status_code=400, detail="home_team cannot be empty")
+        fixture.home_team = stripped
+    if body.away_team is not None:
+        stripped = body.away_team.strip()
+        if not stripped:
+            raise HTTPException(status_code=400, detail="away_team cannot be empty")
+        fixture.away_team = stripped
+    if body.venue is not None:
+        fixture.venue = body.venue.strip()
+
+    # Recompute kickoff_time whenever date or time changed. Setting a future
+    # kickoff naturally re-opens predictions (locking compares kickoff_time).
+    if time_changed:
+        fixture.kickoff_time = _parse_kickoff(fixture.date, fixture.time or "")
+
+    # Reject if the updated team names collide with another fixture in the same GW.
+    if body.home_team is not None or body.away_team is not None:
+        collision = (
+            db.query(Fixture)
+            .filter(
+                Fixture.home_team == fixture.home_team,
+                Fixture.away_team == fixture.away_team,
+                Fixture.gameweek == fixture.gameweek,
+                Fixture.id != fixture_id,
+            )
+            .first()
+        )
+        if collision:
+            raise HTTPException(
+                status_code=409,
+                detail=f"{fixture.home_team} vs {fixture.away_team} already exists in gameweek {fixture.gameweek}",
+            )
+
+    if fixture.home_team == fixture.away_team:
+        raise HTTPException(status_code=400, detail="home_team and away_team cannot be the same")
+
+    db.commit()
+    db.refresh(fixture)
+    return _fixture_dict(fixture)
+
+
+class MoveFixtureRequest(BaseModel):
+    gameweek: int
+
+
+@router.patch("/fixtures/{fixture_id}/gameweek")
+def move_fixture(
+    fixture_id: int,
+    body: MoveFixtureRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Move a fixture to another gameweek, cascading its predictions.
+
+    Predictions carry a denormalized ``gameweek`` column, so they are updated
+    in the same transaction as the fixture. Wildcards are per (user, gameweek)
+    and are NOT changed — instead the affected usernames are returned so the
+    UI can warn the admin.
+    """
+    fixture = db.query(Fixture).filter(Fixture.id == fixture_id).first()
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Fixture not found")
+    if fixture.result:
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot move a fixture that already has a result",
+        )
+    if not (1 <= body.gameweek <= 38):
+        raise HTTPException(status_code=400, detail="Gameweek must be between 1 and 38")
+    if body.gameweek == fixture.gameweek:
+        raise HTTPException(status_code=400, detail="Fixture is already in this gameweek")
+
+    old_gw = fixture.gameweek
+    new_gw = body.gameweek
+
+    # Reject if (home, away, new_gw) already exists (same natural key as CSV upsert).
+    collision = (
+        db.query(Fixture)
+        .filter(
+            Fixture.home_team == fixture.home_team,
+            Fixture.away_team == fixture.away_team,
+            Fixture.gameweek == new_gw,
+            Fixture.id != fixture_id,
+        )
+        .first()
+    )
+    if collision:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{fixture.home_team} vs {fixture.away_team} already exists in gameweek {new_gw}",
+        )
+
+    # One transaction: fixture + its predictions' denormalized gameweek.
+    fixture.gameweek = new_gw
+    predictions_updated = (
+        db.query(Prediction)
+        .filter(Prediction.fixture_id == fixture_id)
+        .update({"gameweek": new_gw})
+    )
+    db.commit()
+
+    # Wildcard warning: only users who BOTH wildcarded old_gw AND have a prediction
+    # on this fixture are actually affected (they lose the double on this match).
+    prediction_user_ids = {
+        r[0] for r in db.query(Prediction.user_id)
+        .filter(Prediction.fixture_id == fixture_id)
+        .all()
+    }
+    wildcards = (
+        db.query(Wildcard)
+        .filter(Wildcard.gameweek == old_gw)
+        .all()
+    )
+    wildcard_usernames = [
+        wc.user.username for wc in wildcards if wc.user_id in prediction_user_ids
+    ]
+
+    return {
+        "fixture_id": fixture_id,
+        "old_gameweek": old_gw,
+        "new_gameweek": new_gw,
+        "predictions_updated": predictions_updated,
+        "wildcard_warnings": wildcard_usernames,
+    }
+
+
+class AddFixtureRequest(BaseModel):
+    gameweek: int
+    date: str          # YYYY-MM-DD
+    time: str = ""
+    home_team: str
+    away_team: str
+    venue: str = ""
+
+
+@router.post("/fixtures")
+def add_fixture(
+    body: AddFixtureRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Add a single fixture manually (outside the CSV upload flow)."""
+    if not (1 <= body.gameweek <= 38):
+        raise HTTPException(status_code=400, detail="Gameweek must be between 1 and 38")
+    home = body.home_team.strip()
+    away = body.away_team.strip()
+    if not home or not away:
+        raise HTTPException(status_code=400, detail="home_team and away_team cannot be empty")
+    if home == away:
+        raise HTTPException(status_code=400, detail="home_team and away_team cannot be the same")
+    try:
+        fixture_date = datetime.strptime(body.date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be YYYY-MM-DD")
+
+    # Same natural key as the CSV upsert: (home, away, gameweek).
+    existing = (
+        db.query(Fixture)
+        .filter(
+            Fixture.home_team == home,
+            Fixture.away_team == away,
+            Fixture.gameweek == body.gameweek,
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"{home} vs {away} already exists in gameweek {body.gameweek}",
+        )
+
+    time_str = body.time.strip()
+    fixture = Fixture(
+        gameweek=body.gameweek,
+        date=fixture_date,
+        day=fixture_date.strftime("%a"),
+        time=time_str,
+        home_team=home,
+        away_team=away,
+        venue=body.venue.strip(),
+        kickoff_time=_parse_kickoff(fixture_date, time_str),
+        status="scheduled",
+    )
+    db.add(fixture)
+    db.commit()
+    db.refresh(fixture)
+    return _fixture_dict(fixture)
+
+
+@router.delete("/fixtures/{fixture_id}")
+def delete_fixture(
+    fixture_id: int,
+    force: bool = False,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a fixture. If it has predictions, requires ``force=true``.
+
+    The first non-forced call returns 409 with the prediction count so the UI
+    can show an informed confirmation before the destructive retry.
+    """
+    fixture = db.query(Fixture).filter(Fixture.id == fixture_id).first()
+    if not fixture:
+        raise HTTPException(status_code=404, detail="Fixture not found")
+
+    predictions_count = (
+        db.query(Prediction).filter(Prediction.fixture_id == fixture_id).count()
+    )
+    if predictions_count > 0 and not force:
+        # Plain JSONResponse (not HTTPException) so the body keys sit at the
+        # top level — the frontend reads predictions_count/has_result directly
+        # from err.response.data to build its confirmation prompt.
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": "Fixture has predictions",
+                "predictions_count": predictions_count,
+                "has_result": bool(fixture.result),
+            },
+        )
+
+    # cascade="all, delete-orphan" on Fixture.predictions / Fixture.result
+    # removes dependent rows automatically.
+    db.delete(fixture)
+    db.commit()
+    return {"deleted": True, "predictions_deleted": predictions_count}
 
 
 # ── Invites ───────────────────────────────────────────────────────────────────

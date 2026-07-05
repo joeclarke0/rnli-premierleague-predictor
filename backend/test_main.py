@@ -788,3 +788,393 @@ def test_missing_postponed_fixture_excluded_from_count(client):
     )
     # Total fixture count must reflect only non-postponed fixtures (1, not 2).
     assert body["total_fixtures"] == 1
+
+
+# ── Phase A: Manual Fixture Editor ───────────────────────────────────────────
+#
+# All Phase A tests use GW 30-38 namespace so they never collide with data
+# seeded by earlier module-scoped tests (GW 1-29 core tests, GW 50-53 missing
+# predictions tests). Tests are ordered: edit, move, add, delete.
+
+def _make_admin_and_header(db, username_suffix: str):
+    """Create a fresh admin user and return (admin, header)."""
+    admin = _make_user(
+        db,
+        username=f"fa_admin_{username_suffix}",
+        email=f"fa_admin_{username_suffix}@test.com",
+        role="admin",
+    )
+    return admin, _auth_header(admin)
+
+
+# ── Edit fixture ─────────────────────────────────────────────────────────────
+
+def test_edit_fixture_updates_date_and_kickoff(client):
+    """PATCH /admin/fixtures/{id} — admin can update date/time; kickoff_time recomputes."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "edit_date")
+        fid = _make_fixture(db, gameweek=30, home="EditHome1", away="EditAway1")
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}",
+        json={"date": "2025-12-01", "time": "15:00"},
+        headers=header,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["date"] == "2025-12-01"
+    # kickoff_time must be non-null — a time was provided so it should recompute.
+    assert body["kickoff_time"] is not None
+    assert "2025-12-01" in body["kickoff_time"]
+
+
+def test_edit_fixture_blocked_if_scored(client):
+    """PATCH /admin/fixtures/{id} — 403 when a Result already exists for the fixture."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "edit_scored")
+        fid = _make_fixture(db, gameweek=30, home="EditHome2", away="EditAway2")
+        _add_result(db, fixture_id=fid, gameweek=30, home=1, away=0)
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}",
+        json={"date": "2025-12-02"},
+        headers=header,
+    )
+    assert resp.status_code == 403
+    assert "result" in resp.json()["detail"].lower()
+
+
+def test_edit_fixture_duplicate_teams_rejected(client):
+    """PATCH /admin/fixtures/{id} — 409 when renaming would create a duplicate natural key."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "edit_dup")
+        # Existing fixture that our rename would collide with.
+        _make_fixture(db, gameweek=31, home="CollideA", away="CollideB")
+        # The fixture we are editing — rename its home to 'CollideA' (same GW, same away).
+        fid = _make_fixture(db, gameweek=31, home="OriginalA", away="CollideB")
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}",
+        json={"home_team": "CollideA"},
+        headers=header,
+    )
+    assert resp.status_code == 409
+
+
+def test_edit_fixture_home_equals_away_rejected(client):
+    """PATCH /admin/fixtures/{id} — 400 when home_team == away_team after update."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "edit_same")
+        fid = _make_fixture(db, gameweek=31, home="SameTeamA", away="SameTeamB")
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}",
+        json={"home_team": "SameTeamB"},
+        headers=header,
+    )
+    assert resp.status_code == 400
+
+
+# ── Move fixture ──────────────────────────────────────────────────────────────
+
+def test_move_fixture_cascades_predictions(client):
+    """PATCH /admin/fixtures/{id}/gameweek — fixture and predictions both move to new GW."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "move_cascade")
+        user = _make_user(db, username="fa_move_player", email="fa_move_player@test.com")
+        fid = _make_fixture(db, gameweek=32, home="MoveHome1", away="MoveAway1")
+        _add_prediction(db, user_id=user.id, fixture_id=fid, gameweek=32, home=1, away=0)
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}/gameweek",
+        json={"gameweek": 33},
+        headers=header,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["old_gameweek"] == 32
+    assert body["new_gameweek"] == 33
+    assert body["predictions_updated"] == 1
+
+    # Verify DB state: fixture in GW33, prediction.gameweek also 33.
+    db = SessionLocal()
+    try:
+        fixture = db.query(Fixture).filter(Fixture.id == fid).first()
+        assert fixture.gameweek == 33
+        pred = db.query(Prediction).filter(Prediction.fixture_id == fid).first()
+        assert pred.gameweek == 33
+    finally:
+        db.close()
+
+
+def test_move_fixture_blocked_if_scored(client):
+    """PATCH /admin/fixtures/{id}/gameweek — 403 when a Result exists."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "move_scored")
+        fid = _make_fixture(db, gameweek=32, home="MoveHome2", away="MoveAway2")
+        _add_result(db, fixture_id=fid, gameweek=32, home=2, away=1)
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}/gameweek",
+        json={"gameweek": 33},
+        headers=header,
+    )
+    assert resp.status_code == 403
+    assert "result" in resp.json()["detail"].lower()
+
+
+def test_move_fixture_blocked_if_same_gameweek(client):
+    """PATCH /admin/fixtures/{id}/gameweek — 400 when target GW equals current GW."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "move_same_gw")
+        fid = _make_fixture(db, gameweek=33, home="MoveHome3", away="MoveAway3")
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}/gameweek",
+        json={"gameweek": 33},
+        headers=header,
+    )
+    assert resp.status_code == 400
+    assert "already" in resp.json()["detail"].lower()
+
+
+def test_move_fixture_collision_rejected(client):
+    """PATCH /admin/fixtures/{id}/gameweek — 409 when (home, away, new_gw) already exists."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "move_collision")
+        # Target GW already has the same matchup.
+        _make_fixture(db, gameweek=35, home="CollideMove", away="CollideMoveAway")
+        # The fixture to move — currently in GW34, same teams as above.
+        fid = _make_fixture(db, gameweek=34, home="CollideMove", away="CollideMoveAway")
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}/gameweek",
+        json={"gameweek": 35},
+        headers=header,
+    )
+    assert resp.status_code == 409
+
+
+def test_move_fixture_wildcard_warning_only_for_users_with_predictions(client):
+    """PATCH /admin/fixtures/{id}/gameweek — wildcard_warnings only includes users who
+    BOTH wildcarded the old GW AND have a prediction on this specific fixture."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "move_wc_warn")
+        # User A: wildcarded old GW + has prediction on this fixture → IN warnings.
+        user_a = _make_user(db, username="fa_wc_a", email="fa_wc_a@test.com")
+        # User B: wildcarded old GW but NO prediction on this fixture → NOT in warnings.
+        user_b = _make_user(db, username="fa_wc_b", email="fa_wc_b@test.com")
+        # User C: has prediction but NO wildcard → NOT in warnings.
+        user_c = _make_user(db, username="fa_wc_c", email="fa_wc_c@test.com")
+
+        fid = _make_fixture(db, gameweek=36, home="WCMoveHome", away="WCMoveAway")
+
+        _add_prediction(db, user_id=user_a.id, fixture_id=fid, gameweek=36, home=1, away=0)
+        _add_prediction(db, user_id=user_c.id, fixture_id=fid, gameweek=36, home=2, away=1)
+
+        db.add(Wildcard(user_id=user_a.id, gameweek=36))
+        db.add(Wildcard(user_id=user_b.id, gameweek=36))
+        db.commit()
+
+        username_a = user_a.username
+        username_b = user_b.username
+        username_c = user_c.username
+    finally:
+        db.close()
+
+    resp = client.patch(
+        f"/admin/fixtures/{fid}/gameweek",
+        json={"gameweek": 37},
+        headers=header,
+    )
+    assert resp.status_code == 200
+    warnings = resp.json()["wildcard_warnings"]
+    assert username_a in warnings, "User A (wildcard + prediction) must be warned"
+    assert username_b not in warnings, "User B (wildcard only, no prediction) must NOT be warned"
+    assert username_c not in warnings, "User C (prediction only, no wildcard) must NOT be warned"
+
+
+# ── Add fixture ───────────────────────────────────────────────────────────────
+
+def test_add_fixture_success(client):
+    """POST /admin/fixtures — creates fixture with correct fields in DB."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "add_ok")
+    finally:
+        db.close()
+
+    resp = client.post(
+        "/admin/fixtures",
+        json={
+            "gameweek": 34,
+            "date": "2025-11-15",
+            "time": "12:30",
+            "home_team": "AddHome1",
+            "away_team": "AddAway1",
+            "venue": "Test Stadium",
+        },
+        headers=header,
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["home_team"] == "AddHome1"
+    assert body["away_team"] == "AddAway1"
+    assert body["gameweek"] == 34
+    assert body["date"] == "2025-11-15"
+    assert body["status"] == "scheduled"
+    assert body["kickoff_time"] is not None
+
+    # Verify fixture persisted in DB.
+    db = SessionLocal()
+    try:
+        fixture = db.query(Fixture).filter(Fixture.id == body["id"]).first()
+        assert fixture is not None
+        assert fixture.venue == "Test Stadium"
+    finally:
+        db.close()
+
+
+def test_add_fixture_duplicate_rejected(client):
+    """POST /admin/fixtures — 409 when (home, away, gameweek) already exists."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "add_dup")
+        # Seed the existing fixture.
+        _make_fixture(db, gameweek=34, home="DupHome", away="DupAway")
+    finally:
+        db.close()
+
+    resp = client.post(
+        "/admin/fixtures",
+        json={
+            "gameweek": 34,
+            "date": "2025-11-15",
+            "home_team": "DupHome",
+            "away_team": "DupAway",
+        },
+        headers=header,
+    )
+    assert resp.status_code == 409
+
+
+def test_add_fixture_home_equals_away_rejected(client):
+    """POST /admin/fixtures — 400 when home_team == away_team."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "add_same")
+    finally:
+        db.close()
+
+    resp = client.post(
+        "/admin/fixtures",
+        json={
+            "gameweek": 35,
+            "date": "2025-11-22",
+            "home_team": "SameClub",
+            "away_team": "SameClub",
+        },
+        headers=header,
+    )
+    assert resp.status_code == 400
+
+
+# ── Delete fixture ────────────────────────────────────────────────────────────
+
+def test_delete_fixture_no_predictions_succeeds(client):
+    """DELETE /admin/fixtures/{id} — fixture with no predictions is deleted directly."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "del_clean")
+        fid = _make_fixture(db, gameweek=38, home="DelHome1", away="DelAway1")
+    finally:
+        db.close()
+
+    resp = client.delete(f"/admin/fixtures/{fid}", headers=header)
+    assert resp.status_code == 200
+    assert resp.json()["deleted"] is True
+
+    # Fixture must be gone.
+    db = SessionLocal()
+    try:
+        assert db.query(Fixture).filter(Fixture.id == fid).first() is None
+    finally:
+        db.close()
+
+
+def test_delete_fixture_with_predictions_returns_409(client):
+    """DELETE /admin/fixtures/{id} (no force) — returns 409 with predictions_count when
+    predictions exist. Body fields are at the top level (plain JSONResponse)."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "del_409")
+        user = _make_user(db, username="fa_del_player", email="fa_del_player@test.com")
+        fid = _make_fixture(db, gameweek=38, home="DelHome2", away="DelAway2")
+        _add_prediction(db, user_id=user.id, fixture_id=fid, gameweek=38, home=1, away=1)
+    finally:
+        db.close()
+
+    resp = client.delete(f"/admin/fixtures/{fid}", headers=header)
+    assert resp.status_code == 409
+    body = resp.json()
+    # Body fields sit at top level (JSONResponse, not HTTPException).
+    assert body["predictions_count"] == 1
+    assert "has_result" in body
+
+    # Fixture must still exist (not deleted).
+    db = SessionLocal()
+    try:
+        assert db.query(Fixture).filter(Fixture.id == fid).first() is not None
+    finally:
+        db.close()
+
+
+def test_delete_fixture_force_cascades_predictions(client):
+    """DELETE /admin/fixtures/{id}?force=true — deletes fixture and its predictions."""
+    db = SessionLocal()
+    try:
+        _, header = _make_admin_and_header(db, "del_force")
+        user = _make_user(db, username="fa_del_force_player", email="fa_del_force_player@test.com")
+        fid = _make_fixture(db, gameweek=38, home="DelHome3", away="DelAway3")
+        _add_prediction(db, user_id=user.id, fixture_id=fid, gameweek=38, home=2, away=0)
+    finally:
+        db.close()
+
+    resp = client.delete(f"/admin/fixtures/{fid}", params={"force": "true"}, headers=header)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["deleted"] is True
+    assert body["predictions_deleted"] == 1
+
+    # Both fixture and its prediction must be gone.
+    db = SessionLocal()
+    try:
+        assert db.query(Fixture).filter(Fixture.id == fid).first() is None
+        assert db.query(Prediction).filter(Prediction.fixture_id == fid).count() == 0
+    finally:
+        db.close()

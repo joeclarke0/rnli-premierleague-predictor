@@ -3199,3 +3199,52 @@
 .dark .adm-matrix-score--wrong {
   color: #f87171; /* red-400 */
 }
+
+/* ── Fixture editor (adm-fixture-*) ─────────────────────────────────────── */
+.adm-fixture-form {
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+.adm-fixture-form > * + * { margin-top: 0.5rem; }
+.dark .adm-fixture-form { background: rgba(31, 41, 55, 0.6); }
+
+.adm-fixture-input {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  padding: 0.25rem 0.5rem;
+}
+.adm-fixture-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px #003087;
+}
+.dark .adm-fixture-input {
+  border-color: #4b5563;
+  background: #1f2937;
+  color: #ffffff;
+}
+
+.adm-fixture-move-select {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  padding: 0.25rem 0.5rem;
+}
+.dark .adm-fixture-move-select {
+  border-color: #4b5563;
+  background: #1f2937;
+  color: #ffffff;
+}
+
+.adm-action-btn--red { border-color: rgba(220,38,38,0.35); color: #dc2626; }
+.adm-action-btn--red:hover { border-color: #dc2626; color: #dc2626; background: rgba(220,38,38,0.06); }
+.dark .adm-action-btn--red { border-color: rgba(248,113,113,0.35); color: #f87171; }
+.dark .adm-action-btn--red:hover { border-color: #f87171; color: #f87171; background: rgba(248,113,113,0.08); }

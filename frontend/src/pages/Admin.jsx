@@ -8,6 +8,7 @@ import {
   FiTrash2, FiShield, FiUser, FiChevronDown, FiRefreshCw,
   FiCheckCircle, FiXCircle, FiEdit2, FiUpload, FiDownload,
   FiKey, FiX, FiMail, FiCopy, FiPlus, FiSlash, FiCalendar, FiStar, FiZap,
+  FiArrowRight, FiCheck,
 } from 'react-icons/fi';
 
 const TABS = [
@@ -634,6 +635,15 @@ function FixtureStatusManager() {
   const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
+  // Manual editor state
+  const [editingId, setEditingId] = useState(null);       // fixture id being edited inline
+  const [editForm, setEditForm] = useState({});           // draft values for inline edit
+  const [movingId, setMovingId] = useState(null);         // fixture id being moved
+  const [moveTarget, setMoveTarget] = useState('');       // target GW selection
+  const [deletingId, setDeletingId] = useState(null);     // fixture id awaiting delete confirm
+  const [deleteInfo, setDeleteInfo] = useState(null);     // { predictions_count, has_result }
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState({ gameweek: '', date: '', time: '', home_team: '', away_team: '', venue: '' });
 
   useEffect(() => {
     fixturesAPI.getAll({})
@@ -643,6 +653,14 @@ function FixtureStatusManager() {
         if (gws.length > 0) setGameweek(gws[0]);
       })
       .catch(() => toast.error('Failed to load gameweeks'));
+  }, []);
+
+  const loadFixtures = useCallback((gw) => {
+    setLoading(true);
+    fixturesAPI.getByGameweek(gw)
+      .then((r) => setFixtures(r.data.fixtures))
+      .catch(() => toast.error('Failed to load fixtures'))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -655,6 +673,25 @@ function FixtureStatusManager() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [gameweek]);
+
+  // Reload the GW list AND the visible fixtures after any mutation. When the
+  // target GW is unchanged, the load effect won't re-fire, so fetch directly.
+  const reload = useCallback((targetGw) => {
+    fixturesAPI.getAll({}).then((r) => {
+      const gws = [...new Set(r.data.fixtures.map((f) => f.gameweek))].sort((a, b) => a - b);
+      setAvailableGws(gws);
+      const gw = targetGw ?? gameweek;
+      if (gws.includes(gw)) {
+        if (gw !== gameweek) setGameweek(gw);   // triggers the load effect
+        else loadFixtures(gw);                   // same GW: effect won't fire, fetch directly
+      } else if (gws.length > 0) {
+        setGameweek(gws[0]);
+      } else {
+        setGameweek(null);
+        setFixtures([]);
+      }
+    }).catch(() => toast.error('Failed to reload fixtures'));
+  }, [gameweek, loadFixtures]);
 
   const setStatus = async (fixture, status) => {
     setUpdatingId(fixture.id);
@@ -669,31 +706,167 @@ function FixtureStatusManager() {
     }
   };
 
+  // ── Edit (inline) ──
+  const startEdit = (f) => {
+    setEditingId(f.id);
+    setEditForm({ date: f.date, time: f.time || '', home_team: f.home_team, away_team: f.away_team, venue: f.venue || '' });
+    setMovingId(null); setDeletingId(null); setDeleteInfo(null);
+  };
+  const saveEdit = async (f) => {
+    setUpdatingId(f.id);
+    try {
+      await adminAPI.editFixture(f.id, editForm);
+      setEditingId(null);
+      toast.success('Fixture updated');
+      reload();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update fixture');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // ── Move ──
+  const startMove = (f) => {
+    setMovingId(f.id); setMoveTarget('');
+    setEditingId(null); setDeletingId(null); setDeleteInfo(null);
+  };
+  const confirmMove = async (f) => {
+    if (!moveTarget) return;
+    setUpdatingId(f.id);
+    try {
+      const res = await adminAPI.moveFixture(f.id, Number(moveTarget));
+      setMovingId(null);
+      if (res.data.wildcard_warnings?.length > 0) {
+        toast(`⚠️ Moved. Wildcard warning: ${res.data.wildcard_warnings.join(', ')} had a wildcard on GW${res.data.old_gameweek}.`, { duration: 6000 });
+      } else {
+        toast.success(`Moved to GW${moveTarget}. ${res.data.predictions_updated} predictions updated.`);
+      }
+      reload(Number(moveTarget));
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to move fixture');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // ── Delete ──
+  const requestDelete = async (f) => {
+    // First attempt without force — if the fixture has predictions the API
+    // returns 409 with the count so we can show an informed confirmation.
+    setDeletingId(f.id); setDeleteInfo(null);
+    setEditingId(null); setMovingId(null);
+    try {
+      await adminAPI.deleteFixture(f.id, false);
+      toast.success('Fixture deleted');
+      reload();
+      setDeletingId(null);
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setDeleteInfo(err.response.data);  // { predictions_count, has_result }
+      } else {
+        toast.error(err.response?.data?.detail || 'Failed to delete fixture');
+        setDeletingId(null);
+      }
+    }
+  };
+  const confirmDelete = async (f) => {
+    setUpdatingId(f.id);
+    try {
+      await adminAPI.deleteFixture(f.id, true);
+      toast.success('Fixture and predictions deleted');
+      setDeletingId(null); setDeleteInfo(null);
+      reload();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to delete fixture');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // ── Add ──
+  const submitAdd = async () => {
+    try {
+      await adminAPI.addFixture({ ...addForm, gameweek: Number(addForm.gameweek) });
+      toast.success('Fixture added');
+      setShowAddForm(false);
+      const targetGw = Number(addForm.gameweek);
+      setAddForm({ gameweek: '', date: '', time: '', home_team: '', away_team: '', venue: '' });
+      reload(targetGw);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add fixture');
+    }
+  };
+
   const statusCls = (status) => {
     if (status === 'postponed') return 'adm-status-badge adm-status-badge--amber';
     if (status === 'completed') return 'adm-status-badge adm-status-badge--green';
     return 'adm-status-badge adm-status-badge--gray';
   };
 
+  const addFormValid =
+    addForm.gameweek !== '' && Number(addForm.gameweek) >= 1 && Number(addForm.gameweek) <= 38 &&
+    addForm.date.trim() !== '' && addForm.home_team.trim() !== '' && addForm.away_team.trim() !== '';
+
   return (
     <div className="adm-card">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <p className="adm-section-title">Fixture Status</p>
-          <p className="text-xs text-gray-400 mt-0.5">Postpone to exclude from scoring, or reschedule.</p>
+          <p className="text-xs text-gray-400 mt-0.5">Postpone, reschedule, edit, move, add or delete fixtures.</p>
         </div>
-        {availableGws.length > 0 && (
-          <div className="relative">
-            <select value={gameweek ?? ''} onChange={(e) => setGameweek(Number(e.target.value))}
-              className="input-field w-36 pr-8 appearance-none">
-              {availableGws.map((gw) => (
-                <option key={gw} value={gw}>Gameweek {gw}</option>
-              ))}
-            </select>
-            <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowAddForm((v) => !v)} className="adm-action-btn">
+            <FiPlus className="w-3.5 h-3.5" /> Add fixture
+          </button>
+          {availableGws.length > 0 && (
+            <div className="relative">
+              <select value={gameweek ?? ''} onChange={(e) => setGameweek(Number(e.target.value))}
+                className="input-field w-36 pr-8 appearance-none">
+                {availableGws.map((gw) => (
+                  <option key={gw} value={gw}>Gameweek {gw}</option>
+                ))}
+              </select>
+              <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          )}
+        </div>
       </div>
+
+      {showAddForm && (
+        <div className="adm-fixture-form mb-4">
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">New fixture</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <input type="number" min="1" max="38" placeholder="Gameweek (1-38)" value={addForm.gameweek}
+              onChange={(e) => setAddForm((s) => ({ ...s, gameweek: e.target.value }))}
+              className="adm-fixture-input" aria-label="Gameweek" />
+            <input type="date" value={addForm.date}
+              onChange={(e) => setAddForm((s) => ({ ...s, date: e.target.value }))}
+              className="adm-fixture-input" aria-label="Date" />
+            <input type="time" value={addForm.time}
+              onChange={(e) => setAddForm((s) => ({ ...s, time: e.target.value }))}
+              className="adm-fixture-input" aria-label="Kick-off time (optional)" />
+            <input type="text" placeholder="Home team" value={addForm.home_team}
+              onChange={(e) => setAddForm((s) => ({ ...s, home_team: e.target.value }))}
+              className="adm-fixture-input" aria-label="Home team" />
+            <input type="text" placeholder="Away team" value={addForm.away_team}
+              onChange={(e) => setAddForm((s) => ({ ...s, away_team: e.target.value }))}
+              className="adm-fixture-input" aria-label="Away team" />
+            <input type="text" placeholder="Venue (optional)" value={addForm.venue}
+              onChange={(e) => setAddForm((s) => ({ ...s, venue: e.target.value }))}
+              className="adm-fixture-input" aria-label="Venue" />
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={submitAdd} disabled={!addFormValid}
+              className="adm-action-btn disabled:opacity-40">
+              <FiCheck className="w-3.5 h-3.5" /> Save
+            </button>
+            <button onClick={() => setShowAddForm(false)} className="adm-action-btn">
+              <FiX className="w-3.5 h-3.5" /> Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {availableGws.length === 0 ? (
         <p className="text-sm text-gray-500 text-center py-6">No fixtures loaded yet.</p>
@@ -706,26 +879,117 @@ function FixtureStatusManager() {
           {fixtures.map((f) => {
             const postponed = f.status === 'postponed';
             const busy = updatingId === f.id;
+            // UX hint only — the backend enforces the hard guard on results.
+            const scored = f.status === 'completed';
             return (
-              <li key={f.id} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{f.home_team} vs {f.away_team}</p>
-                  <p className="text-xs text-gray-400">{f.date}{f.time ? ` · ${f.time}` : ''}</p>
+              <li key={f.id} className="py-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{f.home_team} vs {f.away_team}</p>
+                    <p className="text-xs text-gray-400">{f.date}{f.time ? ` · ${f.time}` : ''}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                    <span className={statusCls(f.status)}>{f.status || 'scheduled'}</span>
+                    {postponed ? (
+                      <button onClick={() => setStatus(f, 'scheduled')} disabled={busy}
+                        className="adm-action-btn disabled:opacity-50">
+                        <FiCalendar className="w-3.5 h-3.5" /> Reschedule
+                      </button>
+                    ) : (
+                      <button onClick={() => setStatus(f, 'postponed')} disabled={busy}
+                        className="adm-action-btn adm-action-btn--amber disabled:opacity-50">
+                        <FiSlash className="w-3.5 h-3.5" /> Postpone
+                      </button>
+                    )}
+
+                    {/* Edit */}
+                    {editingId !== f.id && (
+                      <button onClick={() => startEdit(f)} disabled={busy || scored}
+                        title={scored ? 'Cannot edit a scored fixture' : 'Edit'}
+                        className="adm-action-btn disabled:opacity-40">
+                        <FiEdit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {/* Move */}
+                    {movingId === f.id ? (
+                      <div className="flex items-center gap-1">
+                        <select value={moveTarget} onChange={(e) => setMoveTarget(e.target.value)}
+                          className="adm-fixture-move-select" aria-label="Move to gameweek">
+                          <option value="">Move to GW…</option>
+                          {Array.from({ length: 38 }, (_, i) => i + 1)
+                            .filter((gw) => gw !== f.gameweek)
+                            .map((gw) => <option key={gw} value={gw}>GW {gw}</option>)}
+                        </select>
+                        <button onClick={() => confirmMove(f)} disabled={!moveTarget || busy}
+                          title="Confirm move"
+                          className="adm-action-btn disabled:opacity-40"><FiCheck className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setMovingId(null)} title="Cancel"
+                          className="adm-action-btn"><FiX className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ) : (
+                      <button onClick={() => startMove(f)} disabled={busy || scored}
+                        title={scored ? 'Cannot move a scored fixture' : 'Move to another gameweek'}
+                        className="adm-action-btn disabled:opacity-40">
+                        <FiArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {/* Delete */}
+                    {deletingId === f.id && deleteInfo ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-amber-500">
+                          {deleteInfo.predictions_count} prediction{deleteInfo.predictions_count !== 1 ? 's' : ''} will be deleted.
+                          {deleteInfo.has_result ? ' Result will be lost too.' : ''} Sure?
+                        </span>
+                        <button onClick={() => confirmDelete(f)} disabled={busy}
+                          className="adm-action-btn adm-action-btn--red disabled:opacity-40">
+                          <FiTrash2 className="w-3.5 h-3.5" /> Yes, delete
+                        </button>
+                        <button onClick={() => { setDeletingId(null); setDeleteInfo(null); }} title="Cancel"
+                          className="adm-action-btn"><FiX className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ) : (
+                      <button onClick={() => requestDelete(f)} disabled={busy}
+                        title="Delete fixture"
+                        className="adm-action-btn adm-action-btn--red disabled:opacity-40">
+                        <FiTrash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={statusCls(f.status)}>{f.status || 'scheduled'}</span>
-                  {postponed ? (
-                    <button onClick={() => setStatus(f, 'scheduled')} disabled={busy}
-                      className="adm-action-btn disabled:opacity-50">
-                      <FiCalendar className="w-3.5 h-3.5" /> Reschedule
-                    </button>
-                  ) : (
-                    <button onClick={() => setStatus(f, 'postponed')} disabled={busy}
-                      className="adm-action-btn adm-action-btn--amber disabled:opacity-50">
-                      <FiSlash className="w-3.5 h-3.5" /> Postpone
-                    </button>
-                  )}
-                </div>
+
+                {/* Inline edit form */}
+                {editingId === f.id && (
+                  <div className="adm-fixture-form">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <input type="date" value={editForm.date}
+                        onChange={(e) => setEditForm((s) => ({ ...s, date: e.target.value }))}
+                        className="adm-fixture-input" aria-label="Date" />
+                      <input type="time" value={editForm.time}
+                        onChange={(e) => setEditForm((s) => ({ ...s, time: e.target.value }))}
+                        className="adm-fixture-input" aria-label="Kick-off time" />
+                      <input type="text" placeholder="Venue" value={editForm.venue}
+                        onChange={(e) => setEditForm((s) => ({ ...s, venue: e.target.value }))}
+                        className="adm-fixture-input" aria-label="Venue" />
+                      <input type="text" placeholder="Home team" value={editForm.home_team}
+                        onChange={(e) => setEditForm((s) => ({ ...s, home_team: e.target.value }))}
+                        className="adm-fixture-input" aria-label="Home team" />
+                      <input type="text" placeholder="Away team" value={editForm.away_team}
+                        onChange={(e) => setEditForm((s) => ({ ...s, away_team: e.target.value }))}
+                        className="adm-fixture-input" aria-label="Away team" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => saveEdit(f)} disabled={busy || !editForm.home_team?.trim() || !editForm.away_team?.trim()}
+                        className="adm-action-btn disabled:opacity-40">
+                        <FiCheck className="w-3.5 h-3.5" /> Save
+                      </button>
+                      <button onClick={() => setEditingId(null)} className="adm-action-btn">
+                        <FiX className="w-3.5 h-3.5" /> Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             );
           })}
