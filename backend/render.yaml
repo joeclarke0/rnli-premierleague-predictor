@@ -14,3 +14,5 @@ services:
         sync: false
       - key: INVITE_ONLY
         value: false
+      - key: FOOTBALL_DATA_API_KEY
+        sync: false
