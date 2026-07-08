@@ -13,6 +13,10 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./rnli_predictor.db")
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    # Validate pooled connections before use so stale connections (dropped by
+    # Render/Supabase after idle periods) are transparently replaced instead of
+    # surfacing as errors on the first request after a quiet spell.
+    pool_pre_ping=True,
     echo=False  # Set to True for SQL query debugging
 )
 

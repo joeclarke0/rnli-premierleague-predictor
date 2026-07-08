@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { fixturesAPI, predictionsAPI, resultsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -66,6 +66,13 @@ export default function Predictions() {
   const [wildcardGameweeks, setWildcardGameweeks]   = useState(new Set());
   const [wildcardSaving, setWildcardSaving]         = useState(false);
   const [wildcardConfirmOpen, setWildcardConfirmOpen] = useState(false);
+  const wildcardCancelRef = useRef(null);
+
+  // Move keyboard focus into the wildcard confirmation dialog when it opens,
+  // so keyboard users land on Cancel and can Escape/Tab from inside the modal.
+  useEffect(() => {
+    if (wildcardConfirmOpen) wildcardCancelRef.current?.focus();
+  }, [wildcardConfirmOpen]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -364,6 +371,7 @@ export default function Predictions() {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={() => setWildcardConfirmOpen(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setWildcardConfirmOpen(false); }}
           role="dialog"
           aria-modal="true"
         >
@@ -384,6 +392,7 @@ export default function Predictions() {
             </p>
             <div className="flex gap-3 mt-6">
               <button
+                ref={wildcardCancelRef}
                 onClick={() => setWildcardConfirmOpen(false)}
                 className="pd-modal-cancel"
               >

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from database import create_tables
 from migrate import run_migrations
@@ -51,6 +52,13 @@ app = FastAPI(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Trust X-Forwarded-* headers from Render's edge proxy so request.client.host
+# reflects the real client IP (otherwise every request shares the proxy's IP
+# and all users fall into a single rate-limit bucket). trusted_hosts="*" is
+# acceptable because the app is only reachable through Render's proxy — it is
+# not directly exposed to the internet.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # CORS middleware configuration.
 # Origins come from the ALLOWED_ORIGINS env var in production (comma-separated),

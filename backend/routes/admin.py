@@ -1155,7 +1155,10 @@ def apply_fixture_sync(
             status, detail = handler(change, db)
         except Exception as e:  # keep one bad change from poisoning the batch
             db.rollback()
-            status, detail = "error", f"Unexpected error: {e}"
+            # Log the full exception server-side; return only a generic message
+            # to the client so internal details (paths, SQL, etc.) don't leak.
+            print(f"❌ [fixture-sync] apply failed for {change.change_id}: {e}")
+            status, detail = "error", "Unexpected error applying this change"
         results.append({"change_id": change.change_id, "status": status, "detail": detail})
 
     return {

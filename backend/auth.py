@@ -184,9 +184,18 @@ async def get_current_admin(
 # User Authentication
 # ============================================================================
 
+# Precomputed at module load so unknown-email logins still pay exactly one
+# bcrypt comparison. Without this, a missing email returned instantly while a
+# real email took ~100ms — a timing oracle for enumerating registered emails.
+_DUMMY_HASH = bcrypt.hashpw(b"dummy-password-for-timing", bcrypt.gensalt()).decode('utf-8')
+
+
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """
     Authenticate a user by email and password.
+
+    Always performs one bcrypt comparison, even when the email is not
+    registered, so response timing does not reveal whether an email exists.
 
     Args:
         db: Database session
@@ -198,10 +207,10 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """
     user = db.query(User).filter(User.email == email).first()
 
-    if not user:
-        return None
+    hash_to_check = user.password_hash if user else _DUMMY_HASH
+    password_ok = verify_password(password, hash_to_check)
 
-    if not verify_password(password, user.password_hash):
+    if not user or not password_ok:
         return None
 
     return user
