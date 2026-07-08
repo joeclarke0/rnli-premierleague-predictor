@@ -36,6 +36,11 @@ TEAM_NAME_MAP: dict[str, str] = {
     "chelsea fc": "Chelsea",
     "chelsea": "Chelsea",
 
+    # Coventry City
+    "coventry city fc": "Coventry City",
+    "coventry city": "Coventry City",
+    "coventry": "Coventry City",
+
     # Crystal Palace
     "crystal palace fc": "Crystal Palace",
     "crystal palace": "Crystal Palace",
@@ -48,10 +53,20 @@ TEAM_NAME_MAP: dict[str, str] = {
     "fulham fc": "Fulham",
     "fulham": "Fulham",
 
+    # Hull City
+    "hull city fc": "Hull City",
+    "hull city": "Hull City",
+    "hull": "Hull City",
+
     # Ipswich — CSV uses "Ipswich Town"
     "ipswich town fc": "Ipswich Town",
     "ipswich town": "Ipswich Town",
     "ipswich": "Ipswich Town",
+
+    # Leeds United
+    "leeds united fc": "Leeds United",
+    "leeds united": "Leeds United",
+    "leeds": "Leeds United",
 
     # Leicester — CSV uses "Leicester City"
     "leicester city fc": "Leicester City",
@@ -87,6 +102,10 @@ TEAM_NAME_MAP: dict[str, str] = {
     # Southampton
     "southampton fc": "Southampton",
     "southampton": "Southampton",
+
+    # Sunderland
+    "sunderland afc": "Sunderland",
+    "sunderland": "Sunderland",
 
     # Tottenham — CSV uses "Tottenham"
     "tottenham hotspur fc": "Tottenham",
