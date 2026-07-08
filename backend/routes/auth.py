@@ -8,6 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Request, status, Query
 from pydantic import BaseModel, EmailStr, field_validator
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -153,9 +154,21 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
         db.flush()  # assign new_user.id without ending the transaction
 
         # Consume the invite (single-use) as part of the same transaction.
+        # An atomic conditional UPDATE (guarded on used_at IS NULL) prevents two
+        # concurrent registrations from both consuming the same invite under
+        # Postgres READ COMMITTED — only one request's UPDATE matches a row.
         if invite is not None:
-            invite.used_by = new_user.id
-            invite.used_at = datetime.now(timezone.utc)
+            consumed = db.execute(
+                update(Invite)
+                .where(Invite.id == invite.id, Invite.used_at.is_(None))
+                .values(used_by=new_user.id, used_at=datetime.now(timezone.utc))
+            )
+            if consumed.rowcount == 0:
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Invite already used",
+                )
 
         db.commit()
         db.refresh(new_user)

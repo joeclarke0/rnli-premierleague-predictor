@@ -1178,3 +1178,56 @@ def test_delete_fixture_force_cascades_predictions(client):
         assert db.query(Prediction).filter(Prediction.fixture_id == fid).count() == 0
     finally:
         db.close()
+
+
+# ── Invite single-use consumption ─────────────────────────────────────────────
+
+def test_invite_single_use_second_registration_rejected(client, monkeypatch):
+    """A single-use invite must only ever create one account.
+
+    The invite is consumed via an atomic conditional UPDATE (used_at IS NULL
+    guard) so a second registration — including one racing under Postgres READ
+    COMMITTED — sees rowcount == 0 and is rejected. True concurrency isn't
+    reproducible with TestClient's in-process SQLite, so this proves the
+    sequential contract: first use succeeds, any reuse fails.
+    """
+    monkeypatch.setenv("INVITE_ONLY", "true")
+
+    db = SessionLocal()
+    try:
+        admin = _make_user(db, username="race_inviter", email="race_inviter@test.com", role="admin")
+        invite = Invite(created_by=admin.id)
+        db.add(invite)
+        db.commit()
+        db.refresh(invite)
+        token = invite.token
+        invite_id = invite.id
+    finally:
+        db.close()
+
+    first = client.post("/auth/register", json={
+        "username": "race_winner", "email": "race_winner@test.com",
+        "password": "password123", "invite_token": token,
+    })
+    assert first.status_code == 201
+    winner_id = first.json()["id"]
+
+    # Second attempt with the same token: _get_valid_invite sees used_at set
+    # and returns None -> 403. (If two requests raced past that check, the
+    # atomic UPDATE's rowcount guard would return 409 instead — either way,
+    # no second account is created.)
+    second = client.post("/auth/register", json={
+        "username": "race_loser", "email": "race_loser@test.com",
+        "password": "password123", "invite_token": token,
+    })
+    assert second.status_code in (403, 409)
+
+    db = SessionLocal()
+    try:
+        # Invite is bound to the first user only, and no second account exists.
+        used = db.query(Invite).filter(Invite.id == invite_id).first()
+        assert used.used_at is not None
+        assert used.used_by == winner_id
+        assert db.query(User).filter(User.username == "race_loser").first() is None
+    finally:
+        db.close()

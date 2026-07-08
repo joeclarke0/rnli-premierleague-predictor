@@ -1070,26 +1070,21 @@ function FixturesTab() {
 
   const handleUpload = async () => {
     if (!file || !confirmed) return;
-    const formData = new FormData();
-    formData.append('file', file);
     setUploading(true); setError(null);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/admin/fixtures/upload?replace=true`,
-        { method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }, body: formData }
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        const detail = data.detail;
+      const res = await adminAPI.uploadFixtures(file, true);
+      const data = res.data;
+      setResult(data); setFile(null); setConfirmed(false);
+      toast.success(`${data.imported} fixtures imported across ${data.gameweeks.length} gameweeks!`);
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      if (detail !== undefined) {
         const msg  = typeof detail === 'object' ? detail.message : detail;
         const errs = typeof detail === 'object' ? detail.errors : [];
         setError({ message: msg, errors: errs });
       } else {
-        setResult(data); setFile(null); setConfirmed(false);
-        toast.success(`${data.imported} fixtures imported across ${data.gameweeks.length} gameweeks!`);
+        setError({ message: 'Upload failed — check your connection and try again', errors: [] });
       }
-    } catch {
-      setError({ message: 'Upload failed — check your connection and try again', errors: [] });
     } finally {
       setUploading(false);
     }

@@ -1334,6 +1334,12 @@ def simulate(
       - Random predictions for every user (admins included)
       - Random results for every fixture (all GWs scored)
     """
+    # Fail-safe: never allow the destructive reset against production.
+    # Only blocks when ENVIRONMENT is explicitly "production" (set in render.yaml),
+    # so unset environments (local dev, CI) keep working.
+    if os.environ.get("ENVIRONMENT") == "production":
+        raise HTTPException(status_code=403, detail="Simulation is disabled in production")
+
     # 1. Wipe existing data
     db.query(Wildcard).delete()
     db.query(Prediction).delete()

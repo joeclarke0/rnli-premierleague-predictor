@@ -129,6 +129,16 @@ export const adminAPI = {
     api.get('/admin/missing-predictions', { params: gameweek != null ? { gameweek } : {} }),
   updateFixtureStatus: (fixtureId, status) =>
     api.patch(`/admin/fixtures/${fixtureId}/status`, { status }),
+  // CSV fixture upload. The instance default Content-Type (application/json)
+  // must be removed so the browser sets multipart/form-data with its boundary.
+  uploadFixtures: (file, replace = true) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/admin/fixtures/upload', formData, {
+      params: { replace },
+      headers: { 'Content-Type': undefined },
+    });
+  },
   // Manual fixture editor
   addFixture: (data) => api.post('/admin/fixtures', data),
   editFixture: (fixtureId, data) => api.patch(`/admin/fixtures/${fixtureId}`, data),

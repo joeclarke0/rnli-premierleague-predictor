@@ -16,3 +16,5 @@ services:
         value: false
       - key: FOOTBALL_DATA_API_KEY
         sync: false
+      - key: ENVIRONMENT
+        value: production
