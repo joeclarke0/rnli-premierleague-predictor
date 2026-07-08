@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Request, status, Query
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -88,8 +88,7 @@ class UserResponse(BaseModel):
     email: str
     role: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenResponse(BaseModel):
@@ -173,7 +172,7 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
         db.commit()
         db.refresh(new_user)
 
-        print(f"✅ New user registered: {new_user.email}")
+        print(f"✅ New user registered: {new_user.id}")
 
         return UserResponse(
             id=new_user.id,
@@ -237,7 +236,7 @@ def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
         }
     )
 
-    print(f"✅ User logged in: {user.email}")
+    print(f"✅ User logged in: {user.id}")
 
     return TokenResponse(
         access_token=access_token,

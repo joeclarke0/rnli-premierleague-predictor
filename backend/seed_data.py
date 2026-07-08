@@ -163,6 +163,13 @@ def seed_settings(db):
 
 def main():
     """Main seeding function."""
+    # Fail-safe: never seed hardcoded demo accounts into production.
+    # Only blocks when ENVIRONMENT is explicitly "production" (set in render.yaml),
+    # so unset environments (local dev, CI) keep working.
+    if os.environ.get("ENVIRONMENT") == "production":
+        print("❌ Refusing to run: ENVIRONMENT is 'production'. Seeding creates demo accounts and must not run against the production database.")
+        return
+
     print("\n" + "="*60)
     print("🌱 RNLI Premier League Predictor - Database Seeding")
     print("="*60 + "\n")

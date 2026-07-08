@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -19,6 +19,14 @@ engine = create_engine(
     pool_pre_ping=True,
     echo=False  # Set to True for SQL query debugging
 )
+
+# SQLite does not enforce foreign key constraints by default (Postgres does).
+# Enable the pragma per-connection so local/test behaviour matches production.
+@event.listens_for(engine, "connect")
+def _sqlite_fk_on(dbapi_conn, _):
+    if DATABASE_URL.startswith("sqlite"):
+        dbapi_conn.execute("PRAGMA foreign_keys=ON")
+
 
 # Create SessionLocal class for database sessions
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

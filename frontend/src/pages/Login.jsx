@@ -18,7 +18,7 @@ export default function Login() {
   useEffect(() => {
     if (isAuthenticated) navigate('/predictions');
     if (location.state?.message) toast.success(location.state.message);
-  }, [isAuthenticated, navigate, location.state]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, navigate, location.state]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

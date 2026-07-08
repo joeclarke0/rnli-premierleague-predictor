@@ -36,7 +36,7 @@ def submit_prediction(
     - **predicted_away**: Predicted away team score
     """
     try:
-        print(f"📝 Incoming prediction from user {current_user.username}:", prediction.dict())
+        print(f"📝 Incoming prediction from user {current_user.id}:", prediction.model_dump())
 
         # Verify fixture exists
         fixture = db.query(Fixture).filter(Fixture.id == prediction.fixture_id).first()
@@ -196,7 +196,7 @@ def get_wildcards(
             .all()
         )
         gameweeks = [w.gameweek for w in wildcards]
-        print(f"✅ Wildcards fetched for {current_user.username}: {gameweeks}")
+        print(f"✅ Wildcards fetched for user {current_user.id}: {gameweeks}")
         return {"gameweeks": gameweeks}
     except Exception as e:
         print("❌ Error fetching wildcards:", str(e))
@@ -217,7 +217,7 @@ def activate_wildcard(
     wildcard is a no-op success.
     """
     try:
-        print(f"🃏 Wildcard activation from {current_user.username}: GW{body.gameweek}")
+        print(f"🃏 Wildcard activation from user {current_user.id}: GW{body.gameweek}")
 
         # Gate: once any result exists for this gameweek, activation is frozen.
         if _gameweek_has_results(db, body.gameweek):
@@ -290,7 +290,7 @@ def deactivate_wildcard(
         if user_id and user_id != current_user.id and current_user.role != "admin":
             raise HTTPException(status_code=403, detail="Admin access required to deactivate another user's wildcard")
         target_id = user_id if user_id else current_user.id
-        print(f"🃏 Wildcard deactivation by {current_user.username} for user {target_id}: GW{gameweek}")
+        print(f"🃏 Wildcard deactivation by user {current_user.id} for user {target_id}: GW{gameweek}")
 
         if _gameweek_has_results(db, gameweek):
             raise HTTPException(

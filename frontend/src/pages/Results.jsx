@@ -228,6 +228,7 @@ export default function Results() {
                     type="number"
                     min="0"
                     max="20"
+                    aria-label={`${fixture.home_team} score`}
                     value={result.home}
                     disabled={isPostponed}
                     onChange={(e) => handleResultChange(fixture.id, 'home', e.target.value)}
@@ -238,6 +239,7 @@ export default function Results() {
                     type="number"
                     min="0"
                     max="20"
+                    aria-label={`${fixture.away_team} score`}
                     value={result.away}
                     disabled={isPostponed}
                     onChange={(e) => handleResultChange(fixture.id, 'away', e.target.value)}

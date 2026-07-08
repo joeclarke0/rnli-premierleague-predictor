@@ -34,7 +34,7 @@ def submit_result(
     - **actual_away**: Actual away team score
     """
     try:
-        print(f"📝 Incoming result from admin {current_admin.username}:", result.dict())
+        print(f"📝 Incoming result from admin {current_admin.id}:", result.model_dump())
 
         # Verify fixture exists
         fixture = db.query(Fixture).filter(Fixture.id == result.fixture_id).first()

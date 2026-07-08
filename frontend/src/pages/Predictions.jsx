@@ -477,6 +477,7 @@ export default function Predictions() {
                       type="number"
                       min="0"
                       max="20"
+                      aria-label={`${fixture.home_team} score`}
                       value={pred.home}
                       disabled={closed}
                       onChange={(e) => handleChange(fixture.id, 'home', e.target.value)}
@@ -488,6 +489,7 @@ export default function Predictions() {
                       type="number"
                       min="0"
                       max="20"
+                      aria-label={`${fixture.away_team} score`}
                       value={pred.away}
                       disabled={closed}
                       onChange={(e) => handleChange(fixture.id, 'away', e.target.value)}
